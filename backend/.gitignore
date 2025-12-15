@@ -7,6 +7,10 @@ __pycache__/
 venv/
 venv*/
 .env
+venv_old/
+venv311/
+venv_old*/
+venv311*/
 
 # Distribution / packaging
 .Python

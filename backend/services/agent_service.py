@@ -1,12 +1,15 @@
 import uuid
 from datetime import datetime
 from typing import Dict, Any, List
+import os
+import sys
+import importlib
+from pathlib import Path
 from config import settings
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_community.chat_models import ChatOllama
 from langchain_openai import ChatOpenAI
-from tools import QdrantConnector, QBOConnector
 from storage import AgentStorage
 
 
@@ -30,23 +33,73 @@ class AgentService:
                 temperature=0.7
             )
         
-        # Initialize tools
-        self.qdrant_tool = QdrantConnector()
-        self.qbo_tool = QBOConnector()
-        
-        # Convert tools to LangChain format
-        self.tools = [
-            self.qdrant_tool.to_langchain_tool(),
-            self.qbo_tool.to_langchain_tool()
-        ]
+        # Load all available tools dynamically
+        self.tools = self._load_all_tools()
     
-    def create_agent(self, prompt: str, name: str = None) -> Dict[str, Any]:
+    def _load_all_tools(self) -> List:
+        """
+        Dynamically load all tools from the tools directory
+        
+        Returns:
+            List of LangChain tools
+        """
+        tools = []
+        tools_dir = Path(__file__).parent.parent / "tools"
+        
+        # Get all .py files in tools directory
+        for tool_file in tools_dir.glob("*.py"):
+            # Skip __init__.py and base_tool.py
+            if tool_file.name.startswith("__") or tool_file.name == "base_tool.py":
+                continue
+            
+            try:
+                # Import the module
+                module_name = f"tools.{tool_file.stem}"
+                
+                # Clear from cache to force reimport
+                if module_name in sys.modules:
+                    importlib.reload(sys.modules[module_name])
+                else:
+                    module = importlib.import_module(module_name)
+                
+                module = sys.modules.get(module_name) or importlib.import_module(module_name)
+                
+                # Find the tool class (should end with 'Connector')
+                for attr_name in dir(module):
+                    attr = getattr(module, attr_name)
+                    # Check if it's a class and has the required methods
+                    if (isinstance(attr, type) and 
+                        attr_name.endswith('Connector') and
+                        hasattr(attr, 'to_langchain_tool')):
+                        # Instantiate and convert to LangChain tool
+                        tool_instance = attr()
+                        tools.append(tool_instance.to_langchain_tool())
+                        print(f"✅ Loaded tool: {attr_name}")
+                        break
+                        
+            except ModuleNotFoundError as e:
+                print(f"⚠️ Could not load tool from {tool_file.name}: {e}")
+                dep_name = str(e).split("'")[1] if "'" in str(e) else "unknown"
+                print(f"   💡 Install missing dependency: pip install {dep_name}")
+            except Exception as e:
+                print(f"⚠️ Could not load tool from {tool_file.name}: {e}")
+        
+        print(f"\nTotal tools loaded: {len(tools)}\n")
+        return tools
+    
+    def reload_tools(self):
+        """Reload all tools from directory (useful after generating new tools)"""
+        self.tools = self._load_all_tools()
+    
+    def create_agent(self, prompt: str, name: str = None, selected_tools: List[str] = None, workflow_config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Create an agent from a prompt
         
         Args:
-            prompt: User prompt describing the agent's purpose (may include configuration)
+            prompt: User prompt describing the agent's purpose
             name: Optional name for the agent
+            selected_tools: List of tool names to assign to this agent (if None, uses all tools)
+            workflow_config: Optional workflow configuration (trigger_type, input_fields, output_format)
             
         Returns:
             Dictionary with agent information
@@ -54,17 +107,35 @@ class AgentService:
         agent_id = str(uuid.uuid4())
         agent_name = name or f"Agent-{agent_id[:8]}"
         
-        # Parse configuration from prompt if exists
-        config = self._parse_configuration(prompt)
-        base_prompt = config['base_prompt']
+        # Set default workflow config if not provided
+        if workflow_config is None:
+            workflow_config = {
+                "trigger_type": "text_query",
+                "input_fields": [],
+                "output_format": "text"
+            }
         
-        # Create system prompt
+        # Filter tools based on selected_tools list
+        if selected_tools is not None and len(selected_tools) > 0:
+            agent_tools = [t for t in self.tools if t.name in selected_tools]
+            print(f"\n🎯 Assigning {len(agent_tools)} specific tools to agent: {selected_tools}")
+        elif selected_tools is not None and len(selected_tools) == 0:
+            # Empty list provided - no specific tools selected, use AI fallback
+            agent_tools = []
+            print(f"\nℹ️ No tools specified - agent will use AI reasoning as fallback")
+        else:
+            # None provided - fallback to all tools (legacy behavior)
+            agent_tools = self.tools
+            print(f"\n⚠️ Warning: No tool selection provided, using all {len(self.tools)} tools")
+        
+        # Create system prompt with only selected tools
+        tool_descriptions = "\n".join([f"- {tool.name}: {tool.description}" for tool in agent_tools])
+        
         system_prompt = f"""You are an AI agent with the following purpose:
-{base_prompt}
+{prompt}
 
 You have access to the following tools:
-- qdrant_search: Search and query data from Qdrant vector database (collection: icap_dev_migration)
-- qbo_query: Query QuickBooks Online data (placeholder)
+{tool_descriptions}
 
 Use these tools to help users accomplish their tasks. Always be helpful and provide clear explanations of your actions."""
 
@@ -75,124 +146,49 @@ Use these tools to help users accomplish their tasks. Always be helpful and prov
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
         
-        # Create agent
+        # Create agent with only selected tools
         agent = create_openai_functions_agent(
             llm=self.llm,
-            tools=self.tools,
+            tools=agent_tools,
             prompt=prompt_template
         )
         
-        # Create agent executor
+        # Create agent executor with only selected tools
         agent_executor = AgentExecutor(
             agent=agent,
-            tools=self.tools,
+            tools=agent_tools,
             verbose=True,
             handle_parsing_errors=True
         )
         
-        # Save agent metadata with workflow_config format
-        workflow_config = {
-            "trigger_type": config.get('execution_trigger', 'user_text_input'),
-            "input_fields": config.get('custom_fields', []),
-            "output_format": config.get('output_format', 'text')
-        }
-        
-        # Handle legacy agents that might have different structure
-        if 'workflow_config' in agent_data:
-            existing_workflow_config = agent_data.get('workflow_config', {})
-            if 'trigger_type' not in workflow_config and 'trigger_type' in existing_workflow_config:
-                workflow_config['trigger_type'] = existing_workflow_config['trigger_type']
-            if 'output_format' not in workflow_config and 'output_format' in existing_workflow_config:
-                workflow_config['output_format'] = existing_workflow_config['output_format']
-            if 'input_fields' not in workflow_config and 'input_fields' in existing_workflow_config:
-                workflow_config['input_fields'] = existing_workflow_config['input_fields']
-        
+        # Save agent metadata including selected tools and workflow config
         agent_data = {
             "id": agent_id,
             "name": agent_name,
-            "prompt": prompt,  # Store original prompt with config
+            "prompt": prompt,
             "system_prompt": system_prompt,
+            "selected_tools": selected_tools or [t.name for t in self.tools],
+            "workflow_config": workflow_config,  # Store workflow configuration
             "created_at": datetime.now().isoformat(),
-            "workflow_config": workflow_config  # Store in legacy workflow_config format
         }
         
         self.storage.save_agent(agent_data)
         
         return agent_data
     
-    def _parse_configuration(self, prompt: str) -> Dict[str, Any]:
-        """
-        Parse configuration from prompt if it exists
-        
-        Args:
-            prompt: Full prompt potentially with [Configuration] section
-            
-        Returns:
-            Dictionary with base_prompt and configuration details
-        """
-        lines = prompt.split('\n')
-        config_index = -1
-        
-        for i, line in enumerate(lines):
-            if '[Configuration]' in line:
-                config_index = i
-                break
-        
-        if config_index == -1:
-            # No configuration found
-            return {
-                'base_prompt': prompt.strip(),
-                'execution_trigger': 'query',
-                'output_format': 'text',
-                'selected_tools': []
-            }
-        
-        # Extract base prompt and configuration
-        base_prompt = '\n'.join(lines[:config_index]).strip()
-        config_lines = lines[config_index:]
-        
-        config = {
-            'base_prompt': base_prompt,
-            'execution_trigger': 'query',
-            'output_format': 'text',
-            'selected_tools': [],
-            'custom_fields': []
-        }
-        
-        for line in config_lines:
-            if 'Execution Trigger:' in line:
-                trigger = line.split(':', 1)[1].strip().lower()
-                config['execution_trigger'] = trigger
-            elif 'Output Format:' in line:
-                fmt = line.split(':', 1)[1].strip().lower()
-                config['output_format'] = fmt
-            elif 'Selected Tools:' in line:
-                tools = line.split(':', 1)[1].strip()
-                if tools and tools != 'auto-detect':
-                    config['selected_tools'] = [t.strip() for t in tools.split(',')]
-            elif 'Custom Fields:' in line:
-                fields_json = line.split(':', 1)[1].strip()
-                if fields_json and fields_json != 'none':
-                    try:
-                        import json
-                        config['custom_fields'] = json.loads(fields_json)
-                    except:
-                        pass
-        
-        return config
-    
-    def execute_agent(self, agent_id: str, user_query: str) -> Dict[str, Any]:
+    def execute_agent(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None) -> Dict[str, Any]:
         """
         Execute an agent with a user query
         
         Args:
             agent_id: Unique agent identifier
             user_query: User's query/request
+            tool_configs: Optional runtime tool configurations (e.g., API keys)
             
         Returns:
             Dictionary with execution results
         """
-        # Load agent
+        # 1. Load agent data
         agent_data = self.storage.get_agent(agent_id)
         if not agent_data:
             return {
@@ -200,42 +196,119 @@ Use these tools to help users accomplish their tasks. Always be helpful and prov
                 "error": f"Agent {agent_id} not found"
             }
         
-        # Recreate agent (agents are not serializable, so we recreate from prompt)
-        system_prompt = agent_data.get("system_prompt", agent_data.get("prompt", ""))
+        # 2. Apply runtime tool configurations (Environment Variables)
+        original_env = {}
+        if tool_configs:
+            for tool_name, config in tool_configs.items():
+                for key, value in config.items():
+                    # Construct env var name (e.g., QBO_API_KEY)
+                    if key == 'api_key':
+                        env_var = f"{tool_name.upper()}_API_API_KEY"
+                    elif key == 'secret_key':
+                        env_var = f"{tool_name.upper()}_API_SECRET_KEY"
+                    elif key == 'access_token':
+                        env_var = f"{tool_name.upper()}_ACCESS_TOKEN"
+                    elif key == 'region':
+                        env_var = f"{tool_name.upper()}_REGION_NAME"
+                    else:
+                        env_var = f"{tool_name.upper()}_{key.upper()}"
+                    
+                    # Store original value for cleanup
+                    original_env[env_var] = os.getenv(env_var)
+                    # Set new temporary value
+                    os.environ[env_var] = value
         
-        prompt_template = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
-        
-        agent = create_openai_functions_agent(
-            llm=self.llm,
-            tools=self.tools,
-            prompt=prompt_template
-        )
-        
-        agent_executor = AgentExecutor(
-            agent=agent,
-            tools=self.tools,
-            verbose=True,
-            handle_parsing_errors=True
-        )
-        
-        # Execute agent
         try:
-            result = agent_executor.invoke({"input": user_query})
-            return {
-                "success": True,
-                "output": result.get("output", ""),
-                "intermediate_steps": result.get("intermediate_steps", [])
-            }
+            # 3. Reload tools to pick up new environment variables
+            if tool_configs:
+                self.tools = self._load_all_tools()
+            
+            # 4. Filter tools for this specific agent
+            selected_tool_names = agent_data.get("selected_tools", [])
+            
+            # If selected_tools is None/empty, agent_tools becomes []
+            agent_tools = [t for t in self.tools if t.name in selected_tool_names] if selected_tool_names else []
+            
+            system_prompt = agent_data.get("system_prompt", agent_data.get("prompt", ""))
+            
+            # -----------------------------------------------------------
+            # ✅ BRANCH 1: Agent HAS tools (Standard Agent Execution)
+            # -----------------------------------------------------------
+            if agent_tools and len(agent_tools) > 0:
+                prompt_template = ChatPromptTemplate.from_messages([
+                    ("system", system_prompt),
+                    ("human", "{input}"),
+                    MessagesPlaceholder(variable_name="agent_scratchpad"),
+                ])
+                
+                # This function REQUIRES at least one tool to work
+                agent = create_openai_functions_agent(
+                    llm=self.llm,
+                    tools=agent_tools,
+                    prompt=prompt_template
+                )
+                
+                agent_executor = AgentExecutor(
+                    agent=agent,
+                    tools=agent_tools,
+                    verbose=True,
+                    handle_parsing_errors=True
+                )
+                
+                # Execute
+                result = agent_executor.invoke({"input": user_query})
+                
+                return {
+                    "success": True,
+                    "output": result.get("output", ""),
+                    "intermediate_steps": result.get("intermediate_steps", [])
+                }
+
+            # -----------------------------------------------------------
+            # ✅ BRANCH 2: Agent has NO tools (Fallback to Simple Chat)
+            # -----------------------------------------------------------
+            else:
+                print(f"ℹ️ Agent {agent_id} has no tools selected. Running as standard LLM chat.")
+                
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_query)
+                ]
+                
+                # Direct LLM call since we can't use an AgentExecutor without tools
+                response = self.llm.invoke(messages)
+                
+                return {
+                    "success": True,
+                    "output": response.content,
+                    "intermediate_steps": [] 
+                }
+
+        # -----------------------------------------------------------
+        # ❌ CATCH BLOCK (Exception Handling)
+        # -----------------------------------------------------------
         except Exception as e:
+            print(f"❌ Error executing agent {agent_id}: {str(e)}")
             return {
                 "success": False,
                 "error": str(e),
                 "error_type": type(e).__name__
             }
+
+        # -----------------------------------------------------------
+        # 🧹 FINALLY BLOCK (Cleanup)
+        # -----------------------------------------------------------
+        finally:
+            # Restore original environment variables
+            for env_var, original_value in original_env.items():
+                if original_value is None:
+                    os.environ.pop(env_var, None)
+                else:
+                    os.environ[env_var] = original_value
+            
+            # Reload tools again to restore original state (remove temporary configs)
+            if tool_configs:
+                self.tools = self._load_all_tools()
     
     def list_agents(self) -> List[Dict[str, Any]]:
         """List all saved agents"""
@@ -249,14 +322,15 @@ Use these tools to help users accomplish their tasks. Always be helpful and prov
         """Delete an agent"""
         return self.storage.delete_agent(agent_id)
     
-    def update_agent(self, agent_id: str, prompt: str, name: str = None) -> Dict[str, Any]:
+    def update_agent(self, agent_id: str, prompt: str, name: str = None, workflow_config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Update an agent's prompt and regenerate system prompt
         
         Args:
             agent_id: Unique agent identifier
-            prompt: New user prompt (may include configuration)
+            prompt: New user prompt
             name: Optional new name
+            workflow_config: Optional workflow configuration
             
         Returns:
             Updated agent data
@@ -269,32 +343,35 @@ Use these tools to help users accomplish their tasks. Always be helpful and prov
         # Use existing name if not provided
         agent_name = name or existing_agent.get("name")
         
-        # Parse configuration from prompt
-        config = self._parse_configuration(prompt)
-        base_prompt = config['base_prompt']
+        # Use existing workflow_config if not provided
+        if workflow_config is None:
+            workflow_config = existing_agent.get("workflow_config", {
+                "trigger_type": "text_query",
+                "input_fields": [],
+                "output_format": "text"
+            })
         
-        # Regenerate system prompt
+        # Get selected tools from existing agent
+        selected_tool_names = existing_agent.get("selected_tools", [])
+        agent_tools = [t for t in self.tools if t.name in selected_tool_names] if selected_tool_names else self.tools
+        
+        # Regenerate system prompt with selected tools
+        tool_descriptions = "\n".join([f"- {tool.name}: {tool.description}" for tool in agent_tools])
+        
         system_prompt = f"""You are an AI agent with the following purpose:
-{base_prompt}
+{prompt}
 
 You have access to the following tools:
-- qdrant_search: Search and query data from Qdrant vector database (collection: icap_dev_migration)
-- qbo_query: Query QuickBooks Online data (placeholder)
+{tool_descriptions}
 
 Use these tools to help users accomplish their tasks. Always be helpful and provide clear explanations of your actions."""
         
-        # Prepare updated data with workflow_config format
-        workflow_config = {
-            "trigger_type": config.get('execution_trigger', 'user_text_input'),
-            "input_fields": config.get('custom_fields', []),
-            "output_format": config.get('output_format', 'text')
-        }
-        
+        # Prepare updated data
         updated_data = {
             "name": agent_name,
-            "prompt": prompt,  # Store full prompt with config
+            "prompt": prompt,
             "system_prompt": system_prompt,
-            "workflow_config": workflow_config  # Store in legacy workflow_config format
+            "workflow_config": workflow_config
         }
         
         # Update in storage
@@ -302,4 +379,25 @@ Use these tools to help users accomplish their tasks. Always be helpful and prov
         
         # Return updated agent
         return self.storage.get_agent(agent_id)
+    
+    def get_available_tools(self) -> List[str]:
+        """
+        Get list of available tool names by scanning the tools directory
+        
+        Returns:
+            List of tool names (without .py extension)
+        """
+        tools_dir = Path(__file__).parent.parent / "tools"
+        tool_files = []
+        
+        if tools_dir.exists():
+            for file in tools_dir.glob("*.py"):
+                # Skip __init__.py and private files
+                if file.name.startswith("__") or file.name.startswith("_"):
+                    continue
+                # Extract tool name (filename without .py)
+                tool_name = file.stem
+                tool_files.append(tool_name)
+        
+        return tool_files
 

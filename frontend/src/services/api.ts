@@ -15,6 +15,7 @@ export interface Agent {
   prompt: string;
   created_at: string;
   workflow_config?: WorkflowConfig;
+  selected_tools?: string[];
 }
 
 export interface WorkflowConfig {
@@ -73,6 +74,7 @@ export interface UpdateAgentRequest {
   prompt: string;
   name?: string;
   workflow_config?: WorkflowConfig;
+  selected_tools?: string[];
 }
 
 export interface ToolSpec {

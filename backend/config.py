@@ -17,9 +17,9 @@ class Settings:
     use_openai: bool = os.getenv("USE_OPENAI", "false").lower() == "true"
     
     # Qdrant settings
-    qdrant_url: str = os.getenv("QDRANT_URL", "https://vector-dev.icapsgs.com/")
+    qdrant_url: str = os.getenv("QDRANT_URL", "https://0e1e9ae9-597a-4bc5-bafd-9773e2123a1f.us-east4-0.gcp.cloud.qdrant.io")
     qdrant_api_key: Optional[str] = os.getenv("QDRANT_API_KEY")
-    qdrant_collection: str = os.getenv("QDRANT_COLLECTION", "icap_dev_migration")
+    qdrant_collection: str = os.getenv("QDRANT_COLLECTION", "icap_dev")
     
     # Postgres settings (kept for backward compatibility)
     postgres_host: Optional[str] = os.getenv("PG_HOST", "localhost")

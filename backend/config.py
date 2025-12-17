@@ -30,6 +30,7 @@ class Settings:
     
     # Storage settings
     agents_storage_dir: str = os.getenv("AGENTS_STORAGE_DIR", "agents")
+    tools_output_dir: str = os.getenv("TOOLS_OUTPUT_DIR", "tools")
 
 
 settings = Settings()

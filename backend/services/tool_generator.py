@@ -27,7 +27,11 @@ class ToolGenerator:
                 temperature=0.2
             )
         
-        self.tools_dir = Path(__file__).parent.parent / "tools"
+        tools_output_dir = settings.tools_output_dir or "tools"
+        if os.path.isabs(tools_output_dir):
+            self.tools_dir = Path(tools_output_dir)
+        else:
+            self.tools_dir = Path(__file__).parent.parent / tools_output_dir
     
     def generate_tool(self, tool_spec: Dict[str, Any]) -> Dict[str, Any]:
         """

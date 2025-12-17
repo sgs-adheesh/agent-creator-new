@@ -12,6 +12,14 @@ from langchain_community.chat_models import ChatOllama
 from langchain_openai import ChatOpenAI
 from storage import AgentStorage
 
+# Import ToolAnalyzer (with error handling to avoid circular imports)
+try:
+    from services.tool_analyzer import ToolAnalyzer
+    TOOL_ANALYZER_AVAILABLE = True
+except ImportError:
+    ToolAnalyzer = None
+    TOOL_ANALYZER_AVAILABLE = False
+
 
 class AgentService:
     """Service for creating and executing agents"""
@@ -324,7 +332,7 @@ Use these tools to help users accomplish their tasks. Always be helpful and prov
     
     def update_agent(self, agent_id: str, prompt: str, name: str = None, workflow_config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Update an agent's prompt and regenerate system prompt
+        Update an agent's prompt and regenerate system prompt with automatic tool selection
         
         Args:
             agent_id: Unique agent identifier
@@ -351,9 +359,30 @@ Use these tools to help users accomplish their tasks. Always be helpful and prov
                 "output_format": "text"
             })
         
-        # Get selected tools from existing agent
-        selected_tool_names = existing_agent.get("selected_tools", [])
-        agent_tools = [t for t in self.tools if t.name in selected_tool_names] if selected_tool_names else self.tools
+        # Automatically analyze prompt to determine appropriate tools
+        if TOOL_ANALYZER_AVAILABLE and ToolAnalyzer:
+            try:
+                tool_analyzer = ToolAnalyzer()
+                existing_tool_names = self.get_available_tools()
+                tool_analysis = tool_analyzer.analyze_prompt(prompt, existing_tool_names)
+                
+                # Use matched tools if analysis was successful, otherwise fall back to existing tools
+                if tool_analysis.get("success", False):
+                    selected_tool_names = tool_analysis.get("matched_tools", existing_agent.get("selected_tools", []))
+                    print(f"🤖 Auto-selected tools based on prompt: {selected_tool_names}")
+                else:
+                    # Fall back to existing selected tools
+                    selected_tool_names = existing_agent.get("selected_tools", [])
+                    print(f"⚠️ Tool analysis failed, keeping existing tools: {selected_tool_names}")
+            except Exception as e:
+                print(f"⚠️ Tool analysis failed with error: {e}, keeping existing tools")
+                selected_tool_names = existing_agent.get("selected_tools", [])
+        else:
+            print("⚠️ Tool analyzer not available, keeping existing tools")
+            selected_tool_names = existing_agent.get("selected_tools", [])
+        
+        # Filter tools based on selected_tool_names
+        agent_tools = [t for t in self.tools if t.name in selected_tool_names] if selected_tool_names else []
         
         # Regenerate system prompt with selected tools
         tool_descriptions = "\n".join([f"- {tool.name}: {tool.description}" for tool in agent_tools])
@@ -371,6 +400,7 @@ Use these tools to help users accomplish their tasks. Always be helpful and prov
             "name": agent_name,
             "prompt": prompt,
             "system_prompt": system_prompt,
+            "selected_tools": selected_tool_names,
             "workflow_config": workflow_config
         }
         
@@ -382,22 +412,11 @@ Use these tools to help users accomplish their tasks. Always be helpful and prov
     
     def get_available_tools(self) -> List[str]:
         """
-        Get list of available tool names by scanning the tools directory
+        Get list of available tool names by scanning loaded tools
         
         Returns:
-            List of tool names (without .py extension)
+            List of actual tool names (e.g., 'postgres_query', not 'postgres_connector')
         """
-        tools_dir = Path(__file__).parent.parent / "tools"
-        tool_files = []
-        
-        if tools_dir.exists():
-            for file in tools_dir.glob("*.py"):
-                # Skip __init__.py and private files
-                if file.name.startswith("__") or file.name.startswith("_"):
-                    continue
-                # Extract tool name (filename without .py)
-                tool_name = file.stem
-                tool_files.append(tool_name)
-        
-        return tool_files
+        # Return actual tool names from loaded tools
+        return [tool.name for tool in self.tools]
 

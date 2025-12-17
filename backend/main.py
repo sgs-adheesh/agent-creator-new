@@ -23,7 +23,14 @@ app.add_middleware(
 # Initialize services
 agent_service = AgentService()
 workflow_generator = WorkflowGenerator()
-tool_analyzer = ToolAnalyzer()
+
+# Initialize ToolAnalyzer with error handling
+try:
+    tool_analyzer = ToolAnalyzer()
+except Exception as e:
+    print(f"⚠️ Warning: ToolAnalyzer initialization failed: {e}")
+    tool_analyzer = None
+
 tool_generator = ToolGenerator()
 semantic_service = SemanticService()
 
@@ -209,7 +216,7 @@ async def update_agent(agent_id: str, request: UpdateAgentRequest):
         if request.workflow_config:
             workflow_config_dict = request.workflow_config.dict()
         
-        # Update agent using the service (regenerate system_prompt)
+        # Update agent using the service (regenerate system_prompt and auto-select tools)
         updated_agent = agent_service.update_agent(
             agent_id=agent_id,
             prompt=request.prompt,
@@ -232,7 +239,17 @@ async def analyze_tools(request: ToolAnalysisRequest):
         existing_tools = agent_service.get_available_tools()
         
         # Analyze prompt
-        analysis = tool_analyzer.analyze_prompt(request.prompt, existing_tools)
+        if tool_analyzer is not None:
+            analysis = tool_analyzer.analyze_prompt(request.prompt, existing_tools)
+        else:
+            # Fallback response when tool_analyzer is not available
+            analysis = {
+                "success": False,
+                "error": "Tool analyzer not available",
+                "matched_tools": [],
+                "new_tools_needed": [],
+                "reasoning": "Tool analyzer service is not available"
+            }
         
         return ToolAnalysisResponse(**analysis)
     except Exception as e:

@@ -33,8 +33,8 @@ class AgentStorage:
         
         agent_path = self._get_agent_path(agent_id)
         
-        with open(agent_path, "w") as f:
-            json.dump(agent_data, f, indent=2)
+        with open(agent_path, "w", encoding="utf-8") as f:
+            json.dump(agent_data, f, indent=2, ensure_ascii=False)
         
         return agent_id
     
@@ -53,7 +53,7 @@ class AgentStorage:
         if not agent_path.exists():
             return None
         
-        with open(agent_path, "r") as f:
+        with open(agent_path, "r", encoding="utf-8") as f:
             return json.load(f)
     
     def list_agents(self) -> List[Dict]:
@@ -67,7 +67,7 @@ class AgentStorage:
         
         for agent_file in self.storage_dir.glob("*.json"):
             try:
-                with open(agent_file, "r") as f:
+                with open(agent_file, "r", encoding="utf-8") as f:
                     agent_data = json.load(f)
                     agents.append(agent_data)
             except Exception as e:
@@ -92,7 +92,7 @@ class AgentStorage:
             return False
         
         # Load existing data
-        with open(agent_path, "r") as f:
+        with open(agent_path, "r", encoding="utf-8") as f:
             agent_data = json.load(f)
         
         # Update fields
@@ -101,8 +101,8 @@ class AgentStorage:
         agent_data["updated_at"] = datetime.now().isoformat()
         
         # Save updated data
-        with open(agent_path, "w") as f:
-            json.dump(agent_data, f, indent=2)
+        with open(agent_path, "w", encoding="utf-8") as f:
+            json.dump(agent_data, f, indent=2, ensure_ascii=False)
         
         return True
     

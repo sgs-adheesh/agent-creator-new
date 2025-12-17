@@ -83,6 +83,13 @@ class AgentService:
                         tool_instance = attr()
                         tools.append(tool_instance.to_langchain_tool())
                         print(f"✅ Loaded tool: {attr_name}")
+                        
+                        # Check if this tool also has a schema inspection tool
+                        if hasattr(tool_instance, 'to_langchain_schema_tool'):
+                            schema_tool = tool_instance.to_langchain_schema_tool()
+                            tools.append(schema_tool)
+                            print(f"📊 Loaded schema tool: {schema_tool.name}")
+                        
                         break
                         
             except ModuleNotFoundError as e:

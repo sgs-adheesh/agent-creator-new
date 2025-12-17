@@ -12,6 +12,11 @@ class PostgresQueryInput(BaseModel):
     query: str = Field(description="SQL SELECT query to execute on the PostgreSQL database. Only SELECT queries are allowed.")
 
 
+class PostgresSchemaInput(BaseModel):
+    """Input schema for Postgres schema inspection tool"""
+    table_name: str = Field(description="Name of the table to inspect. Use semantic names like 'invoice' or 'vendor'. Leave empty to get all tables.", default="")
+
+
 class PostgresConnector(BaseTool):
     """Read-only Postgres database connector tool"""
     
@@ -19,12 +24,21 @@ class PostgresConnector(BaseTool):
         # Get database schema to include in description
         schema_info = self._get_database_schema()
         
-        description = """Execute read-only SQL queries on PostgreSQL database. Only SELECT queries are allowed.
-        
+        description = """⚠️ IMPORTANT: Call 'postgres_inspect_schema' tool FIRST before using this tool!
+
+Execute read-only SQL queries on PostgreSQL database. Only SELECT queries are allowed.
+
+🔴 REQUIRED FIRST STEP: Use postgres_inspect_schema(table_name='invoice') to see:
+- Actual column names
+- Which columns are JSONB (require ->> operator)
+- Sample data structure
+
 Available tables and columns:
 {}
 
-Use this tool to query invoice data, customer information, and other business data.""".format(schema_info)
+Use this tool to query invoice data, customer information, and other business data.
+
+Note: Many columns are JSONB - you MUST inspect schema first or queries will fail!""".format(schema_info)
         
         super().__init__(
             name="postgres_query",
@@ -34,6 +48,9 @@ Use this tool to query invoice data, customer information, and other business da
         
         # Initialize table mappings as empty dict
         self.table_mappings = {}
+        
+        # Track which tables have been inspected in current session
+        self._inspected_tables = set()
         
         # Try to generate semantic table mappings based on database schema
         try:
@@ -236,6 +253,176 @@ Use this tool to query invoice data, customer information, and other business da
         # The main enhancement is in the error handling in the execute method
         return query
     
+    def _extract_tables_from_query(self, query: str) -> List[str]:
+        """
+        Extract table names from a SQL query
+        
+        Args:
+            query: SQL query string
+            
+        Returns:
+            List of table names found in the query
+        """
+        import re
+        
+        tables = []
+        
+        # Pattern to match table names in FROM and JOIN clauses
+        patterns = [
+            r'\bFROM\s+([\w_]+)',
+            r'\bJOIN\s+([\w_]+)'
+        ]
+        
+        for pattern in patterns:
+            matches = re.findall(pattern, query, re.IGNORECASE)
+            tables.extend(matches)
+        
+        return list(set(tables))  # Remove duplicates
+    
+    def _auto_inspect_tables(self, query: str) -> str:
+        """
+        Automatically inspect tables in the query if not already inspected
+        Returns helpful schema information as a string
+        
+        Args:
+            query: SQL query to analyze
+            
+        Returns:
+            Schema information string to help the LLM
+        """
+        tables = self._extract_tables_from_query(query)
+        schema_info = []
+        
+        for table in tables:
+            # Resolve semantic name to actual table name
+            actual_table = self._resolve_table_name(table)
+            
+            # Check if we've already inspected this table in this session
+            if actual_table not in self._inspected_tables:
+                print(f"🔍 AUTO-INSPECT: Checking schema for table '{actual_table}'...")
+                
+                # Get schema for this table
+                schema_result = self.get_table_schema(table_name=table)
+                
+                if schema_result.get('success'):
+                    self._inspected_tables.add(actual_table)
+                    
+                    # Build helpful message
+                    jsonb_cols = schema_result.get('jsonb_columns', [])
+                    if jsonb_cols:
+                        schema_info.append(
+                            f"⚠️ Table '{actual_table}' has JSONB columns: {', '.join(jsonb_cols)}. "
+                            f"Use ->> operator: (column_name->>'value')::type"
+                        )
+                    
+                    # Show sample data structure
+                    if schema_result.get('sample_data'):
+                        schema_info.append(f"📊 Sample data from '{actual_table}': {schema_result['sample_data'][:1]}")
+        
+        if schema_info:
+            return "\n".join(["\n🔍 AUTO-SCHEMA-CHECK:"] + schema_info + [""])
+        return ""
+    
+    def get_table_schema(self, table_name: str = "") -> Dict[str, Any]:
+        """
+        Get detailed schema information for a specific table or all tables.
+        This should be called BEFORE writing queries to understand the table structure.
+        
+        Args:
+            table_name: Optional table name to inspect (can use semantic names like 'invoice')
+            
+        Returns:
+            Dictionary with schema information including columns, data types, and sample data
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Resolve semantic table name if provided
+            actual_table = None
+            if table_name:
+                actual_table = self._resolve_table_name(table_name)
+            
+            # Get schema information
+            if actual_table:
+                # Get columns for specific table
+                cursor.execute("""
+                    SELECT column_name, data_type, is_nullable
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = %s
+                    ORDER BY ordinal_position;
+                """, (actual_table,))
+                
+                columns = cursor.fetchall()
+                
+                if not columns:
+                    cursor.close()
+                    return {
+                        "success": False,
+                        "error": f"Table '{table_name}' (resolved to '{actual_table}') not found"
+                    }
+                
+                # Get sample data to show structure
+                cursor.execute(f"SELECT * FROM {actual_table} LIMIT 3;")
+                sample_rows = cursor.fetchall()
+                column_names = [desc[0] for desc in cursor.description]
+                
+                cursor.close()
+                
+                # Build response
+                column_info = []
+                jsonb_cols = []
+                for col_name, data_type, nullable in columns:
+                    column_info.append({
+                        "name": col_name,
+                        "type": data_type,
+                        "nullable": nullable == "YES"
+                    })
+                    if data_type == "jsonb":
+                        jsonb_cols.append(col_name)
+                
+                response = {
+                    "success": True,
+                    "table_name": actual_table,
+                    "columns": column_info,
+                    "total_columns": len(column_info),
+                    "sample_data": [dict(zip(column_names, row)) for row in sample_rows[:3]]
+                }
+                
+                # Add JSONB guidance if applicable
+                if jsonb_cols:
+                    response["jsonb_columns"] = jsonb_cols
+                    response["jsonb_guidance"] = (
+                        f"⚠️ The following columns are JSONB: {', '.join(jsonb_cols)}. "
+                        "These store objects like {'value': <data>, 'confidence': <float>, ...}. "
+                        "Use ->> operator to extract: (column_name->>'value')::numeric or (column_name->>'value')::date"
+                    )
+                
+                return response
+            else:
+                # Get all tables
+                cursor.execute("""
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    ORDER BY table_name;
+                """)
+                
+                tables = [row[0] for row in cursor.fetchall()]
+                cursor.close()
+                
+                return {
+                    "success": True,
+                    "tables": tables,
+                    "message": "Call this tool again with a specific table_name to see detailed column information"
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
     def _get_database_schema(self) -> str:
         """
         Retrieve database schema information (tables and columns)
@@ -264,10 +451,14 @@ Use this tool to query invoice data, customer information, and other business da
             
             # Organize data by table
             tables = {}
+            jsonb_columns = {}
             for table_name, column_name, data_type in rows:
                 if table_name not in tables:
                     tables[table_name] = []
+                    jsonb_columns[table_name] = []
                 tables[table_name].append(f"{column_name} ({data_type})")
+                if data_type == 'jsonb':
+                    jsonb_columns[table_name].append(column_name)
             
             # Format as string
             if not tables:
@@ -289,6 +480,29 @@ Use this tool to query invoice data, customer information, and other business da
             schema_lines.append("Actual tables and columns:")
             for table_name, columns in tables.items():
                 schema_lines.append(f"  - {table_name}: {', '.join(columns)}")
+            
+            # Add JSONB handling instructions if any JSONB columns exist
+            has_jsonb = any(len(cols) > 0 for cols in jsonb_columns.values())
+            if has_jsonb:
+                schema_lines.append("")
+                schema_lines.append("⚠️ IMPORTANT - JSONB Column Handling:")
+                schema_lines.append("Many columns are stored as JSONB objects with the structure: {'value': <actual_value>, 'pageNo': <int>, 'confidence': <float>, ...}")
+                schema_lines.append("")
+                schema_lines.append("To query JSONB columns:")
+                schema_lines.append("  - Extract text value: column_name->>'value' (e.g., invoice_date->>'value')")
+                schema_lines.append("  - Extract as JSONB: column_name->'value' (for nested operations)")
+                schema_lines.append("  - Cast to date: (invoice_date->>'value')::date")
+                schema_lines.append("  - Cast to numeric: (total->>'value')::numeric")
+                schema_lines.append("  - Check confidence: (column_name->>'confidence')::float")
+                schema_lines.append("")
+                schema_lines.append("Example queries:")
+                schema_lines.append("  - SELECT (total->>'value')::numeric FROM icap_invoice WHERE (total->>'value') IS NOT NULL;")
+                schema_lines.append("  - SELECT * FROM icap_invoice WHERE (invoice_date->>'value')::date BETWEEN '2023-01-01' AND '2023-12-31';")
+                schema_lines.append("  - SELECT SUM((total->>'value')::numeric) FROM icap_invoice WHERE (total->>'confidence')::float > 90;")
+                schema_lines.append("")
+                for table_name, cols in jsonb_columns.items():
+                    if cols:
+                        schema_lines.append(f"  JSONB columns in {table_name}: {', '.join(cols)}")
             
             return "\n".join(schema_lines)
             
@@ -321,6 +535,11 @@ Use this tool to query invoice data, customer information, and other business da
         # Resolve semantic table names to actual table names
         resolved_query = self._resolve_semantic_table_names(query)
         print(f"🔍 DEBUG: resolved query: '{resolved_query}'")
+        
+        # AUTO-INSPECT: Check schema for tables in this query
+        auto_schema_info = self._auto_inspect_tables(resolved_query)
+        if auto_schema_info:
+            print(auto_schema_info)
         
         # Enhance query for JSONB date handling
         enhanced_query = self._enhance_query_for_jsonb_dates(resolved_query)
@@ -373,7 +592,8 @@ Use this tool to query invoice data, customer information, and other business da
                 "success": True,
                 "columns": columns,
                 "rows": results,
-                "row_count": len(results)
+                "row_count": len(results),
+                "schema_info": auto_schema_info if auto_schema_info else None
             }
             
         except psycopg2.Error as e:
@@ -386,9 +606,23 @@ Use this tool to query invoice data, customer information, and other business da
             
             error_msg = str(e)
             
+            # Add auto-schema info to error message if available
+            if auto_schema_info:
+                error_msg = auto_schema_info + "\n" + error_msg
+            
             # Provide better error messages for common JSONB issues
             if "jsonb" in error_msg.lower() and ("extract" in error_msg.lower() or "date_part" in error_msg.lower()):
-                error_msg += "\n\n💡 TIP: The date column appears to be stored as JSONB. Try using JSONB operators like ->> to extract values.\nExample: invoice_date->>'date' to extract a 'date' field from JSONB."
+                error_msg += "\n\n💡 TIP: The date column appears to be stored as JSONB. Try using JSONB operators like ->> to extract values.\nExample: invoice_date->>'value' to extract the value field from JSONB, then cast it: (invoice_date->>'value')::date"
+            elif "does not exist" in error_msg.lower() and "column" in error_msg.lower():
+                # Extract column name from error if possible
+                import re
+                column_match = re.search(r'column "([^"]+)" does not exist', error_msg)
+                if column_match:
+                    missing_col = column_match.group(1)
+                    error_msg += f"\n\n💡 TIP: Column '{missing_col}' not found. Many columns are stored as JSONB objects.\n"
+                    error_msg += "Common JSONB columns: invoice_date, invoice_number, total, sub_total, tax, etc.\n"
+                    error_msg += "Use ->> operator to extract values: (total->>'value')::numeric, (invoice_date->>'value')::date\n"
+                    error_msg += "Example: SELECT (total->>'value')::numeric AS total_amount FROM icap_invoice;"
             
             return {
                 "success": False,
@@ -430,5 +664,50 @@ Use this tool to query invoice data, customer information, and other business da
                 func=tool_func,
                 name=self.name,
                 description=self.description
+            )
+    
+    def to_langchain_schema_tool(self) -> StructuredTool:
+        """Create a separate LangChain tool for schema inspection"""
+        
+        def schema_tool_func(table_name: str = "") -> str:
+            print(f"📊 DEBUG: schema_tool_func called with table_name: {table_name}")
+            result = self.get_table_schema(table_name=table_name)
+            print(f"📊 DEBUG: get_table_schema returned: {result}")
+            return str(result)
+        
+        description = """🔍 MUST USE THIS FIRST before writing SQL queries! Inspect PostgreSQL database schema.
+
+⚠️ CRITICAL: Always call this tool BEFORE postgres_query to see:
+- Exact column names (many are JSONB, not simple columns!)
+- Data types and structure
+- Sample data with actual values
+- How to properly extract JSONB fields
+
+Usage:
+- Call with table_name='invoice' to see invoice table structure
+- Call with table_name='vendor' to see vendor table structure  
+- Call with empty string to list all available tables
+
+Without calling this first, your queries WILL FAIL because you won't know:
+- Which columns exist
+- Which columns are JSONB (need ->> operator)
+- The correct syntax to extract values
+
+Example: postgres_inspect_schema(table_name='invoice') returns column list + sample data."""
+        
+        try:
+            return StructuredTool.from_function(
+                func=schema_tool_func,
+                name="postgres_inspect_schema",
+                description=description,
+                args_schema=PostgresSchemaInput
+            )
+        except Exception as e:
+            print(f"Error creating schema StructuredTool: {e}")
+            # Fallback to basic tool without schema
+            return StructuredTool.from_function(
+                func=schema_tool_func,
+                name="postgres_inspect_schema",
+                description=description
             )
 

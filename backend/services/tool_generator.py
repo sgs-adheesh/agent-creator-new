@@ -61,14 +61,15 @@ Tool Specification:
 Requirements:
 1. Inherit from BaseTool class (already exists in tools/base_tool.py)
 2. Class name should be {self._to_class_name(tool_name)}
-3. Implement __init__() and execute() methods
-4. Use environment variables for API keys (e.g., {tool_name.upper()}_API_KEY)
-5. Return dict with success/error/data
-6. Add helpful error messages
-7. Include docstrings
-8. **CRITICAL**: NEVER raise exceptions or errors in __init__() for missing credentials
-9. **CRITICAL**: Store credentials in __init__() but check them in execute() method
-10. **CRITICAL**: Allow the tool to load even without credentials (return helpful error during execute)
+3. Implement get_config_schema() classmethod to define configuration fields
+4. Implement __init__() and execute() methods
+5. Use environment variables for API keys (e.g., {tool_name.upper()}_API_KEY)
+6. Return dict with success/error/data
+7. Add helpful error messages
+8. Include docstrings
+9. **CRITICAL**: NEVER raise exceptions or errors in __init__() for missing credentials
+10. **CRITICAL**: Store credentials in __init__() but check them in execute() method
+11. **CRITICAL**: Allow the tool to load even without credentials (return helpful error during execute)
 
 Template to follow:
 ```python
@@ -79,6 +80,20 @@ from .base_tool import BaseTool
 
 class {self._to_class_name(tool_name)}(BaseTool):
     \"\"\"Tool for {description}\"\"\"
+    
+    @classmethod
+    def get_config_schema(cls):
+        \"\"\"Return configuration schema for this tool\"\"\"
+        return [
+            {{
+                \"name\": \"api_key\",
+                \"label\": \"{display_name} API Key\",
+                \"type\": \"password\",
+                \"required\": True,
+                \"env_var\": \"{tool_name.upper()}_API_KEY\"
+            }}
+            # Add more config fields if needed (e.g., secret_key, region, base_url)
+        ]
     
     def __init__(self):
         super().__init__(

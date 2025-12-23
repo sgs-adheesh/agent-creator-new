@@ -7,14 +7,24 @@ from .base_tool import BaseTool
 class GoogleSheetsApiConnector(BaseTool):
     """Tool for connecting to the Google Sheets API to generate and manipulate reports in Google Sheets."""
     
+    @classmethod
+    def get_config_schema(cls):
+        return [
+            {
+                "name": "api_key",
+                "label": "Google Sheets API Key",
+                "type": "password",
+                "required": True,
+                "env_var": "GOOGLE_SHEETS_API_API_KEY"
+            }
+        ]
+    
     def __init__(self):
         super().__init__(
             name="google_sheets_api",
             description="This tool connects to the Google Sheets API to generate and manipulate reports in Google Sheets."
         )
         self.api_key = os.getenv("GOOGLE_SHEETS_API_API_KEY")
-        if not self.api_key:
-            raise ValueError("Google Sheets API key not configured. Set GOOGLE_SHEETS_API_API_KEY environment variable.")
     
     def execute(self, **kwargs) -> Dict[str, Any]:
         """
@@ -26,6 +36,12 @@ class GoogleSheetsApiConnector(BaseTool):
         Returns:
             Dictionary with results
         """
+        if not self.api_key:
+            return {
+                "success": False,
+                "error": "Google Sheets API key not configured. Set GOOGLE_SHEETS_API_API_KEY environment variable."
+            }
+        
         try:
             # Example API call to list spreadsheets
             url = "https://sheets.googleapis.com/v4/spreadsheets"

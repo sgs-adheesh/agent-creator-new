@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 from services import AgentService
 from services.workflow_generator import WorkflowGenerator
@@ -62,6 +63,8 @@ class AgentResponse(BaseModel):
     prompt: str
     created_at: str
     workflow_config: Optional[Dict[str, Any]] = None  # Include workflow config in response
+    selected_tools: Optional[List[str]] = None  # Include selected tools in response
+    tool_configs: Optional[Dict[str, Dict[str, str]]] = None  # Include tool configurations
 
 
 class ExecuteAgentResponse(BaseModel):
@@ -69,12 +72,23 @@ class ExecuteAgentResponse(BaseModel):
     output: Optional[str] = None
     error: Optional[str] = None
     intermediate_steps: Optional[List[Dict[str, Any]]] = None
+    output_format: Optional[str] = None
+    csv_data: Optional[str] = None
+    csv_filename: Optional[str] = None
+    download_link: Optional[str] = None
+    table_data: Optional[Dict[str, Any]] = None
+    json_data: Optional[Any] = None
+    summary: Optional[Dict[str, Any]] = None
+    cached_execution: Optional[bool] = None
+    used_cache: Optional[bool] = None
 
 
 class UpdateAgentRequest(BaseModel):
     prompt: str
     name: Optional[str] = None
     workflow_config: Optional[WorkflowConfig] = None
+    selected_tools: Optional[List[str]] = None  # Allow updating selected tools
+    tool_configs: Optional[Dict[str, Dict[str, str]]] = None  # Tool configurations
 
 
 class ToolAnalysisRequest(BaseModel):
@@ -105,6 +119,13 @@ class SemanticSearchResponse(BaseModel):
     suggested_tools: Optional[List[Dict[str, Any]]] = None
     confidence: float = 0.0
     error: Optional[str] = None
+
+
+class CacheQueryRequest(BaseModel):
+    query_template: str
+    parameters: List[str]
+    tables: Optional[List[str]] = None
+    joins: Optional[List[str]] = None
 
 
 @app.get("/")
@@ -160,14 +181,92 @@ async def get_agent(agent_id: str):
 async def execute_agent(agent_id: str, request: ExecuteAgentRequest):
     """Execute an agent with dynamic input"""
     try:
+        # Get agent to check trigger type
+        agent = agent_service.get_agent(agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        workflow_config = agent.get("workflow_config", {})
+        trigger_type = workflow_config.get("trigger_type", "text_query")
+        
         # Build execution query from dynamic inputs
         query = request.query or ""
+        
+        # Handle different trigger types
         if request.input_data:
-            # Convert input_data to query context
-            query = f"Input Data: {request.input_data}\n{query}"
+            if trigger_type == "month_year":
+                # Convert month/year to natural language query
+                month = request.input_data.get("month", "")
+                year = request.input_data.get("year", "")
+                if month and year:
+                    # Map month number to name
+                    month_names = {
+                        "01": "January", "02": "February", "03": "March",
+                        "04": "April", "05": "May", "06": "June",
+                        "07": "July", "08": "August", "09": "September",
+                        "10": "October", "11": "November", "12": "December"
+                    }
+                    month_name = month_names.get(month, month)
+                    query = f"""Generate report for {month_name} {year}.
+
+🔴 CRITICAL INSTRUCTIONS:
+1. Inspect schema for ALL tables you need to answer this query
+2. Identify date/time columns from the schema (check JSONB columns list)
+3. Check sample_data to see the actual date format (usually MM/DD/YYYY)
+4. For month+year filtering for {month_name} {year}:
+   - ⚠️ CRITICAL: Month comes FIRST in MM/DD/YYYY format!
+   - CORRECT Pattern: WHERE (date_column->>'value' LIKE '{month}/%/{year}')
+   - Example: WHERE (invoice_date->>'value' LIKE '02/%/2025')
+   - This matches all dates in February 2025 (02/01/2025, 02/15/2025, etc.)
+5. Use LEFT JOIN for related tables (never INNER JOIN)
+6. Only use columns that exist in the inspected schemas
+
+Return ALL {month_name} {year} records."""
+            elif trigger_type == "date_range":
+                # Handle date range with explicit pattern
+                start_date = request.input_data.get("start_date", "")
+                end_date = request.input_data.get("end_date", "")
+                if start_date and end_date:
+                    query = f"""Generate report from {start_date} to {end_date}.
+
+🔴 CRITICAL INSTRUCTIONS:
+1. Inspect schema for ALL tables you need to answer this query
+2. Identify date/time columns from the schema (check JSONB columns list)
+3. Check sample_data to see the actual date format (usually MM/DD/YYYY)
+4. For date range filtering between {start_date} and {end_date}:
+   - Use string comparison with >= and <= operators
+   - Pattern: WHERE (date_column->>'value' >= '{start_date}' AND date_column->>'value' <= '{end_date}')
+   - This works for MM/DD/YYYY format when both dates are in the same format
+5. Use LEFT JOIN for related tables (never INNER JOIN)
+6. Only use columns that exist in the inspected schemas
+
+Return ONLY records between {start_date} and {end_date} (inclusive)."""
+            elif trigger_type == "year":
+                # Handle year - generic pattern
+                year = request.input_data.get("year", "")
+                if year:
+                    query = f"""Generate report for year {year}.
+
+🔴 CRITICAL INSTRUCTIONS:
+1. Inspect schema for ALL tables you need to answer this query
+2. Identify date/time columns from the schema (check JSONB columns list)
+3. Check sample_data to see the actual date format (usually MM/DD/YYYY)
+4. For year filtering for year {year}:
+   - CORRECT Pattern: WHERE (date_column->>'value' LIKE '%/%/{year}')
+   - Example: WHERE (invoice_date->>'value' LIKE '%/%/2025')
+   - This matches all dates in 2025 (01/15/2025, 06/30/2025, 12/31/2025, etc.)
+5. Use LEFT JOIN for related tables (never INNER JOIN)
+6. Only use columns that exist in the inspected schemas
+
+Return ONLY year {year} records."""
+            else:
+                # Generic conversion
+                query = f"Input Data: {request.input_data}\n{query}"
         
         result = agent_service.execute_agent(agent_id, query, request.tool_configs)
         return ExecuteAgentResponse(**result)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -221,7 +320,9 @@ async def update_agent(agent_id: str, request: UpdateAgentRequest):
             agent_id=agent_id,
             prompt=request.prompt,
             name=request.name,
-            workflow_config=workflow_config_dict
+            workflow_config=workflow_config_dict,
+            selected_tools=request.selected_tools,  # Pass selected tools
+            tool_configs=request.tool_configs  # Pass tool configurations
         )
         
         return AgentResponse(**updated_agent)
@@ -283,6 +384,20 @@ async def list_tools():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/tools/{tool_name}/schema")
+async def get_tool_schema(tool_name: str):
+    """Get configuration schema for a specific tool"""
+    try:
+        schema = agent_service.get_tool_schema(tool_name)
+        if not schema:
+            raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
+        return schema
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/semantic/search", response_model=SemanticSearchResponse)
 async def semantic_search(request: SemanticSearchRequest):
     """Perform semantic search to understand query intent and suggest tools"""
@@ -316,6 +431,39 @@ async def semantic_search(request: SemanticSearchRequest):
             success=False,
             error=str(e)
         )
+
+
+@app.post("/api/agents/{agent_id}/cache-query")
+async def cache_query(agent_id: str, request: CacheQueryRequest):
+    """Cache a query template for future reuse"""
+    try:
+        # Get agent
+        agent = agent_service.get_agent(agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Prepare cached query data
+        cached_query = {
+            "template": request.query_template,
+            "parameters": request.parameters,
+            "tables": request.tables or [],
+            "joins": request.joins or [],
+            "cached_at": datetime.now().isoformat()
+        }
+        
+        # Update agent with cached query
+        agent["cached_query"] = cached_query
+        agent_service.storage.update_agent(agent_id, {"cached_query": cached_query})
+        
+        return {
+            "success": True,
+            "message": "Query cached successfully",
+            "cached_query": cached_query
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

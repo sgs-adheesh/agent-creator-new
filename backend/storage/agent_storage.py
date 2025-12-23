@@ -100,6 +100,12 @@ class AgentStorage:
         agent_data["id"] = agent_id  # Ensure ID doesn't change
         agent_data["updated_at"] = datetime.now().isoformat()
         
+        # 🗑️ Remove fields that are explicitly set to None (cache clearing)
+        fields_to_remove = [key for key, value in updated_data.items() if value is None]
+        for key in fields_to_remove:
+            agent_data.pop(key, None)
+            print(f"🗑️ Removed field '{key}' from agent {agent_id}")
+        
         # Save updated data
         with open(agent_path, "w", encoding="utf-8") as f:
             json.dump(agent_data, f, indent=2, ensure_ascii=False)

@@ -7,6 +7,18 @@ from .base_tool import BaseTool
 class GoogleAnalyticsApiConnector(BaseTool):
     """Tool for connecting to the Google Analytics API to query analytics data for reporting purposes."""
     
+    @classmethod
+    def get_config_schema(cls):
+        return [
+            {
+                "name": "api_key",
+                "label": "Google Analytics API Key",
+                "type": "password",
+                "required": True,
+                "env_var": "GOOGLE_ANALYTICS_API_API_KEY"
+            }
+        ]
+    
     def __init__(self):
         super().__init__(
             name="google_analytics_api",

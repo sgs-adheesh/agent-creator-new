@@ -6,6 +6,18 @@ from .base_tool import BaseTool
 class MicrosoftOnedriveApiConnector(BaseTool):
     """Tool for Enables the agent to sync files with Microsoft OneDrive, allowing for file upload, download, and management within OneDrive."""
     
+    @classmethod
+    def get_config_schema(cls):
+        return [
+            {
+                "name": "api_key",
+                "label": "Microsoft OneDrive API Key",
+                "type": "password",
+                "required": True,
+                "env_var": "MICROSOFT_ONEDRIVE_API_API_KEY"
+            }
+        ]
+    
     def __init__(self):
         super().__init__(
             name="microsoft_onedrive_api",

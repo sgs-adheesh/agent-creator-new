@@ -16,6 +16,7 @@ export interface Agent {
   created_at: string;
   workflow_config?: WorkflowConfig;
   selected_tools?: string[];
+  tool_configs?: Record<string, Record<string, string>>;
 }
 
 export interface WorkflowConfig {
@@ -75,6 +76,7 @@ export interface UpdateAgentRequest {
   name?: string;
   workflow_config?: WorkflowConfig;
   selected_tools?: string[];
+  tool_configs?: Record<string, Record<string, string>>;
 }
 
 export interface ToolSpec {
@@ -108,6 +110,19 @@ export interface ToolGenerationResponse {
     error?: string;
   }>;
   error?: string;
+}
+
+export interface ToolConfigField {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  env_var: string;
+}
+
+export interface ToolSchema {
+  tool_name: string;
+  config_fields: ToolConfigField[];
 }
 
 export const agentApi = {
@@ -167,6 +182,11 @@ export const toolApi = {
   listTools: async (): Promise<string[]> => {
     const response = await api.get<{ success: boolean; tools: string[] }>('/api/tools/list');
     return response.data.tools;
+  },
+  
+  getToolSchema: async (toolName: string): Promise<ToolSchema> => {
+    const response = await api.get<ToolSchema>(`/api/tools/${toolName}/schema`);
+    return response.data;
   },
 };
 

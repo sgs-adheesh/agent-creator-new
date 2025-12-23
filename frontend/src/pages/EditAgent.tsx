@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { agentApi, toolApi } from '../services/api';
-import type { Agent, ToolSpec, WorkflowConfig } from '../services/api';
-import ToolConfirmationModal from '../components/ToolConfirmationModal';
+import type { Agent, WorkflowConfig, ToolSchema } from '../services/api';
 
 export default function EditAgent() {
   const { id } = useParams<{ id: string }>();
@@ -11,7 +10,6 @@ export default function EditAgent() {
   // Loading States
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [generatingTools, setGeneratingTools] = useState(false);
 
   // Form Data
   const [prompt, setPrompt] = useState('');
@@ -19,11 +17,14 @@ export default function EditAgent() {
   
   // Tool Analysis State
   const [error, setError] = useState<string | null>(null);
-  const [showToolModal, setShowToolModal] = useState(false);
-  const [proposedTools, setProposedTools] = useState<ToolSpec[]>([]);
-  const [toolReasoning, setToolReasoning] = useState('');
-  const [dependencyWarnings, setDependencyWarnings] = useState<string[]>([]);
   const [matchedTools, setMatchedTools] = useState<string[]>([]);
+  
+  // Tool Management State
+  const [availableTools, setAvailableTools] = useState<string[]>([]);
+  const [showToolSelector, setShowToolSelector] = useState(false);
+  const [showToolConfigModal, setShowToolConfigModal] = useState(false);
+  const [configuringTool, setConfiguringTool] = useState<string>('');
+  const [toolConfigs, setToolConfigs] = useState<Record<string, Record<string, string>>>({});
 
   // Workflow configuration state
   const [triggerType, setTriggerType] = useState<string>('text_query');
@@ -34,19 +35,44 @@ export default function EditAgent() {
   useEffect(() => {
     if (id) {
       loadAgent();
+      loadAvailableTools();
     }
   }, [id]);
+  
+  const loadAvailableTools = async () => {
+    try {
+      const tools = await toolApi.listTools();
+      setAvailableTools(tools);
+    } catch (err) {
+      console.error('Failed to load available tools:', err);
+    }
+  };
 
   const loadAgent = async () => {
     try {
       setInitialLoading(true);
       const agent: Agent = await agentApi.getAgent(id!);
       
+      console.log('📦 Loaded agent:', agent);
+      console.log('🔧 Agent tools:', agent.selected_tools);
+      console.log('🛠️ Agent tool configs:', agent.tool_configs);
+      
       setName(agent.name);
       setPrompt(agent.prompt);
       
       // Load existing tools
-      setMatchedTools(agent.selected_tools || []);
+      if (agent.selected_tools && agent.selected_tools.length > 0) {
+        setMatchedTools(agent.selected_tools);
+        console.log('✅ Set matched tools:', agent.selected_tools);
+      } else {
+        console.log('⚠️ No tools found for this agent');
+      }
+      
+      // Load existing tool configs
+      if (agent.tool_configs) {
+        setToolConfigs(agent.tool_configs);
+        console.log('✅ Set tool configs:', agent.tool_configs);
+      }
 
       // Load Workflow Config
       if (agent.workflow_config) {
@@ -57,45 +83,24 @@ export default function EditAgent() {
     } catch (err) {
       const error = err as { message?: string };
       setError(error.message || 'Failed to load agent details');
+      console.error('❌ Error loading agent:', err);
     } finally {
       setInitialLoading(false);
     }
   };
 
-  // 2. Handle Update Submission (Analyze Prompt First)
+  // 2. Handle Update Submission (Save current state)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      // Step 1: Analyze prompt to see if requirements changed
-      const analysis = await toolApi.analyzePrompt(prompt);
-
-      if (!analysis.success) {
-        throw new Error(analysis.error || 'Tool analysis failed');
-      }
-
-      // Merge currently existing tools (matched) with any potentially new ones
-      const toolsForAgent = [...(analysis.matched_tools || [])];
-      console.log('🎯 Matched existing tools:', analysis.matched_tools);
+      console.log('💾 Saving agent updates...');
+      console.log('📋 Current tools:', matchedTools);
+      console.log('🔧 Tool configs:', toolConfigs);
       
-      // Step 2: If NEW tools are needed, show modal
-      if (analysis.requires_user_confirmation && analysis.new_tools_needed && analysis.new_tools_needed.length > 0) {
-        const newToolNames = analysis.new_tools_needed.map(t => t.name);
-        
-        // Update matched tools to include the new ones (pending creation)
-        setMatchedTools([...toolsForAgent, ...newToolNames]);
-        setProposedTools(analysis.new_tools_needed);
-        setToolReasoning(analysis.reasoning || 'Updates to the prompt require new tools.');
-        setShowToolModal(true);
-        setLoading(false);
-        return;
-      }
-
-      // Step 3: No new tools needed, update directly
-      setMatchedTools(toolsForAgent);
-      await updateAgentDirectly(toolsForAgent);
+      await updateAgentDirectly(matchedTools);
     } catch (err) {
       const error = err as { response?: { data?: { detail?: string } }; message?: string };
       setError(error.response?.data?.detail || error.message || 'Failed to update agent');
@@ -119,6 +124,7 @@ export default function EditAgent() {
         name: name || undefined,
         selected_tools: toolsToUse.length > 0 ? toolsToUse : [],
         workflow_config: workflowConfig,
+        tool_configs: toolConfigs,  // Include tool configurations
       });
 
       navigate(`/agents/${id}/execute`);
@@ -129,63 +135,7 @@ export default function EditAgent() {
     }
   };
 
-  // 4. Handle New Tool Generation
-  const handleToolConfirmation = async (approvedTools: ToolSpec[]) => {
-    setShowToolModal(false);
-    setGeneratingTools(true);
-    setLoading(true);
-    setError(null);
-    setDependencyWarnings([]);
-
-    try {
-      const allWarnings: string[] = [];
-      
-      for (const tool of approvedTools) {
-        const result = await toolApi.generateTool(tool);
-        if (!result.success) {
-          throw new Error(`Failed to generate tool ${tool.display_name}: ${result.error}`);
-        }
-        
-        if (result.warnings && result.warnings.length > 0) {
-           const failedWarnings = result.warnings.filter((warning: string) => {
-            return !result.installation_log?.some((log) => 
-              log.success && warning.includes(log.package)
-            );
-          });
-          allWarnings.push(...failedWarnings);
-        }
-      }
-      
-      if (allWarnings.length > 0) {
-        setDependencyWarnings(allWarnings);
-        setGeneratingTools(false);
-        setLoading(false);
-        return;
-      }
-
-      await updateAgentDirectly();
-    } catch (err) {
-      const error = err as { message?: string };
-      setError(error.message || 'Failed to generate tools');
-    } finally {
-      setGeneratingTools(false);
-      setLoading(false);
-    }
-  };
-
-  const handleToolCancel = () => {
-    setShowToolModal(false);
-    setLoading(false);
-    setProposedTools([]);
-    setToolReasoning('');
-  };
-
-  const handleDismissWarnings = async () => {
-    setDependencyWarnings([]);
-    await updateAgentDirectly();
-  };
-
-  // 5. Dynamic Field Helpers
+  // 4. Dynamic Field Helpers
   const addInputField = () => {
     setInputFields([...inputFields, { name: '', type: 'text', label: '' }]);
   };
@@ -198,6 +148,61 @@ export default function EditAgent() {
 
   const removeInputField = (index: number) => {
     setInputFields(inputFields.filter((_, i) => i !== index));
+  };
+  
+  // 6. Tool Management Functions
+  const addTool = (toolName: string) => {
+    if (!matchedTools.includes(toolName)) {
+      setMatchedTools([...matchedTools, toolName]);
+    }
+    setShowToolSelector(false);
+  };
+  
+  const removeTool = (toolName: string) => {
+    setMatchedTools(matchedTools.filter(t => t !== toolName));
+    // Also remove config if exists
+    const newConfigs = { ...toolConfigs };
+    delete newConfigs[toolName];
+    setToolConfigs(newConfigs);
+  };
+  
+  const handleConfigureTool = (toolName: string) => {
+    // Exclude postgres and qdrant
+    const excludedTools = ['postgres_query', 'postgres_inspect_schema', 'qdrant_connector', 'qdrant_search', 'QdrantConnector', 'PostgresConnector'];
+    if (excludedTools.some(excluded => toolName.toLowerCase().includes(excluded.toLowerCase()))) {
+      return; // Don't show config modal
+    }
+    
+    setConfiguringTool(toolName);
+    setShowToolConfigModal(true);
+  };
+  
+  const saveToolConfig = (config: Record<string, string>) => {
+    setToolConfigs({
+      ...toolConfigs,
+      [configuringTool]: config
+    });
+    setShowToolConfigModal(false);
+    setConfiguringTool('');
+  };
+  
+  const getToolDisplayName = (toolName: string): string => {
+    // Convert tool names to readable format
+    return toolName
+      .replace(/_/g, ' ')
+      .replace(/([A-Z])/g, ' $1')
+      .trim()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+  
+  const isToolConfigured = (toolName: string): boolean => {
+    const excludedTools = ['postgres_query', 'postgres_inspect_schema', 'qdrant_connector', 'qdrant_search', 'QdrantConnector', 'PostgresConnector'];
+    if (excludedTools.some(excluded => toolName.toLowerCase().includes(excluded.toLowerCase()))) {
+      return true; // Always considered configured (uses .env)
+    }
+    return !!toolConfigs[toolName];
   };
 
   if (initialLoading) {
@@ -254,8 +259,93 @@ export default function EditAgent() {
                 placeholder="Describe what this agent should do..."
               />
               <p className="mt-2 text-sm text-gray-500">
-                Modifying the prompt may trigger a re-analysis of required tools.
+                Describe what you want this agent to accomplish.
               </p>
+            </div>
+            
+            {/* Tool Management Section */}
+            <div className="border-t pt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Tools</h3>
+                  <p className="text-xs text-gray-500 mt-1">{matchedTools.length} tool(s) selected</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowToolSelector(true)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Tool
+                </button>
+              </div>
+              
+              {matchedTools.length === 0 ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                  <h4 className="mt-2 text-sm font-medium text-gray-900">No tools selected</h4>
+                  <p className="mt-1 text-sm text-gray-500">Add tools to give your agent capabilities</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {matchedTools.map(tool => (
+                    <div
+                      key={tool}
+                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-semibold text-gray-900">
+                              {getToolDisplayName(tool)}
+                            </h4>
+                            {isToolConfigured(tool) && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Configured
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">{tool}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeTool(tool)}
+                          className="ml-2 text-red-600 hover:text-red-800 text-sm p-1"
+                          title="Remove tool"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      {/* Configure button for third-party tools only */}
+                      {!['postgres_query', 'postgres_inspect_schema', 'qdrant_connector', 'qdrant_search', 'QdrantConnector', 'PostgresConnector'].some(excluded => 
+                        tool.toLowerCase().includes(excluded.toLowerCase())
+                      ) && (
+                        <button
+                          type="button"
+                          onClick={() => handleConfigureTool(tool)}
+                          className="mt-3 w-full inline-flex items-center justify-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {isToolConfigured(tool) ? 'Edit Configuration' : 'Configure'}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Workflow Configuration Section */}
@@ -397,49 +487,13 @@ export default function EditAgent() {
               </div>
             )}
 
-            {dependencyWarnings.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 text-yellow-600 text-xl">⚠️</div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-yellow-800 mb-2">
-                      Missing Dependencies Detected
-                    </h3>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 mb-3">
-                      {dependencyWarnings.map((warning, idx) => (
-                        <li key={idx}>{warning}</li>
-                      ))}
-                    </ul>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleDismissWarnings}
-                        className="text-sm px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700"
-                      >
-                        Continue Anyway
-                      </button>
-                      <button
-                        onClick={() => setDependencyWarnings([])}
-                        className="text-sm px-3 py-1 border border-yellow-300 rounded hover:bg-yellow-100"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="flex gap-4">
               <button
                 type="submit"
                 disabled={loading || !prompt.trim()}
                 className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading
-                  ? generatingTools
-                    ? 'Generating Tools...'
-                    : 'Analyzing Updates...'
-                  : 'Update Agent'}
+                {loading ? 'Updating...' : 'Update Agent'}
               </button>
               <button
                 type="button"
@@ -452,16 +506,191 @@ export default function EditAgent() {
           </form>
         </div>
       </div>
-
-      {/* Tool Confirmation Modal */}
-      {showToolModal && (
-        <ToolConfirmationModal
-          tools={proposedTools}
-          reasoning={toolReasoning}
-          onConfirm={handleToolConfirmation}
-          onCancel={handleToolCancel}
+      
+      {/* Tool Selector Modal */}
+      {showToolSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowToolSelector(false)}>
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Add Tools</h3>
+            <div className="space-y-2">
+              {availableTools
+                .filter(tool => !matchedTools.includes(tool))
+                .map(tool => (
+                  <button
+                    key={tool}
+                    type="button"
+                    onClick={() => addTool(tool)}
+                    className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all"
+                  >
+                    <div className="font-medium text-gray-900">{getToolDisplayName(tool)}</div>
+                    <div className="text-xs text-gray-500 mt-1">{tool}</div>
+                  </button>
+                ))
+              }
+              {availableTools.filter(tool => !matchedTools.includes(tool)).length === 0 && (
+                <p className="text-center text-gray-500 py-8">All available tools have been added</p>
+              )}
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowToolSelector(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Tool Configuration Modal */}
+      {showToolConfigModal && (
+        <ToolConfigurationModal
+          toolName={configuringTool}
+          initialConfig={toolConfigs[configuringTool] || {}}
+          onSave={saveToolConfig}
+          onCancel={() => {
+            setShowToolConfigModal(false);
+            setConfiguringTool('');
+          }}
         />
       )}
+    </div>
+  );
+}
+
+// Tool Configuration Modal Component
+interface ToolConfigurationModalProps {
+  toolName: string;
+  initialConfig: Record<string, string>;
+  onSave: (config: Record<string, string>) => void;
+  onCancel: () => void;
+}
+
+function ToolConfigurationModal({ toolName, initialConfig, onSave, onCancel }: ToolConfigurationModalProps) {
+  const [config, setConfig] = useState<Record<string, string>>(initialConfig);
+  const [schema, setSchema] = useState<ToolSchema | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const fetchSchema = async () => {
+      try {
+        setLoading(true);
+        const toolSchema = await toolApi.getToolSchema(toolName);
+        setSchema(toolSchema);
+        console.log(`📋 Schema for ${toolName}:`, toolSchema);
+        
+        // Initialize showPassword state for all password fields
+        const passwordFields: Record<string, boolean> = {};
+        toolSchema.config_fields.forEach(field => {
+          if (field.type === 'password') {
+            passwordFields[field.name] = false;
+          }
+        });
+        setShowPassword(passwordFields);
+      } catch (err) {
+        console.error('Failed to load tool schema:', err);
+        setError('Failed to load configuration fields');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSchema();
+  }, [toolName]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(config);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onCancel}>
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Configure {toolName.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+        </h3>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="ml-3 text-gray-600">Loading configuration...</span>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {schema && schema.config_fields.length > 0 ? (
+              schema.config_fields.map(field => (
+                <div key={field.name}>
+                  <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
+                    {field.label} {field.required && <span className="text-red-500">*</span>}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={field.type === 'password' && !showPassword[field.name] ? 'password' : 'text'}
+                      id={field.name}
+                      value={config[field.name] || ''}
+                      onChange={(e) => setConfig({ ...config, [field.name]: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm pr-10"
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      required={field.required}
+                    />
+                    {field.type === 'password' && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword({ ...showPassword, [field.name]: !showPassword[field.name] })}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword[field.name] ? (
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">Environment: {field.env_var}</p>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-500 text-sm">
+                No configuration fields required for this tool.
+              </div>
+            )}
+            
+            <div className="flex gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={!schema || schema.config_fields.length === 0}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Configuration
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

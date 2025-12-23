@@ -7,6 +7,18 @@ from .base_tool import BaseTool
 class StripeApiConnector(BaseTool):
     """Tool for processing payments through Stripe, allowing for secure transactions and payment handling."""
     
+    @classmethod
+    def get_config_schema(cls):
+        return [
+            {
+                "name": "api_key",
+                "label": "Stripe API Key",
+                "type": "password",
+                "required": True,
+                "env_var": "STRIPE_API_API_KEY"
+            }
+        ]
+    
     def __init__(self):
         super().__init__(
             name="stripe_api",
@@ -15,8 +27,6 @@ class StripeApiConnector(BaseTool):
         self.api_key = os.getenv("STRIPE_API_API_KEY")
         if self.api_key:
             stripe.api_key = self.api_key
-        else:
-            raise ValueError("Stripe API key not configured. Set STRIPE_API_API_KEY environment variable.")
     
     def execute(self, **kwargs) -> Dict[str, Any]:
         """

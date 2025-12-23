@@ -9,6 +9,33 @@ class AwsS3ApiConnector(BaseTool):
     """Tool for uploading files to Amazon S3, a scalable storage service. 
     It provides methods for file upload, retrieval, and management within S3 buckets."""
     
+    @classmethod
+    def get_config_schema(cls):
+        return [
+            {
+                "name": "api_key",
+                "label": "AWS Access Key ID",
+                "type": "password",
+                "required": True,
+                "env_var": "AWS_S3_API_API_KEY"
+            },
+            {
+                "name": "secret_key",
+                "label": "AWS Secret Access Key",
+                "type": "password",
+                "required": True,
+                "env_var": "AWS_S3_API_SECRET_KEY"
+            },
+            {
+                "name": "region",
+                "label": "AWS Region",
+                "type": "text",
+                "required": False,
+                "env_var": "AWS_S3_REGION_NAME",
+                "default": "us-east-1"
+            }
+        ]
+    
     def __init__(self):
         super().__init__(
             name="aws_s3_api",
@@ -18,15 +45,16 @@ class AwsS3ApiConnector(BaseTool):
         self.secret_key = os.getenv("AWS_S3_API_SECRET_KEY")
         self.region_name = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
         
-        if not self.api_key or not self.secret_key:
-            raise ValueError("AWS S3 API key and secret key must be configured in environment variables.")
-        
-        self.s3_client = boto3.client(
-            's3',
-            aws_access_key_id=self.api_key,
-            aws_secret_access_key=self.secret_key,
-            region_name=self.region_name
-        )
+        # Only create client if credentials are available
+        if self.api_key and self.secret_key:
+            self.s3_client = boto3.client(
+                's3',
+                aws_access_key_id=self.api_key,
+                aws_secret_access_key=self.secret_key,
+                region_name=self.region_name
+            )
+        else:
+            self.s3_client = None
     
     def execute(self, operation: str, **kwargs) -> Dict[str, Any]:
         """
@@ -39,6 +67,12 @@ class AwsS3ApiConnector(BaseTool):
         Returns:
             Dictionary with results
         """
+        if not self.s3_client:
+            return {
+                "success": False,
+                "error": "AWS S3 credentials not configured. Please configure AWS_S3_API_API_KEY and AWS_S3_API_SECRET_KEY."
+            }
+        
         try:
             if operation == "upload":
                 bucket_name = kwargs.get("bucket_name")

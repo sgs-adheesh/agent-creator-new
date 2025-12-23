@@ -97,8 +97,9 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
             
             # Common semantic categories
             semantic_categories = [
-                'invoice', 'invoice_detail', 'document', 'customer', 
-                'product', 'vendor', 'order', 'payment', 'user'
+                'invoice', 'invoice_detail', 'invoice_line_item',
+                'document', 'customer', 'product', 'vendor', 
+                'order', 'payment', 'user', 'line_item', 'detail'
             ]
             
             # For each semantic category, find matching tables
@@ -239,6 +240,111 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
             
         return resolved_query
     
+    def _detect_implicit_relationships(self, table_name: str, all_tables: List[str]) -> Dict[str, Any]:
+        """
+        Detect implicit foreign key relationships based on naming conventions
+        (e.g., document_id references icap_document.id, invoice_id references icap_invoice.id)
+        
+        Args:
+            table_name: The table to analyze
+            all_tables: List of all available tables in the database
+            
+        Returns:
+            Dictionary with implicit foreign keys and related tables
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Get columns for this table
+            cursor.execute("""
+                SELECT column_name, data_type
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = %s
+                ORDER BY ordinal_position;
+            """, (table_name,))
+            
+            columns = cursor.fetchall()
+            cursor.close()
+            
+            implicit_fks = []
+            referenced_by = []
+            
+            # Pattern 1: Look for columns ending with '_id' (e.g., document_id, vendor_id, invoice_id)
+            for col_name, col_type in columns:
+                if col_name.endswith('_id') and col_type == 'uuid':
+                    # Extract the referenced table name
+                    # e.g., 'document_id' -> look for 'icap_document' or 'document' table
+                    ref_entity = col_name[:-3]  # Remove '_id'
+                    
+                    # Try to find matching table
+                    for potential_table in all_tables:
+                        # Check if table name matches the pattern
+                        # e.g., 'icap_document', 'document'
+                        if (potential_table.endswith('_' + ref_entity) or 
+                            potential_table == ref_entity or
+                            potential_table.endswith(ref_entity)):
+                            
+                            implicit_fks.append({
+                                "column": col_name,
+                                "references_table": potential_table,
+                                "references_column": "id",
+                                "confidence": "high",
+                                "detection_method": "naming_convention"
+                            })
+                            break
+            
+            # Pattern 2: Look for tables that might reference this table
+            # e.g., if table is 'icap_invoice', look for 'invoice_id' in other tables
+            
+            # Extract entity name from table name
+            # 'icap_invoice' -> 'invoice', 'icap_document' -> 'document'
+            entity_name = table_name
+            if '_' in table_name:
+                # Try to extract the entity part (last part after underscore)
+                parts = table_name.split('_')
+                entity_name = parts[-1]  # e.g., 'invoice', 'document'
+            
+            expected_fk_col = f"{entity_name}_id"  # e.g., 'invoice_id', 'document_id'
+            
+            # Check all other tables for this column
+            for other_table in all_tables:
+                if other_table == table_name:
+                    continue
+                    
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public' 
+                        AND table_name = %s
+                        AND column_name = %s
+                        AND data_type = 'uuid';
+                """, (other_table, expected_fk_col))
+                
+                if cursor.fetchone():
+                    # This table has a column that likely references our table
+                    referenced_by.append({
+                        "table": other_table,
+                        "column": expected_fk_col,
+                        "references_column": "id",
+                        "confidence": "high",
+                        "detection_method": "naming_convention"
+                    })
+                cursor.close()
+            
+            return {
+                "implicit_foreign_keys": implicit_fks,
+                "implicit_referenced_by": referenced_by
+            }
+            
+        except Exception as e:
+            print(f"Warning: Could not detect implicit relationships: {e}")
+            return {
+                "implicit_foreign_keys": [],
+                "implicit_referenced_by": []
+            }
+    
     def _enhance_query_for_jsonb_dates(self, query: str) -> str:
         """
         Enhance query to properly handle JSONB date columns by providing better error guidance
@@ -315,6 +421,16 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
                             f"Use ->> operator: (column_name->>'value')::type"
                         )
                     
+                    # Show relationships
+                    if schema_result.get('relationships'):
+                        schema_info.append(f"🔗 {schema_result['relationships']}")
+                    
+                    if schema_result.get('related_tables'):
+                        schema_info.append(f"📊 {schema_result['related_tables']}")
+                        schema_info.append(
+                            "➡️ TIP: For complete invoice data, consider joining with related tables using foreign keys!"
+                        )
+                    
                     # Show sample data structure
                     if schema_result.get('sample_data'):
                         schema_info.append(f"📊 Sample data from '{actual_table}': {schema_result['sample_data'][:1]}")
@@ -332,7 +448,7 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
             table_name: Optional table name to inspect (can use semantic names like 'invoice')
             
         Returns:
-            Dictionary with schema information including columns, data types, and sample data
+            Dictionary with schema information including columns, data types, sample data, and relationships
         """
         try:
             conn = self._get_connection()
@@ -362,6 +478,58 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
                         "error": f"Table '{table_name}' (resolved to '{actual_table}') not found"
                     }
                 
+                # Get foreign key relationships
+                cursor.execute("""
+                    SELECT
+                        kcu.column_name,
+                        ccu.table_name AS foreign_table_name,
+                        ccu.column_name AS foreign_column_name
+                    FROM information_schema.table_constraints AS tc
+                    JOIN information_schema.key_column_usage AS kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                        AND tc.table_schema = kcu.table_schema
+                    JOIN information_schema.constraint_column_usage AS ccu
+                        ON ccu.constraint_name = tc.constraint_name
+                        AND ccu.table_schema = tc.table_schema
+                    WHERE tc.constraint_type = 'FOREIGN KEY'
+                        AND tc.table_name = %s
+                        AND tc.table_schema = 'public';
+                """, (actual_table,))
+                
+                foreign_keys = cursor.fetchall()
+                
+                # Get tables that reference this table (reverse relationships)
+                cursor.execute("""
+                    SELECT
+                        tc.table_name AS referencing_table,
+                        kcu.column_name AS referencing_column,
+                        ccu.column_name AS referenced_column
+                    FROM information_schema.table_constraints AS tc
+                    JOIN information_schema.key_column_usage AS kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                        AND tc.table_schema = kcu.table_schema
+                    JOIN information_schema.constraint_column_usage AS ccu
+                        ON ccu.constraint_name = tc.constraint_name
+                        AND ccu.table_schema = tc.table_schema
+                    WHERE tc.constraint_type = 'FOREIGN KEY'
+                        AND ccu.table_name = %s
+                        AND tc.table_schema = 'public';
+                """, (actual_table,))
+                
+                referenced_by = cursor.fetchall()
+                
+                # Get all available tables for implicit relationship detection
+                cursor.execute("""
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    ORDER BY table_name;
+                """)
+                all_tables = [row[0] for row in cursor.fetchall()]
+                
+                # Detect implicit relationships based on naming conventions
+                implicit_rels = self._detect_implicit_relationships(actual_table, all_tables)
+                
                 # Get sample data to show structure
                 cursor.execute(f"SELECT * FROM {actual_table} LIMIT 3;")
                 sample_rows = cursor.fetchall()
@@ -372,6 +540,7 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
                 # Build response
                 column_info = []
                 jsonb_cols = []
+                uuid_cols = []
                 for col_name, data_type, nullable in columns:
                     column_info.append({
                         "name": col_name,
@@ -380,6 +549,8 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
                     })
                     if data_type == "jsonb":
                         jsonb_cols.append(col_name)
+                    elif data_type == "uuid":
+                        uuid_cols.append(col_name)
                 
                 response = {
                     "success": True,
@@ -388,6 +559,68 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
                     "total_columns": len(column_info),
                     "sample_data": [dict(zip(column_names, row)) for row in sample_rows[:3]]
                 }
+                
+                # Add foreign key relationships (both explicit and implicit)
+                all_fk_info = []
+                all_related_tables = set()
+                
+                # Add explicit foreign keys
+                if foreign_keys:
+                    for col, fk_table, fk_col in foreign_keys:
+                        all_fk_info.append({
+                            "column": col,
+                            "references_table": fk_table,
+                            "references_column": fk_col,
+                            "type": "explicit"
+                        })
+                        all_related_tables.add(fk_table)
+                
+                # Add implicit foreign keys
+                if implicit_rels.get('implicit_foreign_keys'):
+                    for fk in implicit_rels['implicit_foreign_keys']:
+                        all_fk_info.append({
+                            "column": fk['column'],
+                            "references_table": fk['references_table'],
+                            "references_column": fk['references_column'],
+                            "type": "implicit",
+                            "confidence": fk['confidence']
+                        })
+                        all_related_tables.add(fk['references_table'])
+                
+                if all_fk_info:
+                    response["foreign_keys"] = all_fk_info
+                    response["relationships"] = f"This table links to: {', '.join(all_related_tables)}"
+                
+                # Add reverse relationships (both explicit and implicit)
+                all_ref_info = []
+                all_detail_tables = set()
+                
+                # Add explicit reverse relationships
+                if referenced_by:
+                    for ref_table, ref_col, this_col in referenced_by:
+                        all_ref_info.append({
+                            "table": ref_table,
+                            "column": ref_col,
+                            "references_column": this_col,
+                            "type": "explicit"
+                        })
+                        all_detail_tables.add(ref_table)
+                
+                # Add implicit reverse relationships
+                if implicit_rels.get('implicit_referenced_by'):
+                    for ref in implicit_rels['implicit_referenced_by']:
+                        all_ref_info.append({
+                            "table": ref['table'],
+                            "column": ref['column'],
+                            "references_column": ref['references_column'],
+                            "type": "implicit",
+                            "confidence": ref['confidence']
+                        })
+                        all_detail_tables.add(ref['table'])
+                
+                if all_ref_info:
+                    response["referenced_by"] = all_ref_info
+                    response["related_tables"] = f"Related detail tables: {', '.join(all_detail_tables)}"
                 
                 # Add JSONB guidance if applicable
                 if jsonb_cols:
@@ -400,11 +633,12 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
                 
                 return response
             else:
-                # Get all tables
+                # Get all tables starting with 'icap_' prefix
                 cursor.execute("""
                     SELECT table_name
                     FROM information_schema.tables
                     WHERE table_schema = 'public'
+                      AND table_name LIKE 'icap_%'
                     ORDER BY table_name;
                 """)
                 
@@ -414,7 +648,8 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
                 return {
                     "success": True,
                     "tables": tables,
-                    "message": "Call this tool again with a specific table_name to see detailed column information"
+                    "total_tables": len(tables),
+                    "message": f"Found {len(tables)} tables starting with 'icap_'. Call this tool again with a specific table_name to see detailed column information"
                 }
                 
         except Exception as e:
@@ -536,10 +771,9 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
         resolved_query = self._resolve_semantic_table_names(query)
         print(f"🔍 DEBUG: resolved query: '{resolved_query}'")
         
-        # AUTO-INSPECT: Check schema for tables in this query
-        auto_schema_info = self._auto_inspect_tables(resolved_query)
-        if auto_schema_info:
-            print(auto_schema_info)
+        # AUTO-INSPECT: DISABLED - AI should inspect schema during query building, not execution
+        # This was causing redundant schema checks after the AI already inspected tables
+        auto_schema_info = None
         
         # Enhance query for JSONB date handling
         enhanced_query = self._enhance_query_for_jsonb_dates(resolved_query)
@@ -682,9 +916,11 @@ Note: Many columns are JSONB - you MUST inspect schema first or queries will fai
 - Data types and structure
 - Sample data with actual values
 - How to properly extract JSONB fields
+- **Foreign key relationships to related tables**
+- **Related detail tables (e.g., invoice_detail, document)**
 
 Usage:
-- Call with table_name='invoice' to see invoice table structure
+- Call with table_name='invoice' to see invoice table structure AND related tables
 - Call with table_name='vendor' to see vendor table structure  
 - Call with empty string to list all available tables
 
@@ -692,8 +928,12 @@ Without calling this first, your queries WILL FAIL because you won't know:
 - Which columns exist
 - Which columns are JSONB (need ->> operator)
 - The correct syntax to extract values
+- **Which related tables to JOIN for complete data**
 
-Example: postgres_inspect_schema(table_name='invoice') returns column list + sample data."""
+Example: postgres_inspect_schema(table_name='invoice') returns:
+- Column list + sample data
+- Foreign keys showing links to document, vendor tables
+- Related detail tables like icap_invoice_detail"""
         
         try:
             return StructuredTool.from_function(

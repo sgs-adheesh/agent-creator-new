@@ -7,6 +7,18 @@ from .base_tool import BaseTool
 class PaypalApiConnector(BaseTool):
     """Tool for sending invoices via PayPal, enabling users to create and send invoices to customers through the PayPal platform."""
     
+    @classmethod
+    def get_config_schema(cls):
+        return [
+            {
+                "name": "api_key",
+                "label": "PayPal API Key",
+                "type": "password",
+                "required": True,
+                "env_var": "PAYPAL_API_API_KEY"
+            }
+        ]
+    
     def __init__(self):
         super().__init__(
             name="paypal_api",

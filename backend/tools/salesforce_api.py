@@ -7,6 +7,18 @@ from .base_tool import BaseTool
 class SalesforceApiConnector(BaseTool):
     """Tool for interacting with Salesforce data, enabling operations such as querying records and retrieving information from Salesforce databases."""
     
+    @classmethod
+    def get_config_schema(cls):
+        return [
+            {
+                "name": "api_key",
+                "label": "Salesforce API Key",
+                "type": "password",
+                "required": True,
+                "env_var": "SALESFORCE_API_API_KEY"
+            }
+        ]
+    
     def __init__(self):
         super().__init__(
             name="salesforce_api",

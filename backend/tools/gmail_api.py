@@ -7,6 +7,18 @@ from .base_tool import BaseTool
 class GmailApiConnector(BaseTool):
     """Tool for enabling the agent to send emails through Gmail, allowing for the creation and sending of email messages programmatically."""
     
+    @classmethod
+    def get_config_schema(cls):
+        return [
+            {
+                "name": "api_key",
+                "label": "Gmail API Key",
+                "type": "password",
+                "required": True,
+                "env_var": "GMAIL_API_API_KEY"
+            }
+        ]
+    
     def __init__(self):
         super().__init__(
             name="gmail_api",

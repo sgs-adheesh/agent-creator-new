@@ -8,6 +8,18 @@ class DropboxApiConnector(BaseTool):
     """Tool for enabling interaction with the Dropbox service for file sharing and management. 
     It provides methods to upload files, share links, and manage Dropbox folders."""
     
+    @classmethod
+    def get_config_schema(cls):
+        return [
+            {
+                "name": "api_key",
+                "label": "Dropbox API Access Token",
+                "type": "password",
+                "required": True,
+                "env_var": "DROPBOX_API_API_KEY"
+            }
+        ]
+    
     def __init__(self):
         super().__init__(
             name="dropbox_api",

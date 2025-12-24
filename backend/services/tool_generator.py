@@ -49,6 +49,11 @@ class ToolGenerator:
         api_type = tool_spec.get("api_type", "REST API")
         service = tool_spec.get("service", tool_name)
         
+        # 🔍 STEP 1: Analyze API documentation BEFORE generating code
+        print(f"\n🔍 Analyzing {display_name} API documentation...")
+        api_analysis = self._analyze_api_documentation(service, api_type)
+        print(f"✅ Documentation analysis complete for {display_name}")
+        
         generation_prompt = f"""Generate a Python tool class for LangChain integration.
 
 Tool Specification:
@@ -57,6 +62,16 @@ Tool Specification:
 - Description: {description}
 - API Type: {api_type}
 - Service: {service}
+
+🔍 API DOCUMENTATION ANALYSIS:
+{api_analysis}
+
+⚠️ CRITICAL - Use Official Documentation Patterns:
+- Follow the authentication method specified above (OAuth 2.0, API Key, etc.)
+- Use the exact base URLs and endpoints from documentation
+- Include all required headers and parameters
+- Handle errors according to API specification
+- Implement only operations supported by the API
 
 Requirements:
 1. Inherit from BaseTool class (already exists in tools/base_tool.py)
@@ -435,3 +450,69 @@ Generate ONLY the complete Python code, no explanations."""
         except Exception as e:
             # Non-critical error, log but don't fail
             print(f"Warning: Could not update __init__.py: {e}")
+    
+    def _analyze_api_documentation(self, service: str, api_type: str) -> str:
+        """
+        Analyze official API documentation before generating tool code
+        
+        Args:
+            service: Service name (e.g., 'gmail', 'stripe')
+            api_type: API type (e.g., 'REST API', 'GraphQL')
+            
+        Returns:
+            Documentation analysis with authentication, endpoints, and best practices
+        """
+        analysis_prompt = f"""Analyze the OFFICIAL API documentation for {service} ({api_type}).
+
+Provide a concise technical summary focusing on:
+
+1. **Authentication Method**:
+   - What auth is required? (OAuth 2.0, API Key, Bearer Token, etc.)
+   - Which environment variables should be used?
+   - Example: OAuth needs access_token + refresh_token, API Key needs single key
+
+2. **Base URL & Endpoints**:
+   - Official base URL (e.g., https://api.stripe.com/v1)
+   - Common endpoints for CRUD operations
+   - Required headers (Content-Type, Authorization format)
+
+3. **Key Operations**:
+   - List 3-5 most common operations (create, list, retrieve, update, delete)
+   - Required parameters for each operation
+   - Response format (JSON structure)
+
+4. **Error Handling**:
+   - HTTP status codes used
+   - Error response format
+   - Common error scenarios
+
+5. **Python Libraries**:
+   - Official Python SDK if available (e.g., stripe, google-api-python-client)
+   - Required pip packages
+   - Import statements needed
+
+6. **Critical Notes**:
+   - Any deprecated endpoints or auth methods to AVOID
+   - Rate limits or quota considerations
+   - Required scopes for OAuth (if applicable)
+
+Format your response as a structured guide the AI can follow when generating the tool code.
+Be specific about authentication - this is where most integration mistakes happen.
+
+If you don't have specific information about {service}, provide general best practices for {api_type} integrations."""
+        
+        try:
+            response = self.llm.invoke(analysis_prompt)
+            analysis = response.content if hasattr(response, 'content') else str(response)
+            return analysis
+        except Exception as e:
+            # Return fallback guidance if analysis fails
+            return f"""⚠️ Could not analyze documentation (Error: {e})
+
+General {api_type} Best Practices:
+1. Use proper authentication (check official docs)
+2. Validate all credentials in execute() method, not __init__()
+3. Use official Python SDK if available
+4. Return structured error messages
+5. Include rate limit handling
+6. Follow RESTful conventions for endpoints"""

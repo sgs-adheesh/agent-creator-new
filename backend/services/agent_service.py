@@ -415,9 +415,11 @@ class AgentService:
                                 for row in rows:
                                     inv_num = row.get(invoice_number_col)
                                     if inv_num:
-                                        if inv_num not in invoices:
-                                            invoices[inv_num] = []
-                                        invoices[inv_num].append(row)
+                                        # Convert to string to handle dict/JSONB values
+                                        inv_num_str = str(inv_num) if not isinstance(inv_num, dict) else inv_num.get('value', str(inv_num))
+                                        if inv_num_str not in invoices:
+                                            invoices[inv_num_str] = []
+                                        invoices[inv_num_str].append(row)
                                 
                                 # Analyze each invoice
                                 for inv_num, inv_rows in invoices.items():
@@ -432,14 +434,18 @@ class AgentService:
                                     # Get invoice date
                                     for col in columns:
                                         if 'invoice' in col.lower() and 'date' in col.lower():
-                                            invoice_data["date"] = first_row.get(col)
+                                            date_val = first_row.get(col)
+                                            invoice_data["date"] = str(date_val) if not isinstance(date_val, dict) else date_val.get('value', str(date_val))
                                         elif 'invoice' in col.lower() and 'total' in col.lower():
                                             try:
-                                                invoice_data["total"] = float(str(first_row.get(col, 0)).replace('$', '').replace(',', ''))
+                                                total_val = first_row.get(col, 0)
+                                                total_str = str(total_val) if not isinstance(total_val, dict) else total_val.get('value', '0')
+                                                invoice_data["total"] = float(total_str.replace('$', '').replace(',', ''))
                                             except:
                                                 pass
                                         elif 'vendor' in col.lower() and 'name' in col.lower():
-                                            invoice_data["vendor"] = first_row.get(col)
+                                            vendor_val = first_row.get(col)
+                                            invoice_data["vendor"] = str(vendor_val) if not isinstance(vendor_val, dict) else vendor_val.get('value', str(vendor_val))
                                     
                                     # Calculate line-level totals
                                     line_totals = []
@@ -448,14 +454,18 @@ class AgentService:
                                         for col in columns:
                                             if 'line' in col.lower() and 'total' in col.lower():
                                                 try:
-                                                    val = float(str(row.get(col, 0)).replace('$', '').replace(',', ''))
+                                                    line_val = row.get(col, 0)
+                                                    line_str = str(line_val) if not isinstance(line_val, dict) else line_val.get('value', '0')
+                                                    val = float(line_str.replace('$', '').replace(',', ''))
                                                     if val > 0:
                                                         line_totals.append(val)
                                                 except:
                                                     pass
                                             elif 'quantity' in col.lower():
                                                 try:
-                                                    val = float(str(row.get(col, 0)).replace('$', '').replace(',', ''))
+                                                    qty_val = row.get(col, 0)
+                                                    qty_str = str(qty_val) if not isinstance(qty_val, dict) else qty_val.get('value', '0')
+                                                    val = float(qty_str.replace('$', '').replace(',', ''))
                                                     if val > 0:
                                                         quantities.append(val)
                                                 except:
@@ -470,6 +480,8 @@ class AgentService:
                                 
                             except Exception as e:
                                 print(f"Error generating invoice breakdown: {e}")
+                                import traceback
+                                traceback.print_exc()
                         
                         # Analyze EACH column in detail
                         for col in columns:
@@ -943,9 +955,705 @@ Provide a comprehensive analysis:"""
         
         return '\n'.join(lines)
     
+    def _execute_with_guidance(self, agent_data: Dict, user_query: str, input_data: Dict = None) -> Dict[str, Any]:
+        """
+        Execute agent using pre-built execution guidance (FAST PATH)
+        Includes automatic SQL error correction with retry logic (max 3 attempts)
+        Falls back to AI-based query generation if template fails
+        
+        Args:
+            agent_data: Agent configuration with execution_guidance
+            user_query: User query string
+            input_data: Optional input data from frontend (month, year, dates, etc.)
+            
+        Returns:
+            Execution results or None to trigger fallback
+        """
+        try:
+            print("\n⚡ FAST PATH: Using pre-built execution guidance")
+            
+            execution_guidance = agent_data.get('execution_guidance')
+            if not execution_guidance or execution_guidance.get('error'):
+                print("⚠️ No valid execution guidance available - falling back to traditional execution")
+                return None
+            
+            query_template = execution_guidance.get('query_template', {})
+            execution_plan = execution_guidance.get('execution_plan', {})
+            workflow_config = agent_data.get('workflow_config', {})
+            
+            # Step 1: Extract parameters from input_data or user_query
+            params = {}
+            parameters_needed = query_template.get('parameters', [])
+            
+            print(f"  Parameters needed: {parameters_needed}")
+            print(f"  Input data: {input_data}")
+            
+            if input_data:
+                # Extract from structured input_data (from frontend)
+                for param in parameters_needed:
+                    if param in input_data:
+                        value = input_data[param]
+                        # Format month with leading zero if needed
+                        if param == 'month' and isinstance(value, (int, str)):
+                            params[param] = str(value).zfill(2)
+                        else:
+                            params[param] = str(value)
+            else:
+                # Try to parse from user_query string
+                params = self._extract_query_parameters(user_query, workflow_config)
+            
+            if not params and parameters_needed:
+                print(f"⚠️ Could not extract required parameters: {parameters_needed}")
+                return None
+            
+            print(f"  Extracted parameters: {params}")
+            
+            # Step 2: Fill template with parameters
+            full_query = query_template.get('full_template', '')
+            
+            try:
+                filled_query = full_query.format(**params)
+                print(f"  ✅ Query filled: {filled_query[:150]}...")
+            except KeyError as e:
+                print(f"⚠️ Missing parameter {e} in template")
+                return None
+            
+            # Step 3: Execute query with retry logic (max 3 attempts)
+            from tools.postgres_connector import PostgresConnector
+            pg_connector = PostgresConnector()
+            
+            max_retries = 3
+            current_query = filled_query
+            last_error = None
+            query_was_corrected = False  # Track if we corrected the query
+            
+            for attempt in range(1, max_retries + 1):
+                print(f"\n  🔄 Attempt {attempt}/{max_retries}: Executing query...")
+                result = pg_connector.execute(query=current_query)
+                
+                if result.get('success'):
+                    print(f"  ✅ Query executed successfully: {result.get('row_count', 0)} rows returned")
+                    
+                    # 💾 SAVE CORRECTED QUERY to agent JSON if it was fixed
+                    if query_was_corrected and attempt > 1:
+                        print(f"\n💾 Saving corrected query template to agent JSON...")
+                        self._save_corrected_query_template(
+                            agent_data=agent_data,
+                            corrected_query=current_query,
+                            original_query=filled_query,
+                            attempt_number=attempt
+                        )
+                    
+                    # Step 4: Format based on output_format
+                    output_format = workflow_config.get('output_format', 'text')
+                    
+                    # 🎯 Generate purpose-driven output message using agent's prompt
+                    agent_prompt = agent_data.get('prompt', '')
+                    rows = result.get('rows', [])
+                    columns = result.get('columns', [])
+                    row_count = result.get('row_count', 0)
+                    
+                    print("\n🤖 Generating purpose-driven output based on agent's mission...")
+                    purpose_output = self._generate_cached_query_output(
+                        agent_prompt=agent_prompt,
+                        output_format=output_format,
+                        row_count=row_count,
+                        rows=rows,
+                        columns=columns
+                    )
+                    
+                    # Create intermediate_steps format for _format_output
+                    intermediate_steps = [{
+                        "action": {
+                            "tool": "postgres_query",
+                            "tool_input": {"query": current_query},
+                            "log": f"Used pre-built query template with parameters: {params}. Succeeded on attempt {attempt}/{max_retries}"
+                        },
+                        "result": result
+                    }]
+                    
+                    # Use existing _format_output method with purpose-driven output
+                    formatted_result = self._format_output(
+                        output=purpose_output,  # Use purpose-driven message instead of generic
+                        output_format=output_format,
+                        intermediate_steps=intermediate_steps
+                    )
+                    
+                    formatted_result['used_guidance'] = True
+                    formatted_result['execution_time'] = f'Fast (pre-built template, attempt {attempt})'
+                    formatted_result['query_attempts'] = attempt
+                    if query_was_corrected:
+                        formatted_result['query_corrected'] = True
+                        formatted_result['correction_saved'] = True
+                    
+                    print("✅ Fast path execution completed successfully!")
+                    return formatted_result
+                
+                else:
+                    # Query failed - attempt to fix it
+                    error_msg = result.get('error', 'Unknown error')
+                    last_error = error_msg
+                    print(f"  ❌ Query execution failed: {error_msg}")
+                    
+                    if attempt < max_retries:
+                        print(f"  🔧 Attempting to fix SQL syntax error (attempt {attempt}/{max_retries})...")
+                        
+                        # Use LLM to fix the query
+                        corrected_query = self._fix_sql_syntax_error(
+                            query=current_query,
+                            error=error_msg,
+                            schema_context=execution_guidance.get('schema_snapshot', {})
+                        )
+                        
+                        if corrected_query and corrected_query != current_query:
+                            print(f"  ✅ Query corrected by AI")
+                            print(f"  Original: {current_query[:100]}...")
+                            print(f"  Corrected: {corrected_query[:100]}...")
+                            current_query = corrected_query
+                            query_was_corrected = True  # Mark that we made a correction
+                        else:
+                            print(f"  ⚠️ AI could not suggest a fix - breaking retry loop")
+                            break
+                    else:
+                        print(f"  ❌ Max retries ({max_retries}) reached")
+            
+            # If we got here, all retries failed
+            print(f"\n⚠️ Pre-built query template failed after {max_retries} attempts")
+            print(f"  Last error: {last_error}")
+            print(f"  🔄 Falling back to AI-based query generation during execution...")
+            return None  # Signal to use traditional execution
+            
+        except Exception as e:
+            print(f"❌ Error in fast path execution: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def _fix_sql_syntax_error(self, query: str, error: str, schema_context: Dict) -> str:
+        """
+        Use LLM to fix SQL syntax errors
+        
+        Args:
+            query: The failing SQL query
+            error: Error message from PostgreSQL
+            schema_context: Schema information for context
+            
+        Returns:
+            Corrected SQL query or empty string if cannot fix
+        """
+        try:
+            from langchain_core.messages import HumanMessage
+            
+            fix_prompt = f"""You are a PostgreSQL expert. Fix this SQL query that is causing an error.
+
+FAILING QUERY:
+{query}
+
+ERROR MESSAGE:
+{error}
+
+IMPORTANT RULES:
+1. Use LEFT JOIN (not INNER JOIN) to preserve all records
+2. Never include ID columns in SELECT (no invoice_id, vendor_id, document_id, etc.)
+3. Use JSONB operators (->>'value') for JSONB columns
+4. Use proper PostgreSQL syntax
+5. Ensure all referenced columns exist in the tables
+6. Fix any syntax errors, typos, or invalid operators
+7. Return ONLY the corrected SQL query, no explanations
+
+CORRECTED QUERY:"""
+            
+            response = self.llm.invoke([HumanMessage(content=fix_prompt)])
+            corrected_query = response.content.strip()
+            
+            # Remove any markdown code blocks
+            if '```' in corrected_query:
+                import re
+                code_match = re.search(r'```(?:sql)?\n(.*?)\n```', corrected_query, re.DOTALL)
+                if code_match:
+                    corrected_query = code_match.group(1).strip()
+            
+            # Basic validation - must be a SELECT query
+            if not corrected_query.upper().strip().startswith('SELECT'):
+                print("  ⚠️ AI response is not a valid SELECT query")
+                return ""
+            
+            return corrected_query
+            
+        except Exception as e:
+            print(f"  ❌ Error in SQL fix attempt: {e}")
+            return ""
+    
+    def _save_corrected_query_template(self, agent_data: Dict, corrected_query: str, original_query: str, attempt_number: int) -> None:
+        """
+        Save AI-corrected query template back to agent JSON for future use
+        This updates the execution_guidance with the corrected query template
+        
+        Args:
+            agent_data: Agent configuration dictionary
+            corrected_query: The AI-corrected SQL query that worked
+            original_query: The original query that failed
+            attempt_number: Which attempt succeeded (2 or 3)
+        """
+        try:
+            agent_id = agent_data.get('id')
+            if not agent_id:
+                print("  ⚠️ No agent_id found - cannot save correction")
+                return
+            
+            # Get current execution guidance
+            execution_guidance = agent_data.get('execution_guidance')
+            if not execution_guidance:
+                print("  ⚠️ No execution_guidance found - cannot save correction")
+                return
+            
+            # Extract the base query (without parameters) from the corrected query
+            # We need to reverse-engineer the template by removing the specific parameter values
+            query_template = execution_guidance.get('query_template', {})
+            parameters = query_template.get('parameters', [])
+            
+            # Create updated template by replacing parameter placeholders back
+            # This is a simplified approach - we store the corrected full template
+            corrected_template = corrected_query
+            
+            # For parameterized queries, we need to extract the base pattern
+            # Example: Replace "WHERE date LIKE '02/%/2025'" back to "WHERE date LIKE '{month}/%/{year}'"
+            workflow_config = agent_data.get('workflow_config', {})
+            trigger_type = workflow_config.get('trigger_type', 'text_query')
+            
+            # Reconstruct the template with placeholders
+            if trigger_type == "month_year" and 'month' in parameters and 'year' in parameters:
+                # Extract the month/year pattern and replace with placeholders
+                import re
+                # Pattern: 'MM/%/YYYY' -> '{month}/%/{year}'
+                corrected_template = re.sub(r"'(\d{2})/%/(\d{4})'", "'{month}/%/{year}'", corrected_query)
+            elif trigger_type == "date_range" and 'start_date' in parameters and 'end_date' in parameters:
+                import re
+                # Pattern: '>= 'MM/DD/YYYY' AND <= 'MM/DD/YYYY'' -> '>= '{start_date}' AND <= '{end_date}''
+                corrected_template = re.sub(r"'\d{2}/\d{2}/\d{4}'", "'{start_date}'", corrected_query, count=1)
+                corrected_template = re.sub(r"'\d{2}/\d{2}/\d{4}'", "'{end_date}'", corrected_template, count=1)
+            elif trigger_type == "year" and 'year' in parameters:
+                import re
+                # Pattern: '%/%/YYYY' -> '%/%/{year}'
+                corrected_template = re.sub(r"'%/%/(\d{4})'", "'%/%/{year}'", corrected_query)
+            
+            # Update the execution guidance with corrected template
+            query_template['full_template'] = corrected_template
+            query_template['base_query'] = corrected_template.split('WHERE')[0].strip() if 'WHERE' in corrected_template.upper() else corrected_template
+            query_template['correction_history'] = query_template.get('correction_history', [])
+            query_template['correction_history'].append({
+                "original_query": original_query,
+                "corrected_query": corrected_query,
+                "corrected_template": corrected_template,
+                "attempt_number": attempt_number,
+                "corrected_at": datetime.now().isoformat(),
+                "trigger_type": trigger_type
+            })
+            
+            execution_guidance['query_template'] = query_template
+            execution_guidance['last_correction'] = datetime.now().isoformat()
+            
+            # Save updated agent data to storage
+            updated_data = {
+                'execution_guidance': execution_guidance
+            }
+            
+            self.storage.update_agent(agent_id, updated_data)
+            
+            print(f"  ✅ Corrected query template saved to agent JSON")
+            print(f"     - Original template had syntax error")
+            print(f"     - Corrected template: {corrected_template[:80]}...")
+            print(f"     - Correction history: {len(query_template['correction_history'])} correction(s)")
+            print(f"  ℹ️  Future executions will use the corrected template")
+            
+        except Exception as e:
+            print(f"  ⚠️ Error saving corrected query template: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _inspect_schema_for_prompt(self, prompt: str, agent_tools: List) -> str:
+        """
+        Inspect database schema based on the user prompt to provide context-specific guidance
+        
+        Args:
+            prompt: User prompt describing what the agent should do
+            agent_tools: Available tools (to find postgres connector)
+            
+        Returns:
+            Schema context string to include in system prompt
+        """
+        try:
+            # Find the postgres connector tool
+            postgres_tool = None
+            for tool in agent_tools:
+                if tool.name == 'postgres_inspect_schema':
+                    # Get the actual tool function/connector from the tool
+                    # LangChain tools wrap the actual function, we need to access it
+                    postgres_tool = tool
+                    break
+            
+            if not postgres_tool:
+                print("🔴 No postgres_inspect_schema tool found for schema inspection")
+                return ""
+            
+            # Extract entities from the user prompt (invoice, vendor, product, customer, etc.)
+            prompt_lower = prompt.lower()
+            
+            # Common business entities to look for
+            entity_keywords = [
+                'invoice', 'vendor', 'supplier', 'product', 'item', 'customer', 
+                'payment', 'order', 'bill', 'transaction', 'document', 'line item'
+            ]
+            
+            detected_entities = []
+            for entity in entity_keywords:
+                if entity in prompt_lower:
+                    detected_entities.append(entity)
+            
+            if not detected_entities:
+                print("ℹ️ No specific entities detected in prompt, skipping schema inspection")
+                return ""
+            
+            print(f"🔍 Detected entities in prompt: {detected_entities}")
+            
+            # Import postgres connector directly to call get_table_schema
+            from tools.postgres_connector import PostgresConnector
+            
+            pg_connector = PostgresConnector()
+            schema_context_parts = []
+            
+            # Get list of all tables first
+            all_tables_result = pg_connector.get_table_schema(table_name="")
+            if not all_tables_result.get('success'):
+                print(f"⚠️ Failed to get table list: {all_tables_result.get('error')}")
+                return ""
+            
+            available_tables = all_tables_result.get('tables', [])
+            print(f"📊 Found {len(available_tables)} tables in database")
+            
+            # For each detected entity, find matching tables and inspect them
+            inspected_tables = set()
+            
+            for entity in detected_entities:
+                # Find tables related to this entity
+                matching_tables = [t for t in available_tables if entity.replace(' ', '_') in t.lower()]
+                
+                for table_name in matching_tables[:2]:  # Limit to 2 tables per entity to avoid overload
+                    if table_name in inspected_tables:
+                        continue
+                    
+                    print(f"🔍 Inspecting schema for table: {table_name}")
+                    schema_info = pg_connector.get_table_schema(table_name=table_name)
+                    
+                    if schema_info.get('success'):
+                        inspected_tables.add(table_name)
+                        
+                        # Extract key information
+                        columns = schema_info.get('columns', [])
+                        jsonb_cols = schema_info.get('jsonb_columns', [])
+                        foreign_keys = schema_info.get('foreign_keys', [])
+                        related_tables = schema_info.get('related_tables', '')
+                        sample_data = schema_info.get('sample_data', [])
+                        
+                        # Build context for this table
+                        table_context = f"\n**Table: {table_name}**\n"
+                        table_context += f"- Columns ({len(columns)}): {', '.join([c['name'] for c in columns[:10]])}"  # Show first 10
+                        if len(columns) > 10:
+                            table_context += f" ... and {len(columns) - 10} more"
+                        
+                        if jsonb_cols:
+                            table_context += f"\n- JSONB columns (require ->> operator): {', '.join(jsonb_cols)}"
+                        
+                        if foreign_keys:
+                            fk_desc = [f"{fk['column']} → {fk['references_table']}" for fk in foreign_keys[:5]]
+                            table_context += f"\n- Joins with: {', '.join(fk_desc)}"
+                        
+                        if related_tables:
+                            table_context += f"\n- {related_tables}"
+                        
+                        # Show sample data structure (first record only)
+                        if sample_data and len(sample_data) > 0:
+                            sample = sample_data[0]
+                            sample_keys = list(sample.keys())[:5]  # Show first 5 fields
+                            table_context += f"\n- Sample fields: {', '.join(sample_keys)}"
+                        
+                        schema_context_parts.append(table_context)
+            
+            if schema_context_parts:
+                context = "The database has been pre-inspected for your task. Key tables and columns:\n"
+                context += "\n".join(schema_context_parts)
+                context += "\n\n⚠️ IMPORTANT: This is just a preview. You must still call postgres_inspect_schema() for each table before writing queries to get complete column lists and relationships."
+                return context
+            else:
+                return ""
+            
+        except Exception as e:
+            print(f"❌ Error during schema inspection: {e}")
+            import traceback
+            traceback.print_exc()
+            return ""
+    
+    def _build_query_template(self, prompt: str, trigger_type: str, schema_info: str, workflow_config: Dict = None) -> Dict[str, Any]:
+        """
+        Build parameterized query template based on trigger type
+        Uses LLM to generate the base query, then adds appropriate WHERE clause
+        
+        Args:
+            prompt: User prompt describing the data needed
+            trigger_type: Type of trigger (month_year, date_range, year, text_query, conditions)
+            schema_info: Schema context from inspection
+            workflow_config: Optional workflow configuration with input_fields
+            
+        Returns:
+            Dictionary with query template components
+        """
+        try:
+            # Build prompt for LLM to generate base query
+            query_generation_prompt = f"""Based on this user request and database schema, generate a complete SQL SELECT query.
+
+User Request: {prompt}
+
+Database Schema Information:
+{schema_info}
+
+IMPORTANT Requirements:
+1. Use LEFT JOIN (not INNER JOIN) to preserve all records
+2. Never include ID columns in SELECT (no invoice_id, vendor_id, document_id, etc.)
+3. Use JSONB operators (->>'value') for JSONB columns - this is CRITICAL for JSONB fields
+4. Order results appropriately (e.g., ORDER BY invoice_number, line_item_id)
+5. Include ALL relevant business fields from primary table first, then related tables, then detail tables
+6. DO NOT add any WHERE clause for date filtering - I will add that separately
+7. Use proper PostgreSQL syntax - check for typos, correct column names, valid operators
+8. Ensure all table aliases are consistent throughout the query
+9. Use lowercase for SQL keywords (select, from, left join, where, order by)
+10. Test that all referenced columns exist in the schema provided
+
+Generate ONLY the SQL query without date filters. Return just the SQL, no explanations.
+
+SQL QUERY:"""
+            
+            # Use LLM to generate base query
+            from langchain_core.messages import HumanMessage
+            response = self.llm.invoke([HumanMessage(content=query_generation_prompt)])
+            base_query = response.content.strip()
+            
+            # Remove any markdown code blocks
+            if '```' in base_query:
+                import re
+                code_match = re.search(r'```(?:sql)?\n(.*?)\n```', base_query, re.DOTALL)
+                if code_match:
+                    base_query = code_match.group(1).strip()
+            
+            # Basic validation
+            if not base_query.upper().strip().startswith('SELECT'):
+                print("⚠️ Generated query does not start with SELECT")
+                raise ValueError("Invalid query generated - must be a SELECT statement")
+            
+            # Build WHERE clause based on trigger_type
+            where_clause = ""
+            parameters = []
+            param_instructions = ""
+            
+            if trigger_type == "month_year":
+                where_clause = "WHERE (invoice_date->>'value' LIKE '{month}/%/{year}')"
+                parameters = ["month", "year"]
+                param_instructions = "Extract 'month' and 'year' from input_data. Month should be 2-digit format (01-12)."
+                
+            elif trigger_type == "date_range":
+                where_clause = "WHERE (invoice_date->>'value' >= '{start_date}' AND invoice_date->>'value' <= '{end_date}')"
+                parameters = ["start_date", "end_date"]
+                param_instructions = "Extract 'start_date' and 'end_date' from input_data. Format: MM/DD/YYYY."
+                
+            elif trigger_type == "year":
+                where_clause = "WHERE (invoice_date->>'value' LIKE '%/%/{year}')"
+                parameters = ["year"]
+                param_instructions = "Extract 'year' from input_data (4-digit format)."
+                
+            elif trigger_type == "conditions" and workflow_config and workflow_config.get('input_fields'):
+                # Build custom WHERE clause from input_fields
+                conditions = []
+                for field in workflow_config['input_fields']:
+                    field_name = field['name']
+                    parameters.append(field_name)
+                    # Simple equality condition for now - can be enhanced
+                    conditions.append(f"{field_name} = '{{{field_name}}}")
+                where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+                param_instructions = f"Extract these fields from input_data: {', '.join(parameters)}"
+                
+            elif trigger_type == "text_query":
+                # No fixed filter - query can vary
+                where_clause = "-- Custom filter will be applied based on user query"
+                parameters = []
+                param_instructions = "Parse user query to determine filter conditions dynamically."
+            
+            # Combine base query with WHERE clause
+            full_template = base_query
+            if where_clause and not where_clause.startswith('--'):
+                # Insert WHERE clause before ORDER BY if it exists
+                if 'ORDER BY' in base_query.upper():
+                    parts = base_query.upper().split('ORDER BY')
+                    insert_pos = base_query.upper().index('ORDER BY')
+                    full_template = base_query[:insert_pos] + " " + where_clause + " " + base_query[insert_pos:]
+                else:
+                    full_template = base_query + " " + where_clause
+            
+            print(f"\n✅ Generated query template:")
+            print(f"  Base query: {base_query[:100]}...")
+            print(f"  WHERE clause: {where_clause}")
+            print(f"  Parameters: {parameters}")
+            
+            return {
+                "base_query": base_query,
+                "where_clause": where_clause,
+                "parameters": parameters,
+                "param_instructions": param_instructions,
+                "full_template": full_template
+            }
+            
+        except Exception as e:
+            print(f"❌ Error building query template: {e}")
+            import traceback
+            traceback.print_exc()
+            # Return fallback template
+            return {
+                "base_query": "-- Error generating query template",
+                "where_clause": "",
+                "parameters": [],
+                "param_instructions": "",
+                "full_template": "-- Query generation failed, will use traditional agent execution",
+                "error": str(e)
+            }
+    
+    def _build_execution_plan(self, trigger_type: str, output_format: str, query_template: Dict) -> Dict[str, str]:
+        """
+        Create step-by-step execution plan based on output format
+        
+        Args:
+            trigger_type: Type of trigger
+            output_format: Desired output format (csv, table, json, text)
+            query_template: Query template with parameters
+            
+        Returns:
+            Dictionary with numbered execution steps
+        """
+        plan = {
+            "step_1": "Load pre-built query template from execution_guidance",
+            "step_2": query_template.get('param_instructions', 'Extract parameters from input')
+        }
+        
+        # Step 3: Fill parameters
+        if query_template.get('parameters'):
+            params = ', '.join([f'{{{p}}}' for p in query_template['parameters']])
+            plan["step_3"] = f"Replace template parameters: {params}"
+        else:
+            plan["step_3"] = "No parameters needed - use query as-is"
+        
+        # Step 4: Execute query
+        plan["step_4"] = "Execute filled query using postgres_query tool"
+        
+        # Steps 5-6 vary by output format
+        if output_format == "csv":
+            plan["step_5"] = "Convert query results to CSV format with headers"
+            plan["step_6"] = "Encode as base64 and return downloadable CSV file with filename"
+            plan["step_7"] = "Include summary statistics in response"
+            
+        elif output_format == "table":
+            plan["step_5"] = "Structure results as table_data with columns and rows arrays"
+            plan["step_6"] = "Include row_count and column metadata"
+            plan["step_7"] = "Return formatted table for interactive display"
+            
+        elif output_format == "json":
+            plan["step_5"] = "Keep results as JSON array of objects"
+            plan["step_6"] = "Add metadata: total_records, columns, query_executed"
+            plan["step_7"] = "Return as formatted JSON structure"
+            
+        elif output_format == "text":
+            plan["step_5"] = "Generate human-readable markdown summary from results"
+            plan["step_6"] = "Include: executive summary, key findings, detailed analysis"
+            plan["step_7"] = "Format with proper sections and insights for decision-making"
+        
+        return plan
+    
+    def _generate_execution_guidance(self, prompt: str, trigger_type: str, output_format: str, 
+                                     agent_tools: List, workflow_config: Dict = None) -> Dict[str, Any]:
+        """
+        Generate complete execution guidance: schema analysis + query template + execution plan
+        This is called during agent creation/editing to pre-build everything needed for fast execution
+        
+        Args:
+            prompt: User prompt describing what the agent should do
+            trigger_type: Workflow trigger type (month_year, date_range, year, etc.)
+            output_format: Desired output format (csv, table, json, text)
+            agent_tools: Available tools
+            workflow_config: Optional workflow configuration
+            
+        Returns:
+            Complete execution guidance dictionary
+        """
+        try:
+            print("\n🚀 Generating execution guidance...")
+            print(f"  Prompt: {prompt[:80]}...")
+            print(f"  Trigger: {trigger_type}")
+            print(f"  Output: {output_format}")
+            
+            # Step 1: Inspect schema based on prompt
+            print("\n📊 Step 1: Inspecting database schema...")
+            schema_info = self._inspect_schema_for_prompt(prompt, agent_tools)
+            
+            if not schema_info:
+                print("⚠️ No schema info available - guidance will be limited")
+                schema_info = "No schema information available. Agent will inspect schema during execution."
+            
+            # Step 2: Build query template
+            print("\n🔨 Step 2: Building parameterized query template...")
+            query_template = self._build_query_template(
+                prompt=prompt,
+                trigger_type=trigger_type,
+                schema_info=schema_info,
+                workflow_config=workflow_config
+            )
+            
+            # Step 3: Create execution plan
+            print("\n📋 Step 3: Creating execution plan...")
+            execution_plan = self._build_execution_plan(
+                trigger_type=trigger_type,
+                output_format=output_format,
+                query_template=query_template
+            )
+            
+            guidance = {
+                "query_template": query_template,
+                "execution_plan": execution_plan,
+                "schema_context": schema_info,
+                "generated_at": datetime.now().isoformat(),
+                "configuration": {
+                    "trigger_type": trigger_type,
+                    "output_format": output_format,
+                    "prompt": prompt
+                }
+            }
+            
+            print("\n✅ Execution guidance generated successfully!")
+            print(f"  Query has {len(query_template.get('parameters', []))} parameters")
+            print(f"  Execution plan has {len(execution_plan)} steps")
+            
+            return guidance
+            
+        except Exception as e:
+            print(f"\n❌ Error generating execution guidance: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Return minimal guidance on error
+            return {
+                "error": str(e),
+                "fallback_mode": True,
+                "message": "Execution guidance generation failed. Agent will use traditional execution."
+            }
+    
     def _generate_system_prompt(self, prompt: str, agent_tools: List, selected_tool_names: List[str]) -> str:
         """
-        Generate comprehensive system prompt with entity-specific guidance
+        Generate comprehensive system prompt with entity-specific guidance and schema inspection
         
         Args:
             prompt: User prompt
@@ -959,15 +1667,125 @@ Provide a comprehensive analysis:"""
         
         has_postgres = any(tool_name in ['postgres_query', 'postgres_inspect_schema'] for tool_name in selected_tool_names)
         
-        system_prompt = f"""You are an AI agent with the following purpose:
+        # 🔍 AUTO-INSPECT SCHEMA if Postgres tools are selected
+        schema_context = ""
+        if has_postgres:
+            schema_context = self._inspect_schema_for_prompt(prompt, agent_tools)
+        
+        # 🎯 Detect agent intent and purpose from the prompt
+        prompt_lower = prompt.lower()
+        
+        # Detect specific agent types
+        is_duplicate_finder = any(keyword in prompt_lower for keyword in ['duplicate', 'duplicates', 'repeated', 'same invoice', 'same vendor'])
+        is_anomaly_detector = any(keyword in prompt_lower for keyword in ['anomaly', 'unusual', 'outlier', 'fraud', 'suspicious', 'abnormal'])
+        is_comparison = any(keyword in prompt_lower for keyword in ['compare', 'comparison', 'difference', 'vs', 'versus', 'gap', 'variance'])
+        is_trend_analysis = any(keyword in prompt_lower for keyword in ['trend', 'pattern', 'growth', 'decline', 'over time', 'historical'])
+        is_report_agent = any(keyword in prompt_lower for keyword in [
+            'invoice', 'report', 'vendor', 'product', 'customer', 'order',
+            'sales', 'payment', 'transaction', 'financial', 'billing',
+            'generate report', 'monthly report', 'yearly report', 'summary report'
+        ])
+        
+        # 🎯🎯🎯 PURPOSE-FIRST SYSTEM PROMPT - User's goal is THE PRIMARY FOCUS
+        system_prompt = f"""🎯 YOUR PRIMARY MISSION:
 {prompt}
 
-You have access to the following tools:
-{tool_descriptions}"""
+📌 CRITICAL SUCCESS CRITERIA:
+Your response MUST directly address the above mission. Every action, every query, every output must serve this exact purpose.
+"""
         
+        # 🎯 Add specialized instructions based on detected agent type
+        if is_duplicate_finder:
+            system_prompt += """\n🔍 DUPLICATE DETECTION REQUIREMENTS:
+Your goal is to find and identify duplicate records. Your output MUST:
+1. **Explicitly name which records are duplicates** (e.g., "Invoice INV-001 and INV-002 are duplicates")
+2. **State WHY they are duplicates** (same vendor + amount? same date + customer? same product?)
+3. **Group duplicates together** (e.g., "Group 1: INV-001, INV-002, INV-003 share vendor 'ABC Corp' and amount $500")
+4. **Count duplicate groups** (e.g., "Found 5 duplicate groups affecting 12 invoices")
+5. **Provide actionable insights** (Which duplicates should be reviewed? Which might be data entry errors?)
+
+❌ DO NOT just list all records - ANALYZE and IDENTIFY the duplicates specifically!
+❌ DO NOT say "here are the results" - SAY "here are the DUPLICATES I found"
+✅ Be specific with invoice numbers, amounts, vendors, dates that make them duplicates
+"""
+        
+        elif is_anomaly_detector:
+            system_prompt += """\n⚠️ ANOMALY DETECTION REQUIREMENTS:
+Your goal is to find unusual or suspicious records. Your output MUST:
+1. **Explicitly identify which records are anomalies** (e.g., "Invoice INV-789 is an outlier")
+2. **Explain WHY each is anomalous** (amount too high/low? unexpected vendor? date mismatch? unusual pattern?)
+3. **Provide context** ("This invoice is $50,000 while typical invoices from this vendor are $500-$2,000")
+4. **Rank by severity** (Which anomalies are most concerning?)
+5. **Suggest actions** ("These 3 invoices should be reviewed for potential fraud")
+
+❌ DO NOT just list records - HIGHLIGHT what makes them unusual!
+✅ Compare against normal patterns and explain deviations
+"""
+        
+        elif is_comparison:
+            system_prompt += """\n📊 COMPARISON ANALYSIS REQUIREMENTS:
+Your goal is to compare and contrast data points. Your output MUST:
+1. **State the differences explicitly** ("Product A costs $50 while Product B costs $75 - a $25 difference")
+2. **Highlight key variances** (Which differences are significant? Which are minor?)
+3. **Provide percentage changes** when relevant ("Vendor X increased prices by 15%")
+4. **Show trends** (Is the gap widening or narrowing?)
+5. **Make comparisons actionable** (What does this difference mean for the business?)
+
+❌ DO NOT just show two lists side by side
+✅ ANALYZE the differences and explain their significance
+"""
+        
+        elif is_trend_analysis:
+            system_prompt += """\n📈 TREND ANALYSIS REQUIREMENTS:
+Your goal is to identify patterns over time. Your output MUST:
+1. **Describe the trend direction** ("Invoices have been increasing by 10% month-over-month")
+2. **Identify key inflection points** (When did the trend change? What triggered it?)
+3. **Quantify the pattern** (Use specific numbers, percentages, rates)
+4. **Predict implications** (If this trend continues, what happens?)
+5. **Highlight anomalies in the trend** (Which months/periods were unusual?)
+
+❌ DO NOT just show historical data
+✅ INTERPRET the pattern and explain what it means
+"""
+        
+        elif is_report_agent:
+            system_prompt += """\n📋 REPORTING REQUIREMENTS:
+Your goal is to generate a comprehensive, well-organized report. Your output MUST:
+1. **Start with an executive summary** (What are the key takeaways?)
+2. **Present data in logical sections** (Group related information together)
+3. **Include totals and aggregations** when relevant (Total amount, count, averages)
+4. **Highlight important findings** (What stands out? What needs attention?)
+5. **Be complete and thorough** (Include all relevant data points)
+
+✅ Structure your report to be immediately useful for decision-making
+"""
+        
+        else:
+            # Generic analytical agent
+            system_prompt += """\n💡 ANALYSIS REQUIREMENTS:
+Your output MUST:
+1. **Be specific and actionable** (Not just "here are the results")
+2. **Include insights and interpretation** (What does this data mean?)
+3. **Reference actual data points** (Mention specific values, names, dates)
+4. **Address the user's question directly** (Don't go off-topic)
+5. **Provide context where helpful** (Comparisons, benchmarks, patterns)
+"""
+        
+        # Add tool descriptions
+        system_prompt += f"""\n\n🛠️ AVAILABLE TOOLS:
+{tool_descriptions}
+"""
+        
+        # Add schema context if available (before technical guide)
+        if has_postgres and schema_context:
+            system_prompt += f"""\n\n📊 DATABASE SCHEMA PREVIEW:
+{schema_context}
+"""
+        
+        # Add PostgreSQL-specific technical rules ONLY if postgres tools are available
         if has_postgres:
-            # Base PostgreSQL instructions with strict schema adherence - 100% DYNAMIC
-            system_prompt += """\n\n🔴 CRITICAL POSTGRES RULES:
+            # Condensed PostgreSQL technical appendix
+            system_prompt += """\n\n📚 POSTGRESQL TECHNICAL GUIDE (Supporting Reference):
 
 1. **ALWAYS INSPECT ALL TABLES** - Call postgres_inspect_schema() for EVERY table in your query
 2. **VALIDATE BEFORE JOINING** - Inspect schema for ALL tables you plan to JOIN
@@ -1325,6 +2143,43 @@ Trigger Type Patterns:
 
 Remember: For CSV output, just confirm the query executed - don't format anything!"""
         
+        elif has_postgres and not is_report_agent:
+            # 🎯 FLEXIBLE MODE: Simpler PostgreSQL instructions for non-report agents
+            system_prompt += """\n\n🔍 POSTGRESQL USAGE GUIDELINES:
+
+**Schema Inspection (ALWAYS REQUIRED):**
+1. **Before writing ANY query**, call `postgres_inspect_schema('')` to see all available tables
+2. **For each table you plan to use**, call `postgres_inspect_schema('table_name')` to see:
+   - Actual column names and types
+   - Which columns are JSONB (require `->>'value'` operator)
+   - Sample data
+   - Foreign key relationships
+3. **Never assume or guess column names** - always inspect first
+
+**JSONB Columns:**
+- Many columns are JSONB format
+- Extract values using: `column_name->>'value'`
+- Example: `invoice_date->>'value'`, `total->>'value'`
+
+**Query Construction:**
+- Use **only actual column names** from inspected schemas
+- Use `LEFT JOIN` for related tables (not INNER JOIN)
+- Check `foreign_keys` in schema to find correct JOIN columns
+- For JSONB dates, use `TO_DATE(column->>'value', 'MM/DD/YYYY')` for proper filtering
+
+**Output Format Rules:**
+- When `output_format` is **"csv"**: Just confirm success ("Query executed successfully. Results contain X rows.") - the system auto-generates CSV
+- When `output_format` is **"table"**: Return simple confirmation - the system auto-formats the table
+- When `output_format` is **"json"**: Return data in JSON format
+- When `output_format` is **"text"**: You can format the response as you see fit (markdown, natural language, etc.)
+
+**Critical Rules:**
+- ❌ Never expose ID columns (invoice_id, vendor_id, etc.) in SELECT
+- ✅ Always inspect schema before querying
+- ✅ Use `->>'value'` for JSONB columns
+- ✅ Respect the `output_format` setting
+"""
+        
         system_prompt += """\n\nUse these tools to help users accomplish their tasks. Always be helpful and provide clear explanations of your actions."""
           
         return system_prompt
@@ -1398,6 +2253,30 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
             handle_parsing_errors=True
         )
         
+        # 🎯 GENERATE EXECUTION GUIDANCE (if postgres tools selected)
+        execution_guidance = None
+        has_postgres = selected_tools is not None and any(tool in selected_tools for tool in ['postgres_query', 'postgres_inspect_schema'])
+        
+        if has_postgres:
+            print("\n🚀 Generating execution guidance for fast execution...")
+            try:
+                execution_guidance = self._generate_execution_guidance(
+                    prompt=prompt,
+                    trigger_type=workflow_config.get('trigger_type', 'text_query'),
+                    output_format=workflow_config.get('output_format', 'text'),
+                    agent_tools=agent_tools,
+                    workflow_config=workflow_config
+                )
+                
+                if execution_guidance and not execution_guidance.get('error'):
+                    print("✅ Execution guidance generated! Agent will use fast execution path.")
+                else:
+                    print("⚠️ Execution guidance had errors - agent will use traditional path")
+                    execution_guidance = None
+            except Exception as e:
+                print(f"⚠️ Could not generate execution guidance: {e}")
+                execution_guidance = None
+        
         # Save agent metadata including selected tools and workflow config
         agent_data = {
             "id": agent_id,
@@ -1408,6 +2287,11 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
             "workflow_config": workflow_config,  # Store workflow configuration
             "created_at": datetime.now().isoformat(),
         }
+        
+        # Add execution guidance if generated
+        if execution_guidance:
+            agent_data["execution_guidance"] = execution_guidance
+            print("✅ Execution guidance added to agent data")
         
         self.storage.save_agent(agent_data)
         
@@ -1438,7 +2322,20 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
         output_format = workflow_config.get("output_format", "text")
         
         # ============================================================
-        # PRIORITY 1: TRY CACHED QUERY FIRST (Fast Path)
+        # PRIORITY 0: TRY EXECUTION GUIDANCE FIRST (NEW FAST PATH) ⚡
+        # ============================================================
+        # This is the NEW pre-built execution guidance system
+        if agent_data.get("execution_guidance"):
+            print("\n⚡⚡⚡ ULTRA-FAST PATH: Using pre-built execution guidance")
+            guidance_result = self._execute_with_guidance(agent_data, user_query, tool_configs)
+            if guidance_result and guidance_result.get("success"):
+                print("✅ Execution guidance succeeded - returning result")
+                return guidance_result
+            else:
+                print("⚠️ Execution guidance failed - falling back to legacy paths")
+        
+        # ============================================================
+        # PRIORITY 1: TRY CACHED QUERY FIRST (Old Fast Path)
         # ============================================================
         # If a cached query template exists, use it immediately.
         # Only fall back to schema inspection if cache fails.
@@ -1525,7 +2422,12 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
             # If selected_tools is None/empty, agent_tools becomes []
             agent_tools = [t for t in self.tools if t.name in selected_tool_names] if selected_tool_names else []
             
-            system_prompt = agent_data.get("system_prompt", agent_data.get("prompt", ""))
+            # 🎯 CRITICAL: REGENERATE system prompt based on agent's purpose (don't use stale stored version)
+            # This ensures the latest purpose-driven prompt logic is always applied
+            agent_purpose = agent_data.get("prompt", "")
+            system_prompt = self._generate_system_prompt(agent_purpose, agent_tools, selected_tool_names)
+            print(f"\n🎯 Regenerated purpose-driven system prompt for agent execution")
+            print(f"📋 Agent purpose: {agent_purpose[:100]}...")
             
             # -----------------------------------------------------------
             # ✅ BRANCH 1: Agent HAS tools (Standard Agent Execution)
@@ -1705,6 +2607,62 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
             "selected_tools": selected_tool_names,
             "workflow_config": workflow_config
         }
+        
+        # 🔄 REGENERATE EXECUTION GUIDANCE if critical config changed
+        existing_config = existing_agent.get('workflow_config', {})
+        existing_prompt = existing_agent.get('prompt', '')
+        
+        prompt_changed = prompt != existing_prompt
+        trigger_changed = workflow_config.get('trigger_type') != existing_config.get('trigger_type')
+        format_changed = workflow_config.get('output_format') != existing_config.get('output_format')
+        
+        has_postgres = selected_tool_names and any(tool in selected_tool_names for tool in ['postgres_query', 'postgres_inspect_schema'])
+        
+        if (prompt_changed or trigger_changed or format_changed) and has_postgres:
+            print(f"\n🔄 Configuration changed - regenerating execution guidance...")
+            print(f"  Prompt changed: {prompt_changed}")
+            print(f"  Trigger changed: {trigger_changed} ({existing_config.get('trigger_type')} → {workflow_config.get('trigger_type')})")
+            print(f"  Format changed: {format_changed} ({existing_config.get('output_format')} → {workflow_config.get('output_format')})")
+            
+            try:
+                execution_guidance = self._generate_execution_guidance(
+                    prompt=prompt,
+                    trigger_type=workflow_config.get('trigger_type', 'text_query'),
+                    output_format=workflow_config.get('output_format', 'text'),
+                    agent_tools=agent_tools,
+                    workflow_config=workflow_config
+                )
+                
+                if execution_guidance and not execution_guidance.get('error'):
+                    updated_data['execution_guidance'] = execution_guidance
+                    print("✅ Execution guidance regenerated successfully!")
+                else:
+                    print("⚠️ Execution guidance had errors - removing from agent")
+                    updated_data['execution_guidance'] = None
+            except Exception as e:
+                print(f"⚠️ Could not regenerate execution guidance: {e}")
+                updated_data['execution_guidance'] = None
+        elif has_postgres and 'execution_guidance' in existing_agent:
+            # Config didn't change - preserve existing guidance
+            print("ℹ️ No critical configuration changes - keeping existing execution guidance")
+            # Don't include execution_guidance in updated_data - it will be preserved automatically
+        elif has_postgres:
+            # Postgres tools but no existing guidance - try to generate
+            print("\n🆕 No existing execution guidance - generating for first time...")
+            try:
+                execution_guidance = self._generate_execution_guidance(
+                    prompt=prompt,
+                    trigger_type=workflow_config.get('trigger_type', 'text_query'),
+                    output_format=workflow_config.get('output_format', 'text'),
+                    agent_tools=agent_tools,
+                    workflow_config=workflow_config
+                )
+                
+                if execution_guidance and not execution_guidance.get('error'):
+                    updated_data['execution_guidance'] = execution_guidance
+                    print("✅ Execution guidance generated for the first time!")
+            except Exception as e:
+                print(f"⚠️ Could not generate execution guidance: {e}")
         
         # 🗑️ CLEAR cached query when agent is edited (force re-analysis)
         # Explicitly set to None to ensure deletion
@@ -1912,6 +2870,90 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
         
         return params if params else None
     
+    def _generate_cached_query_output(self, agent_prompt: str, output_format: str, row_count: int, rows: List[Dict], columns: List[str]) -> str:
+        """
+        Generate purpose-driven output message for cached query execution using AI
+        
+        Args:
+            agent_prompt: The agent's original purpose/prompt
+            output_format: Output format (csv, table, json, text)
+            row_count: Number of rows returned
+            rows: Query result rows
+            columns: Column names
+            
+        Returns:
+            Purpose-driven output message
+        """
+        try:
+            # ✅ ALWAYS generate purpose-aware summary regardless of output format
+            if row_count == 0:
+                return "No matching records found for your query."
+            
+            # Build context-aware prompt for AI with ALL data analysis
+            sample_rows = rows[:10] if len(rows) > 10 else rows  # Increased from 5 to 10 for better analysis
+            sample_data = "\n".join([
+                " | ".join([f"{col}: {row.get(col, 'N/A')}" for col in columns])
+                for row in sample_rows
+            ])
+            
+            # 🎯 Detect agent intent for specialized analysis
+            prompt_lower = agent_prompt.lower()
+            is_duplicate_finder = any(keyword in prompt_lower for keyword in ['duplicate', 'duplicates', 'repeated', 'same'])
+            is_anomaly_detector = any(keyword in prompt_lower for keyword in ['anomaly', 'unusual', 'outlier', 'fraud', 'suspicious'])
+            is_comparison = any(keyword in prompt_lower for keyword in ['compare', 'difference', 'vs', 'versus', 'gap'])
+            
+            # Build specialized instructions based on agent purpose
+            specialized_instructions = ""
+            if is_duplicate_finder:
+                specialized_instructions = """\n\n🔍 CRITICAL - This is a DUPLICATE FINDER agent:
+- Explicitly identify WHICH records are duplicates (mention invoice numbers, IDs, or identifying fields)
+- State WHAT makes them duplicates (same vendor? same amount? same date?)
+- Count how many duplicate groups were found
+- Example: "Found 3 duplicate invoice groups: INV-001 and INV-002 share vendor 'ABC Corp' and amount $500; INV-003 and INV-004 both charged $1,200 on 01/15/2024."""
+            elif is_anomaly_detector:
+                specialized_instructions = """\n\n⚠️ CRITICAL - This is an ANOMALY DETECTOR agent:
+- Explicitly identify WHICH records are anomalies/outliers
+- State WHY they are unusual (amount too high/low? date mismatch? vendor pattern?)
+- Mention specific values that triggered the anomaly detection"""
+            elif is_comparison:
+                specialized_instructions = """\n\n📊 CRITICAL - This is a COMPARISON agent:
+- Explicitly state the differences found
+- Mention specific values being compared
+- Highlight the variance or gap"""
+            else:
+                specialized_instructions = """\n\n📋 Provide insights based on the agent's purpose:
+- Mention key patterns or findings
+- Reference specific data points when relevant
+- Be analytical, not just descriptive"""
+            
+            ai_prompt = f"""You are an AI assistant helping with this task:
+"{agent_prompt}"
+
+A database query was executed and returned {row_count} record(s) with the following columns:
+{', '.join(columns)}
+
+Sample data (first {len(sample_rows)} rows):
+{sample_data}
+{specialized_instructions}
+
+Provide a comprehensive, analytical summary (3-5 sentences) that directly addresses the agent's purpose.
+Be SPECIFIC with data points - mention actual values, IDs, names, amounts, dates from the results.
+
+Do NOT just say "results contain X records" - ANALYZE what those records mean in context of the task.
+Do NOT format as markdown, just plain text."""
+            
+            from langchain_core.messages import HumanMessage
+            response = self.llm.invoke([HumanMessage(content=ai_prompt)])
+            output = response.content.strip()
+            
+            print(f"\n🤖 Generated purpose-driven output for cached query: {output[:100]}...")
+            return output
+            
+        except Exception as e:
+            print(f"⚠️ Error generating cached query output: {e}")
+            # Fallback to simple message
+            return f"Query executed successfully. Results contain {row_count} records."
+    
     def _execute_cached_query(self, agent_id: str, query: str, tool_configs: Dict[str, Dict[str, str]] = None) -> Dict[str, Any]:
         """
         Execute a cached PostgreSQL query directly
@@ -1955,14 +2997,24 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
                     result = {"success": False, "error": result_str}
                 
                 if result.get("success"):
-                    # Get agent data to determine output format
+                    # Get agent data to determine output format and agent purpose
                     agent_data = self.storage.get_agent(agent_id)
                     workflow_config = agent_data.get("workflow_config", {})
                     output_format = workflow_config.get("output_format", "text")
+                    agent_prompt = agent_data.get("prompt", "")
                     
-                    # Format simple output message
                     row_count = result.get("row_count", 0)
-                    output = f"Query executed successfully. Results contain {row_count} records."
+                    rows = result.get("rows", [])
+                    columns = result.get("columns", [])
+                    
+                    # 🎯 Generate purpose-driven output message using AI
+                    output = self._generate_cached_query_output(
+                        agent_prompt=agent_prompt,
+                        output_format=output_format,
+                        row_count=row_count,
+                        rows=rows,
+                        columns=columns
+                    )
                     
                     # ✅ FIX: Create intermediate steps in DICTIONARY format (not tuple)
                     # Must match the format from _format_output() to pass Pydantic validation

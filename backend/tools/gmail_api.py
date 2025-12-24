@@ -1,31 +1,64 @@
 from typing import Dict, Any
 import os
-import requests
+import base64
+from email.mime.text import MIMEText
 from .base_tool import BaseTool
+
+try:
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    GOOGLE_LIBS_AVAILABLE = True
+except ImportError:
+    GOOGLE_LIBS_AVAILABLE = False
 
 
 class GmailApiConnector(BaseTool):
-    """Tool for enabling the agent to send emails through Gmail, allowing for the creation and sending of email messages programmatically."""
+    """Tool for enabling the agent to send emails through Gmail using OAuth 2.0, allowing for the creation and sending of email messages programmatically."""
     
     @classmethod
     def get_config_schema(cls):
         return [
             {
-                "name": "api_key",
-                "label": "Gmail API Key",
+                "name": "access_token",
+                "label": "Gmail OAuth Access Token",
                 "type": "password",
                 "required": True,
-                "env_var": "GMAIL_API_API_KEY"
+                "env_var": "GMAIL_ACCESS_TOKEN",
+                "description": "OAuth 2.0 access token from Google. Get it from: https://developers.google.com/oauthplayground"
+            },
+            {
+                "name": "refresh_token",
+                "label": "Gmail OAuth Refresh Token (Optional)",
+                "type": "password",
+                "required": False,
+                "env_var": "GMAIL_REFRESH_TOKEN",
+                "description": "Optional refresh token for automatic token renewal"
             }
         ]
     
     def __init__(self):
         super().__init__(
             name="gmail_api",
-            description="This tool enables the agent to send emails through Gmail, allowing for the creation and sending of email messages programmatically."
+            description="This tool enables the agent to send emails through Gmail using OAuth 2.0, allowing for the creation and sending of email messages programmatically."
         )
-        self.api_key = os.getenv("GMAIL_API_API_KEY")
-        self.api_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+        self.access_token = os.getenv("GMAIL_ACCESS_TOKEN")
+        self.refresh_token = os.getenv("GMAIL_REFRESH_TOKEN")
+        self.service = None
+        
+        if not GOOGLE_LIBS_AVAILABLE:
+            self.service = None
+        elif self.access_token:
+            try:
+                # Create credentials from access token
+                credentials = Credentials(token=self.access_token)
+                if self.refresh_token:
+                    credentials.refresh_token = self.refresh_token
+                
+                self.service = build('gmail', 'v1', credentials=credentials)
+            except Exception as e:
+                print(f"⚠️ Gmail API initialization error: {e}")
+                self.service = None
     
     def execute(self, **kwargs) -> Dict[str, Any]:
         """
@@ -37,11 +70,18 @@ class GmailApiConnector(BaseTool):
         Returns:
             Dictionary with results
         """
-        if not self.api_key:
+        if not GOOGLE_LIBS_AVAILABLE:
             return {
                 "success": False,
-                "error": "Gmail API key not configured",
-                "suggestion": "Set GMAIL_API_API_KEY environment variable"
+                "error": "Google API libraries not installed",
+                "suggestion": "Install required packages: pip install google-auth google-auth-oauthlib google-api-python-client"
+            }
+        
+        if not self.service:
+            return {
+                "success": False,
+                "error": "Gmail OAuth credentials not configured",
+                "suggestion": "Set GMAIL_ACCESS_TOKEN environment variable. Get OAuth token from: https://developers.google.com/oauthplayground (use scope: https://www.googleapis.com/auth/gmail.send)"
             }
         
         to = kwargs.get('to')
@@ -55,24 +95,26 @@ class GmailApiConnector(BaseTool):
             }
         
         try:
-            message = {
-                'raw': self._create_message(to, subject, body)
-            }
-            headers = {
-                'Authorization': f'Bearer {self.api_key}',
-                'Content-Type': 'application/json'
-            }
-            response = requests.post(self.api_url, headers=headers, json=message)
-            response.raise_for_status()
+            message = self._create_message(to, subject, body)
+            send_message = {'raw': message}
+            
+            result = self.service.users().messages().send(
+                userId='me',
+                body=send_message
+            ).execute()
+            
             return {
                 "success": True,
-                "data": response.json()
+                "message_id": result.get('id'),
+                "thread_id": result.get('threadId'),
+                "data": result
             }
-        except requests.exceptions.HTTPError as http_err:
+        except HttpError as error:
             return {
                 "success": False,
-                "error": str(http_err),
-                "error_type": "HTTPError"
+                "error": f"Gmail API error: {error}",
+                "error_type": "HttpError",
+                "suggestion": "Check if access token is valid and has gmail.send scope"
             }
         except Exception as e:
             return {
@@ -93,9 +135,6 @@ class GmailApiConnector(BaseTool):
         Returns:
             str: Base64url encoded email message.
         """
-        import base64
-        from email.mime.text import MIMEText
-        
         message = MIMEText(body)
         message['to'] = to
         message['subject'] = subject

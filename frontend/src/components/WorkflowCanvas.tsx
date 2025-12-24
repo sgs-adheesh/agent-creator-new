@@ -672,11 +672,24 @@ export default function WorkflowCanvas({ agentId }: WorkflowCanvasProps) {
                           <tbody className="bg-white divide-y divide-green-100">
                             {(result as any).table_data.rows.map((row: Record<string, any>, idx: number) => (
                               <tr key={idx} className="hover:bg-green-50">
-                                {(result as any).table_data.columns.map((col: string, colIdx: number) => (
-                                  <td key={colIdx} className="px-3 py-2 text-green-800 whitespace-nowrap">
-                                    {row[col] ?? '-'}
-                                  </td>
-                                ))}
+                                {(result as any).table_data.columns.map((col: string, colIdx: number) => {
+                                  // Handle JSONB objects by extracting 'value' property
+                                  const cellValue = row[col];
+                                  const displayValue = 
+                                    cellValue === null || cellValue === undefined 
+                                      ? '-' 
+                                      : typeof cellValue === 'object' && cellValue.value !== undefined
+                                        ? cellValue.value  // Extract 'value' from JSONB object
+                                        : typeof cellValue === 'object'
+                                          ? JSON.stringify(cellValue)  // Fallback: stringify complex objects
+                                          : String(cellValue);  // Convert primitives to string
+                                  
+                                  return (
+                                    <td key={colIdx} className="px-3 py-2 text-green-800 whitespace-nowrap">
+                                      {displayValue}
+                                    </td>
+                                  );
+                                })}
                               </tr>
                             ))}
                           </tbody>

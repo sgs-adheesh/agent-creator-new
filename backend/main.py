@@ -8,9 +8,23 @@ from services import AgentService
 from services.workflow_generator import WorkflowGenerator
 from services.tool_analyzer import ToolAnalyzer
 from services.tool_generator import ToolGenerator
-from services.semantic_service import SemanticService 
+from services.semantic_service import SemanticService
+from tools.postgres_connector import PostgresConnector
 
 app = FastAPI(title="Agent Generator API", version="1.0.0")
+
+# Initialize PostgreSQL schema cache on startup
+# NOTE: Cache is ALWAYS refreshed from database on every application restart
+# to ensure the latest schema changes are captured (force_refresh=True by default)
+print("\n🚀 Starting application...")
+print("📊 Initializing PostgreSQL schema cache...")
+try:
+    # force_refresh=True: Always rebuild cache from database on app restart
+    # force_refresh=False: Try to load from cache file if available (faster but may be stale)
+    PostgresConnector.initialize_cache(force_refresh=True)
+    print("✅ PostgreSQL schema cache initialized successfully\n")
+except Exception as e:
+    print(f"⚠️ Warning: Failed to initialize PostgreSQL cache: {e}\n")
 
 # Enable CORS
 app.add_middleware(

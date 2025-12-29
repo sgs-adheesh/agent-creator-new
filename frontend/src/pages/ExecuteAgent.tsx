@@ -36,9 +36,17 @@ export default function ExecuteAgent() {
         </div>
       </div>
 
-      {/* Workflow Canvas - Full Screen */}
-      <div className="flex-1 overflow-hidden">
-        <WorkflowCanvas agentId={id} />
+      {/* Split View: 50% Workflow + 50% Playground & Results */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Half: Workflow Visualization */}
+        <div className="w-1/2 border-r border-gray-200">
+          <WorkflowCanvas agentId={id} viewMode="workflow-only" />
+        </div>
+        
+        {/* Right Half: Playground & Results */}
+        <div className="w-1/2">
+          <WorkflowCanvas agentId={id} viewMode="playground-only" />
+        </div>
       </div>
     </div>
   );

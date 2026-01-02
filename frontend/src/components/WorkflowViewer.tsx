@@ -101,7 +101,7 @@ export default function WorkflowViewer({ agentId, useAi = true }: WorkflowViewer
         onInit={onInit}
         nodeTypes={nodeTypes}
         fitView
-        attributionPosition="bottom-right"
+        proOptions={{ hideAttribution: true }}
       >
         <Background />
         <Controls />

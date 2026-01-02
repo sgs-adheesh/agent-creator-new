@@ -18,7 +18,7 @@ export default function CreateAgent() {
   
   // Workflow configuration state
   const [triggerType, setTriggerType] = useState<string>('text_query');
-  const [outputFormat, setOutputFormat] = useState<string>('text');
+  const [outputFormat] = useState<string>('table');
   const [inputFields, setInputFields] = useState<WorkflowConfig['input_fields']>([]);
   
   const navigate = useNavigate();
@@ -362,55 +362,6 @@ export default function CreateAgent() {
                   )}
                 </div>
               )}
-
-              {/* Output Format Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Output Format *
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="text"
-                      checked={outputFormat === 'text'}
-                      onChange={(e) => setOutputFormat(e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Text/Markdown (formatted text response)</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="csv"
-                      checked={outputFormat === 'csv'}
-                      onChange={(e) => setOutputFormat(e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">CSV Download (downloadable spreadsheet)</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="json"
-                      checked={outputFormat === 'json'}
-                      onChange={(e) => setOutputFormat(e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">JSON (structured data)</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="table"
-                      checked={outputFormat === 'table'}
-                      onChange={(e) => setOutputFormat(e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Table/Grid (interactive data table)</span>
-                  </label>
-                </div>
-              </div>
             </div>
 
             {error && (

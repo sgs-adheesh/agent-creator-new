@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -61,11 +62,31 @@ function extractCategoricalFields(data: Record<string, unknown>[]): string[] {
 function analyzeData(rawData: unknown) {
   // Handle different data formats
   let dataArray: Record<string, unknown>[] = [];
+  const additionalFields: Record<string, unknown> = {};
   
   if (Array.isArray(rawData)) {
     dataArray = rawData as Record<string, unknown>[];
   } else if (typeof rawData === 'object' && rawData !== null) {
     const typedData = rawData as Record<string, unknown>;
+    
+    // Extract markdown/insight fields (only ai_summary)
+    const insightFields = ['ai_summary'];
+    insightFields.forEach(field => {
+      if (typedData[field]) {
+        additionalFields[field] = typedData[field];
+      }
+    });
+    
+    // Also check inside 'summary' object if it exists
+    if (typedData.summary && typeof typedData.summary === 'object') {
+      const summaryObj = typedData.summary as Record<string, unknown>;
+      insightFields.forEach(field => {
+        if (summaryObj[field]) {
+          additionalFields[field] = summaryObj[field];
+        }
+      });
+    }
+    
     if (typedData.table_data && typeof typedData.table_data === 'object') {
       const tableData = typedData.table_data as Record<string, unknown>;
       if (Array.isArray(tableData.rows)) {
@@ -90,7 +111,8 @@ function analyzeData(rawData: unknown) {
     dataArray,
     numericFields,
     categoricalFields,
-    rowCount: dataArray.length
+    rowCount: dataArray.length,
+    additionalFields
   };
 }
 
@@ -173,7 +195,7 @@ export function DataVisualization({ data, title }: DataVisualizationProps) {
     );
   }
   
-  const { dataArray, numericFields, categoricalFields, rowCount } = analysis;
+  const { dataArray, numericFields, categoricalFields, rowCount, additionalFields } = analysis;
   
   return (
     <div className="space-y-6">
@@ -183,21 +205,44 @@ export function DataVisualization({ data, title }: DataVisualizationProps) {
       
       {/* Pie Chart */}
       {pieData && pieData.length > 0 && (
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
           <h4 className="text-sm font-medium text-gray-700 mb-3">
             Distribution - {categoricalFields[0]} by {numericFields[0]}
           </h4>
-          <ResponsiveContainer width="80%" height={400}>
-            <PieChart>
+          <ResponsiveContainer width="100%" height={550}>
+            <PieChart margin={{ top: 20, right: 100, bottom: 20, left: 100 }}>
               <Pie
                 data={pieData}
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={100}
+                outerRadius={120}
                 fill="#8884d8"
-                label={({ name, percent }) => `${name || 'Unknown'}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+                label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
+                  if ((percent ?? 0) < 0.01 || midAngle === undefined) return null;
+                  const RADIAN = Math.PI / 180;
+                  const radius = outerRadius + 45;
+                  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                  return (
+                    <text 
+                      x={x} 
+                      y={y} 
+                      fill="#333" 
+                      textAnchor={'middle'} 
+                      dominantBaseline="auto"
+                      fontSize="11"
+                      fontWeight="500"
+                    >
+                      {`${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    </text>
+                  );
+                }}
+                labelLine={{
+                  stroke: '#666',
+                  strokeWidth: 1
+                }}
               >
                 {pieData.map((_entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -216,13 +261,23 @@ export function DataVisualization({ data, title }: DataVisualizationProps) {
           <h4 className="text-sm font-medium text-gray-700 mb-3">
             Comparison Chart - Top {Math.min(10, rowCount)} Records
           </h4>
-          <ResponsiveContainer width="80%" height={400}>
-            <BarChart data={barData}>
+          <ResponsiveContainer width="100%" height={550}>
+            <BarChart data={barData} margin={{ top: 20, right: 30, bottom: 100, left: 60 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-              <YAxis />
+              <XAxis 
+                dataKey="name" 
+                angle={-35} 
+                textAnchor="end" 
+                height={90}
+                interval={0}
+                tick={{ fontSize: 10 }}
+              />
+              <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
-              <Legend />
+              <Legend 
+                wrapperStyle={{ paddingTop: '10px' }}
+                iconType="square"
+              />
               {numericFields.map((field, idx) => (
                 <Bar key={field} dataKey={field} fill={COLORS[idx % COLORS.length]} />
               ))}
@@ -278,6 +333,36 @@ export function DataVisualization({ data, title }: DataVisualizationProps) {
           </table>
         </div>
       </div>
+
+      {/* AI Generated Summary */}
+      {additionalFields && Object.keys(additionalFields).length > 0 && (
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3">AI Generated Summary</h4>
+          <div className="space-y-4">
+            {Object.entries(additionalFields).map(([key, value]) => {
+              if (!value) return null;
+              
+              // Handle nested objects or arrays
+              let content = '';
+              if (typeof value === 'object') {
+                try {
+                  content = JSON.stringify(value, null, 2);
+                } catch {
+                  content = String(value);
+                }
+              } else {
+                content = String(value);
+              }
+              
+              return (
+                <div key={key} className="prose prose-sm max-w-none text-gray-700">
+                  <ReactMarkdown>{content}</ReactMarkdown>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

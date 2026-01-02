@@ -604,6 +604,53 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
                 "implicit_referenced_by": []
             }
     
+    def _validate_jsonb_query(self, query: str) -> tuple[bool, str]:
+        """
+        Validate that JSONB columns use correct ->>'value' extraction syntax.
+        
+        Args:
+            query: SQL query string
+            
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        import re
+        
+        # Extract tables from query
+        tables = self._extract_tables_from_query(query)
+        
+        for table in tables:
+            actual_table = self._resolve_table_name(table)
+            
+            # Get JSONB columns for this table from cache
+            if actual_table in self.__class__._SCHEMA_CACHE:
+                columns_info = self.__class__._SCHEMA_CACHE[actual_table]
+                jsonb_cols = [col['name'] for col in columns_info if col['type'] == 'jsonb']
+                
+                # Check each JSONB column
+                for col in jsonb_cols:
+                    # Look for bare column usage (without ->>'value')
+                    # Pattern: column name used without JSONB extraction
+                    patterns = [
+                        # WHERE clause: column_name LIKE (missing extraction)
+                        rf"\b{col}\s*::\s*text\s+LIKE",
+                        rf"\b{col}\s+LIKE",
+                        # SELECT clause: column_name without extraction in math
+                        rf"\(\s*{col}\s*->>\s*'(?!value)[^']+'",  # Using wrong key like 'amount', 'total'
+                    ]
+                    
+                    for pattern in patterns:
+                        if re.search(pattern, query, re.IGNORECASE):
+                            return (False, 
+                                f"❌ JSONB column '{col}' MUST use ->>'value' extraction.\n"
+                                f"Found incorrect usage in query.\n\n"
+                                f"✅ CORRECT: ({col}->>'value')::text\n"
+                                f"❌ WRONG: {col}::text or {col} or ({col}->>'amount')\n\n"
+                                f"JSONB structure: {{\"value\": \"data\", \"confidence\": 0.95}}\n"
+                                f"ALWAYS extract 'value' property, NEVER 'amount' or 'total'.")
+        
+        return (True, "")
+    
     def _enhance_query_for_jsonb_dates(self, query: str) -> str:
         """
         Enhance query to properly handle JSONB date columns by providing better error guidance
@@ -1046,6 +1093,15 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
         # Enhance query for JSONB date handling
         enhanced_query = self._enhance_query_for_jsonb_dates(resolved_query)
         print(f"🔍 DEBUG: enhanced query: '{enhanced_query}'")
+        
+        # Validate JSONB column usage
+        is_valid, validation_error = self._validate_jsonb_query(enhanced_query)
+        if not is_valid:
+            return {
+                "success": False,
+                "error": validation_error,
+                "error_type": "jsonb_validation_error"
+            }
         
         try:
             # Validate query is read-only

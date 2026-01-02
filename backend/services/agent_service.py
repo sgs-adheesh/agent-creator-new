@@ -704,96 +704,51 @@ class AgentService:
                         # Create comprehensive human-readable markdown summary
                         full_summary_parts = [
                             f"# 📊 Query Results Summary\n",
-                            f"**Total Records:** {len(rows)}  ",
-                            f"**Columns ({len(columns)}):** {', '.join(f'`{c}`' for c in columns)}\n",
+                            f"**{len(rows)}** records found with **{len(columns)}** columns\n",
                         ]
                         
                         # Add invoice breakdown section if available
                         if invoice_breakdown:
-                            full_summary_parts.append("## 📎 Invoice Breakdown\n")
-                            full_summary_parts.append(f"*Analysis of {len(invoice_breakdown)} unique invoice(s)*\n")
+                            full_summary_parts.append("## 📎 Invoices\n")
                             
                             for inv_num, data in sorted(invoice_breakdown.items(), key=lambda x: x[1].get('date', ''), reverse=True):
-                                full_summary_parts.append(f"### Invoice: {inv_num}")
-                                if data.get('vendor'):
-                                    full_summary_parts.append(f"- **Vendor:** {data['vendor']}")
-                                if data.get('date'):
-                                    full_summary_parts.append(f"- **Date:** {data['date']}")
+                                full_summary_parts.append(f"**{inv_num}** - {data.get('vendor', 'Unknown')} ({data.get('date', 'No date')})")
+                                full_summary_parts.append(f"  └ {data['line_items']} items, {data.get('total_quantity', 0):,.0f} units")
                                 if data.get('total'):
-                                    full_summary_parts.append(f"- **Invoice Total:** ${data['total']:,.2f}")
-                                full_summary_parts.append(f"- **Line Items:** {data['line_items']} items")
-                                if data.get('total_quantity'):
-                                    full_summary_parts.append(f"- **Total Quantity:** {data['total_quantity']:,.0f} units")
-                                if data.get('line_items_total'):
-                                    full_summary_parts.append(f"- **Calculated Line Total:** ${data['line_items_total']:,.2f}")
-                                full_summary_parts.append("")  # Empty line between invoices
+                                    full_summary_parts.append(f"  └ Total: ${data['total']:,.2f}")
+                                full_summary_parts.append("")
                         
                         if numeric_summary:
-                            full_summary_parts.append("## 💰 Financial/Numeric Analysis\n")
+                            full_summary_parts.append("## 💰 Numbers\n")
                             for col, data in numeric_summary.items():
-                                full_summary_parts.append(f"### {col}")
-                                if data.get('is_header_field'):
-                                    # Header field (duplicated across line items)
-                                    full_summary_parts.append(f"*Note: This is a header-level field, repeated across {data['total_entries']} line items*\n")
-                                    full_summary_parts.append(f"- **Unique Invoice Totals:** {data['unique_count']}")
-                                    full_summary_parts.append(f"- **Values:** {', '.join([f'${v:,.2f}' for v in data['unique_values']])}")
-                                    full_summary_parts.append(f"- **Range:** ${data['min']:,.2f} - ${data['max']:,.2f}\n")
-                                elif data.get('is_quantity'):
-                                    # Quantity field (no dollar signs)
-                                    full_summary_parts.append(f"- **Total:** {data['sum']:,.0f} units")
-                                    full_summary_parts.append(f"- **Average:** {data['average']:,.1f} units")
-                                    full_summary_parts.append(f"- **Min:** {data['min']:,.0f}")
-                                    full_summary_parts.append(f"- **Max:** {data['max']:,.0f}")
-                                    full_summary_parts.append(f"- **Count:** {data['count']} values\n")
+                                if data.get('is_quantity'):
+                                    full_summary_parts.append(f"**{col}:** {data['sum']:,.0f} total, {data['average']:,.1f} avg ({data['min']:,.0f} - {data['max']:,.0f})")
                                 elif data.get('is_currency'):
-                                    # Currency field
-                                    full_summary_parts.append(f"- **Total:** ${data['sum']:,.2f}")
-                                    full_summary_parts.append(f"- **Average:** ${data['average']:,.2f}")
-                                    full_summary_parts.append(f"- **Min:** ${data['min']:,.2f}")
-                                    full_summary_parts.append(f"- **Max:** ${data['max']:,.2f}")
-                                    full_summary_parts.append(f"- **Count:** {data['count']} values\n")
+                                    full_summary_parts.append(f"**{col}:** ${data['sum']:,.2f} total, ${data['average']:,.2f} avg")
                                 else:
-                                    # Generic numeric field
-                                    full_summary_parts.append(f"- **Total:** {data['sum']:,.2f}")
-                                    full_summary_parts.append(f"- **Average:** {data['average']:,.2f}")
-                                    full_summary_parts.append(f"- **Min:** {data['min']:,.2f}")
-                                    full_summary_parts.append(f"- **Max:** {data['max']:,.2f}")
-                                    full_summary_parts.append(f"- **Count:** {data['count']} values\n")
+                                    full_summary_parts.append(f"**{col}:** {data['average']:,.2f} avg ({data['min']:,.2f} - {data['max']:,.2f})")
+                            full_summary_parts.append("")
                         
                         if date_summary:
-                            full_summary_parts.append("## 📅 Date/Time Analysis\n")
+                            full_summary_parts.append("## 📅 Dates\n")
                             for col, data in date_summary.items():
-                                full_summary_parts.append(f"### {col}")
-                                full_summary_parts.append(f"- **From:** {data['from']}")
-                                full_summary_parts.append(f"- **To:** {data['to']}")
-                                full_summary_parts.append(f"- **Total Entries:** {data['count']}")
-                                full_summary_parts.append(f"- **Unique Dates:** {data['unique_count']}\n")
+                                full_summary_parts.append(f"**{col}:** {data['unique_count']} unique dates from {data['from']} to {data['to']}")
+                            full_summary_parts.append("")
                         
                         if categorical_summary:
-                            full_summary_parts.append("## 🏷️ Categorical Analysis\n")
+                            full_summary_parts.append("## 🏷️ Categories\n")
                             for col, data in categorical_summary.items():
-                                full_summary_parts.append(f"### {col}")
-                                full_summary_parts.append(f"- **Unique Values:** {data['unique_count']}")
-                                full_summary_parts.append(f"- **Total Entries:** {data['total_entries']}")
                                 if 'top_values' in data and data['top_values']:
-                                    full_summary_parts.append(f"- **Top Values:**")
-                                    for item in data['top_values']:
-                                        full_summary_parts.append(f"  - {item['value']}: **{item['count']}** occurrences")
-                                full_summary_parts.append("")
+                                    top_3 = data['top_values'][:3]
+                                    values_str = ', '.join([f"{item['value']} ({item['count']})" for item in top_3])
+                                    full_summary_parts.append(f"**{col}:** {values_str}")
+                            full_summary_parts.append("")
                         
                         if text_summary:
-                            full_summary_parts.append("## 📝 Text/Description Fields\n")
+                            full_summary_parts.append("## 📝 Text Fields\n")
                             for col, data in text_summary.items():
-                                full_summary_parts.append(f"### {col}")
-                                full_summary_parts.append(f"- **Unique Entries:** {data['unique_count']}")
-                                full_summary_parts.append(f"- **Total Entries:** {data['total_entries']}")
-                                full_summary_parts.append(f"- **Average Length:** {data['avg_length']} characters")
-                                if 'samples' in data and data['samples']:
-                                    full_summary_parts.append(f"- **Sample Values:**")
-                                    for sample in data['samples']:
-                                        preview = str(sample)[:60] + '...' if len(str(sample)) > 60 else str(sample)
-                                        full_summary_parts.append(f"  - {preview}")
-                                full_summary_parts.append("")
+                                full_summary_parts.append(f"**{col}:** {data['unique_count']} unique entries, avg {data['avg_length']} chars")
+                            full_summary_parts.append("")
                         
                         summary["full_summary"] = "\n".join(full_summary_parts)
                         
@@ -1427,6 +1382,9 @@ IMPORTANT Requirements:
 8. Ensure all table aliases are consistent throughout the query
 9. Use lowercase for SQL keywords (select, from, left join, where, order by)
 10. Test that all referenced columns exist in the schema provided
+11. When using GROUP BY with aggregate functions (COUNT, SUM, AVG, MAX, MIN, etc.) in HAVING clause, ALWAYS include those aggregates in the SELECT clause with meaningful aliases
+    Example: If using HAVING count(*) > 1, then SELECT must include "count(*) as duplicate_count" or similar
+    This allows users to see the aggregate values, not just filter by them
 
 Generate ONLY the SQL query without date filters. Return just the SQL, no explanations.
 

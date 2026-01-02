@@ -89,52 +89,64 @@ export const DynamicPlayground: React.FC<DynamicPlaygroundProps> = ({
       case 'date_range':
         return (
           <div className="space-y-4">
-            <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-            />
-            <button
-              onClick={handleExecute}
-              disabled={loading || !startDate || !endDate}
-              className="w-full bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Generating Report...' : 'Generate Report'}
-            </button>
+            <div className="grid grid-cols-3 gap-4">
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
+              <div className="flex items-end">
+                <button
+                  onClick={handleExecute}
+                  disabled={loading || !startDate || !endDate}
+                  className="w-full bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Executing...' : 'Execute Agent'}
+                </button>
+              </div>
+            </div>
           </div>
         );
 
       case 'month_year':
         return (
           <div className="space-y-4">
-            <MonthYearPicker
-            month={month}
-            year={year}
-            onMonthChange={setMonth}
-            onYearChange={setYear}
-            />
-            <button
-              onClick={handleExecute}
-              disabled={loading || !month || !year}
-              className="w-full bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Generating Report...' : 'Generate Monthly Report'}
-            </button>
+            <div className="grid grid-cols-3 gap-4">
+              <MonthYearPicker
+                month={month}
+                year={year}
+                onMonthChange={setMonth}
+                onYearChange={setYear}
+              />
+              <div className="flex items-end">
+                <button
+                  onClick={handleExecute}
+                  disabled={loading || !month || !year}
+                  className="w-full bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Executing...' : 'Execute Agent'}
+                </button>
+              </div>
+            </div>
           </div>
         );
 
       case 'year':
         return (
           <div className="space-y-4">
-            <YearPicker year={year} onYearChange={setYear} />
-            <button
-              onClick={handleExecute}
-              disabled={loading || !year}
-              className="w-full bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Generating Report...' : 'Generate Yearly Report'}
-            </button>
+            <div className="grid grid-cols-2 gap-4">
+              <YearPicker year={year} onYearChange={setYear} />
+              <div className="flex items-end">
+                <button
+                  onClick={handleExecute}
+                  disabled={loading || !year}
+                  className="w-full bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Executing...' : 'Execute Agent'}
+                </button>
+              </div>
+            </div>
           </div>
         );
 
@@ -180,7 +192,7 @@ export const DynamicPlayground: React.FC<DynamicPlaygroundProps> = ({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="mb-4">
+      <div className="mb-2">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">Playground</h3>
         <p className="text-sm text-gray-500">
           {triggerType === 'text_query' && 'Ask questions to get answers from the agent'}

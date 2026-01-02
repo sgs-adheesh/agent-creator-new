@@ -28,7 +28,7 @@ export default function EditAgent() {
 
   // Workflow configuration state
   const [triggerType, setTriggerType] = useState<string>('text_query');
-  const [outputFormat, setOutputFormat] = useState<string>('text');
+  const [outputFormat] = useState<string>('table');
   const [inputFields, setInputFields] = useState<WorkflowConfig['input_fields']>([]);
 
   // 1. Load Agent Data on Mount
@@ -77,7 +77,6 @@ export default function EditAgent() {
       // Load Workflow Config
       if (agent.workflow_config) {
         setTriggerType(agent.workflow_config.trigger_type || 'text_query');
-        setOutputFormat(agent.workflow_config.output_format || 'text');
         setInputFields(agent.workflow_config.input_fields || []);
       }
     } catch (err) {
@@ -453,32 +452,6 @@ export default function EditAgent() {
                   )}
                 </div>
               )}
-
-              {/* Output Format Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Output Format *
-                </label>
-                <div className="space-y-2">
-                  {[
-                    { val: 'text', label: 'Text/Markdown (formatted text response)' },
-                    { val: 'csv', label: 'CSV Download (downloadable spreadsheet)' },
-                    { val: 'json', label: 'JSON (structured data)' },
-                    { val: 'table', label: 'Table/Grid (interactive data table)' }
-                  ].map((opt) => (
-                    <label key={opt.val} className="flex items-center">
-                      <input
-                        type="radio"
-                        value={opt.val}
-                        checked={outputFormat === opt.val}
-                        onChange={(e) => setOutputFormat(e.target.value)}
-                        className="mr-2"
-                      />
-                      <span className="text-sm">{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
             </div>
 
             {error && (

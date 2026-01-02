@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import * as React from 'react';
 import ReactFlow, {
   Background,
@@ -15,6 +15,8 @@ import { DynamicPlayground } from './DynamicPlayground';
 import { DataVisualization } from './DataVisualization';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // ============================================================================
 // MARKDOWN RENDERER COMPONENT
@@ -181,6 +183,8 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   });
   const [executedQuery, setExecutedQuery] = useState<string | null>(null);
   const [cachingQuery, setCachingQuery] = useState(false);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const [showInputForm, setShowInputForm] = useState(true);
 
   // ============================================================================
   // WORKFLOW LOADING
@@ -219,6 +223,88 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   useEffect(() => {
     loadWorkflow();
   }, [loadWorkflow]);
+
+  // Create a ref to access ReactFlow instance
+  const reactFlowInstance = React.useRef<{ fitView: (options?: { padding?: number; maxZoom?: number }) => void } | null>(null);
+
+  // Re-trigger fitView when panel resizes
+  useEffect(() => {
+    if (!reactFlowInstance.current) return;
+
+    const handleResize = () => {
+      setTimeout(() => {
+        if (reactFlowInstance.current) {
+          reactFlowInstance.current.fitView({ padding: 0.2, maxZoom: 1 });
+        }
+      }, 0);
+    };
+
+    // Create ResizeObserver for this component's container
+    const container = document.getElementById('workflow-container');
+    let resizeObserver: ResizeObserver | null = null;
+    
+    if (container) {
+      resizeObserver = new ResizeObserver(() => {
+        handleResize();
+      });
+      resizeObserver.observe(container);
+    }
+
+    // Also listen to window resize
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [reactFlowInstance.current]);
+
+  const onInit = (instance: { fitView: (options?: { padding?: number; maxZoom?: number }) => void }) => {
+    reactFlowInstance.current = instance;
+    // Initial fit
+    instance.fitView({ padding: 0.2, maxZoom: 1 });
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!resultRef.current) return;
+
+    try {
+      const canvas = await html2canvas(resultRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= 297; // A4 height in mm
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= 297;
+      }
+
+      pdf.save(`agent-result-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
 
   // ============================================================================
   // TOOL CONFIGURATION HANDLERS
@@ -560,7 +646,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   // RENDER: SPLIT VIEW BASED ON viewMode
   // ============================================================================
   return (
-    <div className="h-full w-full relative">
+    <div style={{ width: '100%', height: '100%', overflow: 'hidden' }} id="workflow-container">
       {/* WORKFLOW VISUALIZATION (full or workflow-only mode) */}
       {(viewMode === 'full' || viewMode === 'workflow-only') && (
         <ReactFlow
@@ -569,12 +655,14 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
+          onInit={onInit}
           fitView
           fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
           nodesDraggable={!executing}
           nodesConnectable={false}
           elementsSelectable={!executing}
-          attributionPosition="bottom-right"
+          proOptions={{ hideAttribution: true }}
+          style={{ width: '100%', height: '100%' }}
         >
           <Background />
           <Controls position="bottom-left" />
@@ -583,7 +671,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
 
       {/* PLAYGROUND PANEL (full or playground-only mode) */}
       {(viewMode === 'full' || viewMode === 'playground-only') && (
-        <div className={viewMode === 'playground-only' ? 'h-full overflow-y-auto bg-gray-50 p-6' : 'absolute top-0 right-0'}>
+        <div className={viewMode === 'playground-only' ? 'h-full flex flex-col bg-gray-50 p-6 overflow-hidden' : 'absolute top-0 right-0'}>
           {/* Toggle button for full mode */}
           {viewMode === 'full' && (
             <button
@@ -597,36 +685,52 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
           
           {/* Playground content */}
           {(viewMode === 'playground-only' || showPlayground) && (
-            <div className={viewMode === 'playground-only' ? 'h-full' : 'absolute top-16 right-4 w-96 bg-white rounded-lg shadow-2xl z-10 max-h-[calc(100vh-10rem)] overflow-y-auto p-6 border border-gray-200'}>
+            <div className={viewMode === 'playground-only' ? 'h-full flex flex-col overflow-hidden' : 'absolute top-16 right-4 w-96 bg-white rounded-lg shadow-2xl z-10 max-h-[calc(100vh-10rem)] overflow-y-auto p-6 border border-gray-200'}>
               {/* Input Form */}
+              <div className="flex-shrink-0">
+              <div className="flex justify-between items-center mb-4">
+                {workflowConfig.trigger_type === 'text_query' ? (
+                  <h3 className="text-lg font-semibold text-gray-900">Agent Playground</h3>
+                ) : (
+                  <h3 className="text-lg font-semibold text-gray-900">Execute Agent</h3>
+                )}
+                <button
+                  onClick={() => setShowInputForm(!showInputForm)}
+                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                >
+                  {showInputForm ? 'Hide' : 'Show'} Playground
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showInputForm ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                  </svg>
+                </button>
+              </div>
+              {showInputForm && (
+              <>
               {workflowConfig.trigger_type === 'text_query' ? (
-                <>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Agent Playground</h3>
-                  <form onSubmit={handleExecute} className="space-y-4">
-                    <div>
-                      <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
-                        Your Query
-                      </label>
-                      <textarea
-                        id="query"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        placeholder="Ask the agent to perform a task..."
-                        disabled={executing}
-                      />
-                    </div>
+                <form onSubmit={handleExecute} className="space-y-4">
+                  <div>
+                    <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
+                      Your Query
+                    </label>
+                    <textarea
+                      id="query"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Ask the agent to perform a task..."
+                      disabled={executing}
+                    />
+                  </div>
 
-                    <button
-                      type="submit"
-                      disabled={executing || !query.trim()}
-                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
-                    >
-                      {executing ? 'Executing...' : 'Execute'}
-                    </button>
-                  </form>
-                </>
+                  <button
+                    type="submit"
+                    disabled={executing || !query.trim()}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+                  >
+                    {executing ? 'Executing...' : 'Execute'}
+                  </button>
+                </form>
               ) : (
                 <DynamicPlayground
                   triggerType={workflowConfig.trigger_type}
@@ -635,18 +739,36 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                   loading={executing}
                 />
               )}
+              </>
+              )}
+              </div>
 
               {/* Error Display */}
               {error && (
-                <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
+                <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm flex-shrink-0">
                   {error}
                 </div>
               )}
 
-              {/* Results Section */}
+              {/* Results Section with Scroll */}
+              <div className="flex-1 overflow-y-auto mt-6">
               {result && (
                 <div className="mt-6">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Result</h4>
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-sm font-semibold text-gray-900">Result</h4>
+                    {result.success && (
+                      <button
+                        onClick={handleDownloadPDF}
+                        className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center gap-1"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download PDF
+                      </button>
+                    )}
+                  </div>
+                  <div ref={resultRef}>
                   {result.success ? (
                     <div className="space-y-4">
                       {/* Success indicator */}
@@ -680,18 +802,18 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                             disabled={cachingQuery}
                             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
                           >
-                            {cachingQuery ? '⏳ Caching...' : '✅ Approve & Cache Query'}
+                            {cachingQuery ? '⏳ Loading...' : '✅ Approve'}
                           </button>
                         </div>
                       )}
                       
                       {/* Cached execution indicator */}
-                      {(result as unknown as Record<string, unknown>).cached_execution && (
+                      {/* {(result as unknown as Record<string, unknown>).cached_execution && (
                         <div className="p-2 bg-purple-50 border border-purple-200 rounded text-xs text-purple-700 flex items-center gap-2">
                           <span>⚡</span>
                           <span>Executed using cached query (instant response)</span>
                         </div>
-                      )}
+                      )} */}
                     </div>
                   ) : (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3">
@@ -702,8 +824,10 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                       <div className="text-red-700 text-sm">{result.error || 'Execution failed'}</div>
                     </div>
                   )}
+                  </div>
                 </div>
               )}
+              </div>
             </div>
           )}
         </div>

@@ -1106,19 +1106,25 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
         try:
             # Validate query is read-only
             query_upper = enhanced_query.strip().upper()
-            if not query_upper.startswith("SELECT"):
+            
+            # Use word boundary regex to check if query starts with SELECT
+            # This handles cases where query might have leading quotes or whitespace
+            import re
+            if not re.search(r'\bSELECT\b', query_upper, re.IGNORECASE):
                 return {
-                    "error": "Only SELECT queries are allowed. This is a read-only connector.",
+                    "error": f"Only SELECT queries are allowed. This is a read-only connector. Query starts with: {query_upper[:50]}",
                     "success": False
                 }
             
-            # Check for dangerous keywords
-            dangerous_keywords = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE"]
-            if any(keyword in query_upper for keyword in dangerous_keywords):
-                return {
-                    "error": "Query contains dangerous keywords. Only SELECT queries are allowed.",
-                    "success": False
-                }
+            # Check for dangerous keywords (write operations only) using word boundaries
+            dangerous_keywords = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE", "GRANT", "REVOKE"]
+            for keyword in dangerous_keywords:
+                # Use \b for word boundaries to avoid false positives (e.g., "UPDATE" in "updated_at")
+                if re.search(r'\b' + keyword + r'\b', query_upper):
+                    return {
+                        "error": f"Query contains dangerous keyword '{keyword}'. Only SELECT queries are allowed.",
+                        "success": False
+                    }
             
             conn = self._get_connection()
             

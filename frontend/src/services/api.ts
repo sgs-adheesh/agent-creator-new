@@ -40,6 +40,7 @@ export interface CreateAgentRequest {
 
 export interface ExecuteAgentRequest {
   query: string;
+  input_data?: Record<string, string | number | boolean>;
   tool_configs?: Record<string, Record<string, string>>;
 }
 
@@ -141,9 +142,10 @@ export const agentApi = {
     return response.data;
   },
 
-  executeAgent: async (id: string, query: string, toolConfigs?: Record<string, Record<string, string>>): Promise<ExecuteAgentResponse> => {
+  executeAgent: async (id: string, query: string, toolConfigs?: Record<string, Record<string, string>>, inputData?: Record<string, string | number | boolean>): Promise<ExecuteAgentResponse> => {
     const response = await api.post<ExecuteAgentResponse>(`/api/agents/${id}/execute`, { 
       query,
+      input_data: inputData,
       tool_configs: toolConfigs 
     });
     return response.data;

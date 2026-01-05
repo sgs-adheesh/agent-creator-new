@@ -186,6 +186,20 @@ export default function EditAgent() {
   };
   
   const getToolDisplayName = (toolName: string): string => {
+    // Map specific tool names to user-friendly names
+    const toolNameMap: Record<string, string> = {
+      'postgres_query': 'DB Reader',
+      'postgres_inspect_schema': 'DB Schema Analyzer',
+      'postgres_write': 'DB Writer',
+      'PostgresConnector': 'DB Reader',
+      'PostgresWriter': 'DB Writer',
+    };
+    
+    // Return mapped name if exists, otherwise format normally
+    if (toolNameMap[toolName]) {
+      return toolNameMap[toolName];
+    }
+    
     // Convert tool names to readable format
     return toolName
       .replace(/_/g, ' ')

@@ -1,5 +1,6 @@
 from .base_tool import BaseTool
 from .postgres_connector import PostgresConnector
+from .postgres_writer import PostgresWriter
 from .qdrant_connector import QdrantConnector
 from .qbo_connector import QBOConnector
 from .salesforce_api import SalesforceApiConnector
@@ -16,6 +17,7 @@ from .microsoft_onedrive_api import MicrosoftOnedriveApiConnector
 __all__ = [
     "BaseTool",
     "PostgresConnector",
+    "PostgresWriter",
     "QdrantConnector",
     "QBOConnector",
     "SalesforceApiConnector",

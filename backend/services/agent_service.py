@@ -77,12 +77,12 @@ class AgentService:
                 
                 module = sys.modules.get(module_name) or importlib.import_module(module_name)
                 
-                # Find the tool class (should end with 'Connector')
+                # Find the tool class (should end with 'Connector' or 'Writer')
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
                     # Check if it's a class and has the required methods
                     if (isinstance(attr, type) and 
-                        attr_name.endswith('Connector') and
+                        (attr_name.endswith('Connector') or attr_name.endswith('Writer')) and
                         hasattr(attr, 'to_langchain_tool')):
                         # Instantiate and convert to LangChain tool
                         tool_instance = attr()
@@ -161,6 +161,12 @@ class AgentService:
         else:
             print(f"\n⚠️ No summary generated (no query results found)")
         
+        # 🎨 ALWAYS extract table_data for visualization (regardless of output_format)
+        table_data = self._extract_table_from_output(output, intermediate_steps)
+        if table_data:
+            base_response["table_data"] = table_data
+            print(f"\n📊 Table data extracted for visualization: {table_data.get('row_count', 0)} rows")
+        
         # TEXT format (default) - return as-is
         if output_format == "text":
             return base_response
@@ -195,11 +201,8 @@ class AgentService:
                 print(f"\n⚠️ CSV data is None - no download link created")
             return base_response
         
-        # TABLE format - convert to structured table data
+        # TABLE format - table_data already extracted above
         elif output_format == "table":
-            table_data = self._extract_table_from_output(output, intermediate_steps)
-            if table_data:
-                base_response["table_data"] = table_data
             return base_response
         
         # Unknown format - return as text
@@ -300,44 +303,86 @@ class AgentService:
         Returns:
             Dictionary with columns and rows
         """
+        from decimal import Decimal
+        import json
+        
         try:
+            print(f"\n🔍 Extracting table data from {len(intermediate_steps)} intermediate steps")
+            
             # Try to find postgres_query results in intermediate steps
-            for step in intermediate_steps:
+            for i, step in enumerate(intermediate_steps):
                 # Handle both tuple format (action, result) and dict format {"action": ..., "result": ...}
                 if isinstance(step, dict):
                     # Dictionary format (from cached execution)
                     action = step.get('action', {})
                     result = step.get('result', '')
                     tool_name = action.get('tool') if isinstance(action, dict) else None
+                    print(f"  Step {i}: dict format, tool={tool_name}")
                 elif len(step) >= 2:
                     # Tuple format (from regular execution)
                     action, result = step[0], step[1]
                     tool_name = getattr(action, 'tool', None)
+                    print(f"  Step {i}: tuple format, tool={tool_name}")
                 else:
+                    print(f"  Step {i}: unknown format, skipping")
                     continue
                 
                 if tool_name == 'postgres_query':
-                    # Try to parse result as dict
-                    if isinstance(result, str):
-                        try:
-                            result_dict = eval(result)
-                        except:
-                            result_dict = result
-                    else:
-                        result_dict = result
+                    print(f"  ✅ Found postgres_query at step {i}")
+                    print(f"  Result type: {type(result).__name__}")
                     
-                    if isinstance(result_dict, dict) and 'rows' in result_dict:
-                        return {
-                            "columns": result_dict.get('columns', []),
-                            "rows": result_dict.get('rows', []),
-                            "row_count": result_dict.get('row_count', len(result_dict.get('rows', [])))
+                    # Parse result - handle string, dict, and direct dict results
+                    result_dict = None
+                    if isinstance(result, dict):
+                        result_dict = result
+                        print(f"  Result is already dict with keys: {list(result.keys())}")
+                    elif isinstance(result, str):
+                        # Try JSON first (safest)
+                        try:
+                            result_dict = json.loads(result)
+                            print(f"  Parsed result from JSON string")
+                        except:
+                            # Try eval with Decimal in scope
+                            try:
+                                # Safe eval with Decimal available
+                                result_dict = eval(result, {"__builtins__": {}, "Decimal": Decimal}, {})
+                                print(f"  Parsed result from eval()")
+                            except Exception as parse_err:
+                                print(f"  ⚠️ Failed to parse string result: {parse_err}")
+                                result_dict = None
+                    
+                    if result_dict and isinstance(result_dict, dict) and 'rows' in result_dict:
+                        rows = result_dict.get('rows', [])
+                        columns = result_dict.get('columns', [])
+                        
+                        # Convert Decimal types to float for JSON serialization
+                        serialized_rows = []
+                        for row in rows:
+                            serialized_row = {}
+                            for key, value in row.items():
+                                if isinstance(value, Decimal):
+                                    serialized_row[key] = float(value)
+                                else:
+                                    serialized_row[key] = value
+                            serialized_rows.append(serialized_row)
+                        
+                        table_data = {
+                            "columns": columns,
+                            "rows": serialized_rows,
+                            "row_count": result_dict.get('row_count', len(serialized_rows))
                         }
+                        
+                        print(f"  ✅ Extracted table: {len(columns)} columns, {len(serialized_rows)} rows")
+                        return table_data
             
             # No table data found
+            print(f"  ⚠️ No postgres_query results found in intermediate steps")
             return None
             
         except Exception as e:
-            print(f"Error extracting table: {e}")
+            print(f"❌ Error extracting table: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def _generate_summary_from_results(self, intermediate_steps: List) -> Dict[str, Any]:
@@ -943,8 +988,9 @@ Provide a comprehensive analysis:"""
             print(f"  Parameters needed: {parameters_needed}")
             print(f"  Input data: {input_data}")
             
-            if input_data:
-                # Extract from structured input_data (from frontend)
+            # Priority 1: Extract from structured input_data (from frontend)
+            if input_data and isinstance(input_data, dict) and len(input_data) > 0:
+                print("  🎯 Using structured input_data from frontend")
                 for param in parameters_needed:
                     if param in input_data:
                         value = input_data[param]
@@ -953,8 +999,10 @@ Provide a comprehensive analysis:"""
                             params[param] = str(value).zfill(2)
                         else:
                             params[param] = str(value)
-            else:
-                # Try to parse from user_query string
+            
+            # Priority 2: Try to parse from user_query string (fallback)
+            if not params and parameters_needed:
+                print("  🔍 Attempting to extract parameters from user_query string")
                 params = self._extract_query_parameters(user_query, workflow_config)
             
             if not params and parameters_needed:
@@ -1661,6 +1709,19 @@ Your goal is to find and identify duplicate records. Your output MUST:
 3. **Group duplicates together** (e.g., "Group 1: INV-001, INV-002, INV-003 share vendor 'ABC Corp' and amount $500")
 4. **Count duplicate groups** (e.g., "Found 5 duplicate groups affecting 12 invoices")
 5. **Provide actionable insights** (Which duplicates should be reviewed? Which might be data entry errors?)
+6. **ALWAYS include COUNT(*) in GROUP BY queries** to show duplicate count per group
+7. **ALWAYS use HAVING COUNT(*) > 1** to filter only actual duplicates
+
+⚠️ CRITICAL SQL Pattern for Duplicates:
+```sql
+SELECT 
+  column1, column2, column3,
+  COUNT(*) AS duplicate_count  -- REQUIRED: Shows how many duplicates
+FROM table
+GROUP BY column1, column2, column3
+HAVING COUNT(*) > 1  -- REQUIRED: Only show groups with duplicates
+ORDER BY duplicate_count DESC;  -- Show worst duplicates first
+```
 
 ❌ DO NOT just list all records - ANALYZE and IDENTIFY the duplicates specifically!
 ❌ DO NOT say "here are the results" - SAY "here are the DUPLICATES I found"
@@ -1984,7 +2045,7 @@ User asks: "Compare invoices with payments"
 - ❌ Forgetting ->>'value' for JSONB columns
 - ❌ NOT reading 'relationships' and 'referenced_by' from schema
 - ❌ Ignoring columns ending in '_id' - they indicate related tables to inspect!
-- ❌ **EXPOSING ID COLUMNS** - Never SELECT invoice_id, vendor_id, document_id, product_id, etc.
+- ❌ **EXPOSING UUID/ID COLUMNS** - NEVER SELECT id, invoice_id, vendor_id, document_id, product_id, etc. Users must see names, not UUIDs!
 - ❌ **WRONG BASE TABLE** - Never use FROM icap_invoice_detail (use FROM icap_invoice instead!)
 - ❌ **NO ORDER BY** - Always ORDER BY primary table's key field to group related records
 - ❌ **WRONG COLUMN ORDER** - Never put detail columns before primary table columns in SELECT
@@ -2037,8 +2098,15 @@ ORDER BY i.invoice_number->>'value', ivd.id;
 
 ❌ WRONG EXAMPLES:
 ```sql
--- ❌ WRONG: Exposing ID columns
-SELECT i.id AS invoice_id, i.invoice_number...  -- DON'T expose IDs!
+-- ❌ WRONG: Exposing UUID/ID columns - Users should NEVER see UUIDs!
+SELECT i.id, i.vendor_id, i.invoice_number...  -- DON'T expose any UUIDs!
+
+-- ✅ CORRECT: Join to get meaningful names instead
+SELECT 
+    (i.invoice_number->>'value') AS invoice_number,
+    v.name AS vendor_name  -- Show vendor name, not UUID!
+FROM icap_invoice i
+LEFT JOIN icap_vendor v ON i.vendor_id = v.id;  -- Use UUID only for JOIN
 
 -- ❌ WRONG: Detail table as base
 FROM icap_invoice_detail ivd              -- Wrong base table!
@@ -2124,6 +2192,24 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
 - Use `LEFT JOIN` for related tables (not INNER JOIN)
 - Check `foreign_keys` in schema to find correct JOIN columns
 - For JSONB dates, use `TO_DATE(column->>'value', 'MM/DD/YYYY')` for proper filtering
+- **For text/name matching, ALWAYS use case-insensitive comparisons:**
+  - Use `ILIKE` instead of `LIKE` for pattern matching (e.g., `WHERE v.name ILIKE '%meat hub%'`)
+  - Or use `LOWER()` function (e.g., `WHERE LOWER(v.name) = LOWER('Meat Hub')`)
+  - Never use `=` or `LIKE` for vendor names, product names, or any user-provided text
+  - Database text fields may have inconsistent capitalization
+
+**Database Write Operations:**
+⚠️ For INSERT, UPDATE, or DELETE operations, use `postgres_write` tool (NOT `postgres_query`):
+- `postgres_query` is read-only (SELECT only)
+- `postgres_write` handles write operations with safety checks:
+  - Always use dry_run=True first to preview changes
+  - Requires WHERE clause for UPDATE/DELETE
+  - Maximum 100 rows per operation
+  - Protected system tables cannot be modified
+- Example workflow:
+  1. postgres_write(query="UPDATE table SET col='val' WHERE id=5", dry_run=True)
+  2. Review affected_rows from response
+  3. postgres_write(query="UPDATE table SET col='val' WHERE id=5", dry_run=False)
 
 **Output Format Rules:**
 - When `output_format` is **"csv"**: Just confirm success ("Query executed successfully. Results contain X rows.") - the system auto-generates CSV
@@ -2132,7 +2218,36 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
 - When `output_format` is **"text"**: You can format the response as you see fit (markdown, natural language, etc.)
 
 **Critical Rules:**
-- ❌ Never expose ID columns (invoice_id, vendor_id, etc.) in SELECT
+- ❌❌❌ **NEVER EXPOSE UUID COLUMNS** - Absolutely forbidden in SELECT clause:
+  - NO id, invoice_id, vendor_id, document_id, product_id, customer_id, user_id, etc.
+  - UUIDs are internal system identifiers with no business meaning
+  - Users should NEVER see raw UUIDs in results
+  
+- ✅✅✅ **ALWAYS JOIN TO GET MEANINGFUL NAMES** instead of UUIDs:
+  - ❌ WRONG: `SELECT invoice_id, vendor_id FROM icap_invoice`
+  - ✅ CORRECT: `SELECT i.invoice_number, v.name AS vendor_name FROM icap_invoice i LEFT JOIN icap_vendor v ON i.vendor_id = v.id`
+  - ❌ WRONG: `SELECT document_id FROM icap_invoice_detail`
+  - ✅ CORRECT: `SELECT (i.invoice_number->>'value') AS invoice_number FROM icap_invoice_detail d LEFT JOIN icap_invoice i ON d.document_id = i.document_id`
+  
+- 📝 **UUID Replacement Rules:**
+  - vendor_id → JOIN icap_vendor, SELECT v.name AS vendor_name
+  - product_id → JOIN icap_product_master, SELECT pm.name AS product_name
+  - document_id → JOIN icap_invoice, SELECT (i.invoice_number->>'value') AS invoice_number
+  - category_id (gl_category_id) → JOIN icap_tenant_category_master, SELECT tcm.name AS category_name
+  - gl_id → JOIN icap_gl, SELECT g.name AS gl_name, g.code AS gl_code
+  
+- 🔗 **Category/Product/GL Mapping Chain:**
+  - Product → Category: icap_product_category_mapping (product_id, gl_category_id)
+  - Category → GL: icap_tenant_gl_category_mapping (category_id, gl_id)
+  - Category Master: icap_tenant_category_master (id)
+  - GL Master: icap_gl (id, name, code)
+  - **Note:** gl_category_id = category_id (same field, different name)
+  
+- ⚠️ **Exception:** Only use UUID columns in WHERE/JOIN clauses (never in SELECT)
+  - OK: `WHERE i.vendor_id = v.id` (for joining)
+  - OK: `WHERE i.id = 'some-uuid'` (for filtering, internal use only)
+  - FORBIDDEN: `SELECT i.id, i.vendor_id` (exposing to user)
+
 - ✅ Always inspect schema before querying
 - ✅ Use `->>'value'` for JSONB columns
 - ✅ Respect the `output_format` setting
@@ -2142,7 +2257,7 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
           
         return system_prompt
       
-    def create_agent(self, prompt: str, name: str = None, selected_tools: List[str] = None, workflow_config: Dict[str, Any] = None) -> Dict[str, Any]:
+    def create_agent(self, prompt: str, name: str = None, selected_tools: List[str] = None, workflow_config: Dict[str, Any] = None, description: str = None, category: str = None, icon: str = None, use_cases: List[str] = None) -> Dict[str, Any]:
         """
         Create an agent from a prompt
         
@@ -2151,6 +2266,10 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
             name: Optional name for the agent
             selected_tools: List of tool names to assign to this agent (if None, uses all tools)
             workflow_config: Optional workflow configuration (trigger_type, input_fields, output_format)
+            description: Short description of the agent's purpose
+            category: Category/classification (e.g., 'Finance & Accounting')
+            icon: Emoji icon for visual representation
+            use_cases: List of common use cases for this agent
             
         Returns:
             Dictionary with agent information
@@ -2211,39 +2330,50 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
             handle_parsing_errors=True
         )
         
-        # 🎯 GENERATE EXECUTION GUIDANCE (if postgres tools selected)
+        # 🎯 GENERATE EXECUTION GUIDANCE (only for structured input types, not text_query)
         execution_guidance = None
         has_postgres = selected_tools is not None and any(tool in selected_tools for tool in ['postgres_query', 'postgres_inspect_schema'])
+        trigger_type = workflow_config.get('trigger_type', 'text_query')
         
-        if has_postgres:
-            print("\n🚀 Generating execution guidance for fast execution...")
+        # Only generate execution guidance for structured inputs (date_range, month_year, year)
+        # Skip for text_query since queries vary too much
+        should_generate_guidance = has_postgres and trigger_type in ['date_range', 'month_year', 'year']
+        
+        if should_generate_guidance:
+            print(f"\n🚀 Generating execution guidance for {trigger_type} trigger (enables query caching)...")
             try:
                 execution_guidance = self._generate_execution_guidance(
                     prompt=prompt,
-                    trigger_type=workflow_config.get('trigger_type', 'text_query'),
+                    trigger_type=trigger_type,
                     output_format=workflow_config.get('output_format', 'text'),
                     agent_tools=agent_tools,
                     workflow_config=workflow_config
                 )
                 
                 if execution_guidance and not execution_guidance.get('error'):
-                    print("✅ Execution guidance generated! Agent will use fast execution path.")
+                    print("✅ Execution guidance generated! Agent will use fast execution path with query caching.")
                 else:
                     print("⚠️ Execution guidance had errors - agent will use traditional path")
                     execution_guidance = None
             except Exception as e:
                 print(f"⚠️ Could not generate execution guidance: {e}")
                 execution_guidance = None
+        elif has_postgres and trigger_type == 'text_query':
+            print(f"\nℹ️ Skipping execution guidance for text_query (no caching - queries too variable)")
         
         # Save agent metadata including selected tools and workflow config
         agent_data = {
             "id": agent_id,
             "name": agent_name,
+            "description": description or prompt[:100],  # Default to first 100 chars of prompt
+            "category": category or "General",
+            "icon": icon or "🤖",
             "prompt": prompt,
             "system_prompt": system_prompt,
             "selected_tools": selected_tools or [t.name for t in self.tools],
             "workflow_config": workflow_config,  # Store workflow configuration
             "created_at": datetime.now().isoformat(),
+            "use_cases": use_cases or []
         }
         
         # Add execution guidance if generated
@@ -2255,7 +2385,7 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
         
         return agent_data
     
-    def execute_agent(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None) -> Dict[str, Any]:
+    def execute_agent(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Execute an agent with a user query
         
@@ -2263,6 +2393,7 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
             agent_id: Unique agent identifier
             user_query: User's query/request
             tool_configs: Optional runtime tool configurations (e.g., API keys)
+            input_data: Optional structured input data (month, year, dates, etc.)
             
         Returns:
             Dictionary with execution results and formatted output
@@ -2285,7 +2416,7 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
         # This is the NEW pre-built execution guidance system
         if agent_data.get("execution_guidance"):
             print("\n⚡⚡⚡ ULTRA-FAST PATH: Using pre-built execution guidance")
-            guidance_result = self._execute_with_guidance(agent_data, user_query, tool_configs)
+            guidance_result = self._execute_with_guidance(agent_data, user_query, input_data)
             if guidance_result and guidance_result.get("success"):
                 print("✅ Execution guidance succeeded - returning result")
                 return guidance_result
@@ -2575,9 +2706,13 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
         format_changed = workflow_config.get('output_format') != existing_config.get('output_format')
         
         has_postgres = selected_tool_names and any(tool in selected_tool_names for tool in ['postgres_query', 'postgres_inspect_schema'])
+        trigger_type = workflow_config.get('trigger_type', 'text_query')
         
-        if (prompt_changed or trigger_changed or format_changed) and has_postgres:
-            print(f"\n🔄 Configuration changed - regenerating execution guidance...")
+        # Only regenerate for structured inputs (date_range, month_year, year)
+        should_regenerate_guidance = has_postgres and trigger_type in ['date_range', 'month_year', 'year']
+        
+        if (prompt_changed or trigger_changed or format_changed) and should_regenerate_guidance:
+            print(f"\n🔄 Configuration changed - regenerating execution guidance for {trigger_type}...")
             print(f"  Prompt changed: {prompt_changed}")
             print(f"  Trigger changed: {trigger_changed} ({existing_config.get('trigger_type')} → {workflow_config.get('trigger_type')})")
             print(f"  Format changed: {format_changed} ({existing_config.get('output_format')} → {workflow_config.get('output_format')})")
@@ -2585,7 +2720,7 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
             try:
                 execution_guidance = self._generate_execution_guidance(
                     prompt=prompt,
-                    trigger_type=workflow_config.get('trigger_type', 'text_query'),
+                    trigger_type=trigger_type,
                     output_format=workflow_config.get('output_format', 'text'),
                     agent_tools=agent_tools,
                     workflow_config=workflow_config
@@ -2600,17 +2735,17 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
             except Exception as e:
                 print(f"⚠️ Could not regenerate execution guidance: {e}")
                 updated_data['execution_guidance'] = None
-        elif has_postgres and 'execution_guidance' in existing_agent:
+        elif should_regenerate_guidance and 'execution_guidance' in existing_agent:
             # Config didn't change - preserve existing guidance
             print("ℹ️ No critical configuration changes - keeping existing execution guidance")
             # Don't include execution_guidance in updated_data - it will be preserved automatically
-        elif has_postgres:
+        elif should_regenerate_guidance:
             # Postgres tools but no existing guidance - try to generate
-            print("\n🆕 No existing execution guidance - generating for first time...")
+            print(f"\n🆕 No existing execution guidance - generating for {trigger_type}...")
             try:
                 execution_guidance = self._generate_execution_guidance(
                     prompt=prompt,
-                    trigger_type=workflow_config.get('trigger_type', 'text_query'),
+                    trigger_type=trigger_type,
                     output_format=workflow_config.get('output_format', 'text'),
                     agent_tools=agent_tools,
                     workflow_config=workflow_config
@@ -2621,6 +2756,10 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
                     print("✅ Execution guidance generated for the first time!")
             except Exception as e:
                 print(f"⚠️ Could not generate execution guidance: {e}")
+        elif has_postgres and trigger_type == 'text_query':
+            print(f"\nℹ️ Skipping execution guidance for text_query (no caching - queries too variable)")
+            # Remove any existing guidance for text_query
+            updated_data['execution_guidance'] = None
         
         # 🗑️ CLEAR cached query when agent is edited (force re-analysis)
         # Explicitly set to None to ensure deletion

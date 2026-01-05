@@ -35,9 +35,19 @@ export const DynamicPlayground: React.FC<DynamicPlaygroundProps> = ({
       case 'text_query':
         inputData = { query: textQuery };
         break;
-        case 'date_range':
-        inputData = { start_date: startDate, end_date: endDate };
-          break;
+      case 'date_range': {
+        // Convert YYYY-MM-DD (HTML date input) to MM/DD/YYYY (database format)
+        const formatDate = (dateStr: string) => {
+          if (!dateStr) return '';
+          const [year, month, day] = dateStr.split('-');
+          return `${month}/${day}/${year}`;
+        };
+        inputData = { 
+          start_date: formatDate(startDate), 
+          end_date: formatDate(endDate) 
+        };
+        break;
+      }
         case 'month_year':
         inputData = { month, year };
           break;

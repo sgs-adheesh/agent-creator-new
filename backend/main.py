@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+import json
+import uuid
+from pathlib import Path
 
 from services import AgentService
 from services.workflow_generator import WorkflowGenerator
@@ -142,6 +145,84 @@ class CacheQueryRequest(BaseModel):
     joins: Optional[List[str]] = None
 
 
+@app.get("/api/templates")
+async def get_templates():
+    """Get all predefined agent templates"""
+    try:
+        templates_file = Path(__file__).parent / "templates" / "agent_templates.json"
+        
+        if not templates_file.exists():
+            return {"success": True, "templates": []}
+        
+        with open(templates_file, 'r', encoding='utf-8') as f:
+            templates = json.load(f)
+        
+        return {"success": True, "templates": templates}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/templates/{template_id}/create", response_model=AgentResponse)
+async def create_agent_from_template(template_id: str, name: Optional[str] = None):
+    """Create a new agent from a template (instant - no AI processing)"""
+    try:
+        # Load template
+        templates_file = Path(__file__).parent / "templates" / "agent_templates.json"
+        
+        if not templates_file.exists():
+            raise HTTPException(status_code=404, detail="Templates file not found")
+        
+        with open(templates_file, 'r', encoding='utf-8') as f:
+            templates = json.load(f)
+        
+        # Find template
+        template = next((t for t in templates if t["id"] == template_id), None)
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        # Generate new agent ID
+        agent_id = str(uuid.uuid4())
+        agent_name = name or template["name"]
+        
+        # Extract template data
+        template_data = template["template"]
+        
+        # Create agent data directly from template (NO AI processing)
+        agent_data = {
+            "id": agent_id,
+            "name": agent_name,
+            "description": template.get("description"),
+            "category": template.get("category"),
+            "icon": template.get("icon"),
+            "prompt": template_data["prompt"],
+            "system_prompt": agent_service._generate_system_prompt(
+                prompt=template_data["prompt"],
+                agent_tools=[t for t in agent_service.tools if t.name in template_data.get("tools", [])],
+                selected_tool_names=template_data.get("tools", [])
+            ),
+            "selected_tools": template_data.get("tools", []),
+            "workflow_config": {
+                "trigger_type": template_data["trigger_type"],
+                "input_fields": template_data.get("input_fields", []),
+                "output_format": "table"
+            },
+            "created_at": datetime.now().isoformat(),
+            "use_cases": template.get("use_cases", []),
+            "execution_guidance": template_data.get("execution_guidance")  # Copy pre-built execution guidance
+        }
+        
+        # Save agent
+        agent_service.storage.save_agent(agent_data)
+        
+        print(f"✅ Created agent '{agent_name}' from template '{template_id}' (instant - no AI processing)")
+        
+        return AgentResponse(**agent_data)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/")
 async def root():
     return {"message": "Agent Generator API"}
@@ -277,7 +358,7 @@ Return ONLY year {year} records."""
                 # Generic conversion
                 query = f"Input Data: {request.input_data}\n{query}"
         
-        result = agent_service.execute_agent(agent_id, query, request.tool_configs)
+        result = agent_service.execute_agent(agent_id, query, request.tool_configs, request.input_data)
         return ExecuteAgentResponse(**result)
     except HTTPException:
         raise

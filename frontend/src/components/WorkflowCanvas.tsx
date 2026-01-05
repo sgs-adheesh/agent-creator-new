@@ -520,7 +520,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         queryString = JSON.stringify(inputData);
       }
       
-      const executionPromise = agentApi.executeAgent(agentId, queryString, toolConfigs);
+      const executionPromise = agentApi.executeAgent(agentId, queryString, toolConfigs, inputData);
       await new Promise((resolve) => setTimeout(resolve, 600));
 
       const response = await executionPromise;

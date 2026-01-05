@@ -133,15 +133,34 @@ export function AgentNode({ data }: CustomNodeProps) {
 
 export function ToolNode({ data }: CustomNodeProps) {
   const name = String(data.tool_name || '').toLowerCase();
-  // Tool icons based on your current technical skills: Qdrant, Postgres, or generic [cite: 22, 27, 33]
+  
+  // Map tool names to friendly display names
+  const getDisplayLabel = (): string => {
+    const mappings: Record<string, string> = {
+      'postgres_query': 'DB Reader',
+      'postgres_inspect_schema': 'DB Schema Analyzer',
+      'postgres_write': 'DB Writer',
+    };
+    
+    const originalName = String(data.tool_name || '');
+    return mappings[originalName] || data.label;
+  };
+  
+  // Tool icons based on your current technical skills
   const icon = name.includes('qdrant') ? '🔍' : name.includes('postgres') ? '🗄️' : '🔧';
   const config: NodeConfig = { 
     icon, bgColor: 'bg-emerald-50', borderColor: 'border-emerald-400', 
     textColor: 'text-emerald-900', descColor: 'text-emerald-700', handleColor: 'bg-emerald-600' 
   };
   
+  // Update label for display
+  const displayData = {
+    ...data,
+    label: getDisplayLabel()
+  };
+  
   return (
-    <BaseNode data={data} config={config} type="tool">
+    <BaseNode data={displayData} config={config} type="tool">
       <div className="bg-white/50 rounded p-2 border border-emerald-100">
         <div className="text-[10px] font-mono text-emerald-600 break-all">ID: {data.tool_name || 'internal_tool'}</div>
       </div>

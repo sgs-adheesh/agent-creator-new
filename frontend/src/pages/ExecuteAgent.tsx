@@ -5,21 +5,6 @@ import WorkflowCanvas from '../components/WorkflowCanvas';
 export default function ExecuteAgent() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  // const [showPlayground, setShowPlayground] = useState(false);
-
-  // useEffect(() => {
-  //   // Trigger window resize event to make ReactFlow recalculate viewport
-  //   const timer1 = setTimeout(() => {
-  //     window.dispatchEvent(new Event('resize'));
-  //   }, 50);
-  //   const timer2 = setTimeout(() => {
-  //     window.dispatchEvent(new Event('resize'));
-  //   }, 200);
-  //   return () => {
-  //     clearTimeout(timer1);
-  //     clearTimeout(timer2);
-  //   };
-  // }, [showPlayground]);
 
   if (!id) {
     return (
@@ -44,15 +29,9 @@ export default function ExecuteAgent() {
             <h1 className="text-2xl font-bold text-gray-900">Agent Workflow</h1>
           </div>
           <div className="flex gap-3">
-            {/* <button
-              onClick={() => setShowPlayground(!showPlayground)}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
-            >
-              {showPlayground ? 'Hide' : 'Show'} Playground
-            </button> */}
             <button
               onClick={() => navigate(`/agents/${id}/edit`)}
-              className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               Edit Agent
             </button>

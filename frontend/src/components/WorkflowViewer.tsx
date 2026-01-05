@@ -50,7 +50,7 @@ export default function WorkflowViewer({ agentId, useAi = true }: WorkflowViewer
 
   if (loading) {
     return (
-      <div className="h-[600px] flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+      <div className="h-[600px] flex items-center justify-center bg-gray-50 rounded-lg border-1 border-dashed border-gray-300">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading workflow...</p>
@@ -61,7 +61,7 @@ export default function WorkflowViewer({ agentId, useAi = true }: WorkflowViewer
 
   if (error) {
     return (
-      <div className="h-[600px] flex items-center justify-center bg-red-50 rounded-lg border-2 border-red-300">
+      <div className="h-[600px] flex items-center justify-center bg-red-50 rounded-lg border-1 border-red-300">
         <div className="text-center">
           <div className="text-4xl mb-4">⚠️</div>
           <p className="text-red-700">{error}</p>
@@ -77,7 +77,7 @@ export default function WorkflowViewer({ agentId, useAi = true }: WorkflowViewer
   }
 
   return (
-    <div className="h-[600px] border-2 border-gray-200 rounded-lg overflow-hidden">
+    <div className="h-[600px] border-1 border-gray-200 rounded-lg overflow-hidden">
       {metadata && (
         <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
           <div className="flex items-center gap-4 text-sm text-gray-600">

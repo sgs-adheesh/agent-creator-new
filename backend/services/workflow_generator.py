@@ -66,13 +66,14 @@ class WorkflowGenerator:
         # Create input node based on trigger type
         input_node = self._create_input_node(trigger_type)
         
-        # Create nodes
+        # Create nodes - VERTICAL SYMMETRIC LAYOUT (centered at x=400)
+        visual_center_x = 400
         nodes = [
             input_node,
             {
                 "id": "agent",
                 "type": "agent",
-                "position": {"x": 250, "y": 100},
+                "position": {"x": visual_center_x, "y": 150},  # Centered agent node
                 "data": {
                     "label": agent_name,
                     "description": agent_prompt,
@@ -92,27 +93,39 @@ class WorkflowGenerator:
             }
         ]
         
-        # Add tool nodes
+        # Add tool nodes - VERTICALLY SYMMETRIC LAYOUT
+        # Tools appear on same horizontal line, centered around x=400 (visual center)
         tool_y_position = 250
-        tool_x_start = 100
-        tool_spacing = 200
+        visual_center = 400  # Center point for symmetric distribution
         
-        for idx, tool in enumerate(tools):
-            tool_id = f"tool-{tool['name']}"
-            tool_x = tool_x_start + (idx * tool_spacing)
+        # Calculate optimal horizontal spacing based on number of tools
+        num_tools = len(tools)
+        
+        # Node width estimate: ~180px per node (to prevent overlap)
+        node_width = 180
+        min_gap = 40  # Minimum gap between nodes
+        min_spacing = node_width + min_gap  # Total space per node
+        
+        if num_tools == 0:
+            pass  # No tools to add
+        elif num_tools == 1:
+            # Single tool: center at visual_center
+            tool_x_start = visual_center
+            tool_spacing = 0
             
+            tool_id = f"tool-{tools[0]['name']}"
             nodes.append({
                 "id": tool_id,
                 "type": "tool",
-                "position": {"x": tool_x, "y": tool_y_position},
+                "position": {"x": tool_x_start, "y": tool_y_position},
                 "data": {
-                    "label": tool["display_name"],
-                    "description": tool["description"],
-                    "tool_name": tool["name"]
+                    "label": tools[0]["display_name"],
+                    "description": tools[0]["description"],
+                    "tool_name": tools[0]["name"]
                 }
             })
             
-            # Edge from agent to tool
+            # Edges for single tool
             edges.append({
                 "id": f"e-agent-{tool_id}",
                 "source": "agent",
@@ -120,8 +133,6 @@ class WorkflowGenerator:
                 "type": "smoothstep",
                 "animated": False
             })
-            
-            # Edge from tool to output (will connect later)
             edges.append({
                 "id": f"e-{tool_id}-output",
                 "source": tool_id,
@@ -129,12 +140,92 @@ class WorkflowGenerator:
                 "type": "smoothstep",
                 "animated": False
             })
+        elif num_tools == 2:
+            # Two tools: symmetric around visual_center
+            # Place one on each side with equal distance from center
+            offset = (node_width + min_gap) / 2
+            positions = [visual_center - offset - node_width/2, visual_center + offset + node_width/2]
+            
+            for idx, tool in enumerate(tools):
+                tool_id = f"tool-{tool['name']}"
+                
+                nodes.append({
+                    "id": tool_id,
+                    "type": "tool",
+                    "position": {"x": positions[idx], "y": tool_y_position},
+                    "data": {
+                        "label": tool["display_name"],
+                        "description": tool["description"],
+                        "tool_name": tool["name"]
+                    }
+                })
+                
+                edges.append({
+                    "id": f"e-agent-{tool_id}",
+                    "source": "agent",
+                    "target": tool_id,
+                    "type": "smoothstep",
+                    "animated": False
+                })
+                edges.append({
+                    "id": f"e-{tool_id}-output",
+                    "source": tool_id,
+                    "target": "output",
+                    "type": "smoothstep",
+                    "animated": False
+                })
+        else:
+            # Multiple tools (3+): distribute symmetrically around visual_center
+            # Calculate total width needed
+            total_width = (num_tools - 1) * min_spacing
+            
+            # Start position (leftmost tool)
+            tool_x_start = visual_center - (total_width / 2)
+            
+            # If total width exceeds reasonable bounds, adjust
+            if total_width > 1200:
+                # Too wide, use minimum spacing and start from reasonable left position
+                tool_x_start = 100
+                min_spacing = max(min_spacing, 200)  # Ensure at least 200px spacing
+            
+            for idx, tool in enumerate(tools):
+                tool_id = f"tool-{tool['name']}"
+                tool_x = tool_x_start + (idx * min_spacing)
+                
+                nodes.append({
+                    "id": tool_id,
+                    "type": "tool",
+                    "position": {"x": tool_x, "y": tool_y_position},
+                    "data": {
+                        "label": tool["display_name"],
+                        "description": tool["description"],
+                        "tool_name": tool["name"]
+                    }
+                })
+                
+                # Edge from agent to tool
+                edges.append({
+                    "id": f"e-agent-{tool_id}",
+                    "source": "agent",
+                    "target": tool_id,
+                    "type": "smoothstep",
+                    "animated": False
+                })
+                
+                # Edge from tool to output
+                edges.append({
+                    "id": f"e-{tool_id}-output",
+                    "source": tool_id,
+                    "target": "output",
+                    "type": "smoothstep",
+                    "animated": False
+                })
         
         # Add output node
         nodes.append({
             "id": "output",
             "type": "output",
-            "position": {"x": 250, "y": 400},
+            "position": {"x": 400, "y": 400},  # Centered output at bottom
             "data": {
                 "label": "Result",
                 "description": "Agent response to user"
@@ -205,7 +296,7 @@ class WorkflowGenerator:
         return {
             "id": "input",
             "type": "input",
-            "position": {"x": 250, "y": 0},
+            "position": {"x": 400, "y": 0},  # Centered input at top
             "data": {
                 "label": config["label"],
                 "description": config["description"],

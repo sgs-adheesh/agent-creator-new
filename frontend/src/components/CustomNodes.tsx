@@ -40,7 +40,7 @@ const BaseNode = ({
     <div 
       onClick={() => setIsExpanded(!isExpanded)}
       className={`
-        relative px-4 py-3 shadow-xl rounded-xl border-2 transition-all duration-300 ease-in-out cursor-pointer
+        relative px-4 py-3 rounded-xl border-1 transition-all duration-300 ease-in-out cursor-pointer
         ${config.bgColor} ${config.borderColor} 
         /* Width logic: dynamic but constrained for readability */
         min-w-[220px] max-w-[400px] h-auto group

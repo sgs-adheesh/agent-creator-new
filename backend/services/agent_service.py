@@ -396,41 +396,56 @@ class AgentService:
             Dictionary with detailed summary statistics and human-readable insights
         """
         try:
+            print(f"\n🔍 DEBUG: Generating summary from {len(intermediate_steps)} steps")
+            
+            # 🔧 FIX: Check ALL steps and use the LAST successful postgres_query with rows
+            last_successful_summary = None
+            
             # Find postgres_query results
-            for step in intermediate_steps:
+            for idx, step in enumerate(intermediate_steps):
+                print(f"  Step {idx}: type={type(step)}, is_dict={isinstance(step, dict)}, is_tuple={isinstance(step, tuple)}")
+                
                 # Handle both tuple format (action, result) and dict format {"action": ..., "result": ...}
                 if isinstance(step, dict):
                     # Dictionary format (from cached execution)
                     action = step.get('action', {})
                     result = step.get('result', '')
                     tool_name = action.get('tool') if isinstance(action, dict) else None
-                elif len(step) >= 2:
+                    print(f"    Dict format: tool_name={tool_name}")
+                elif isinstance(step, tuple) and len(step) >= 2:
                     # Tuple format (from regular execution)
                     action, result = step[0], step[1]
                     tool_name = getattr(action, 'tool', None)
+                    print(f"    Tuple format: tool_name={tool_name}, result_type={type(result)}")
                 else:
+                    print(f"    Unknown format, skipping")
                     continue
                 
                 if tool_name == 'postgres_query':
+                    print(f"    ✅ Found postgres_query step!")
                     # Parse result
                     if isinstance(result, str):
+                        print(f"      Result is string, attempting eval()...")
                         try:
                             result_dict = eval(result)
-                        except:
+                            print(f"      ✅ Eval successful, type={type(result_dict)}")
+                        except Exception as eval_err:
+                            print(f"      ❌ Eval failed: {eval_err}")
                             continue
                     else:
+                        print(f"      Result is already dict: {type(result)}")
                         result_dict = result
                     
+                    print(f"      Checking if result_dict has 'rows'... has_rows={'rows' in result_dict if isinstance(result_dict, dict) else False}")
                     if isinstance(result_dict, dict) and 'rows' in result_dict:
                         rows = result_dict.get('rows', [])
                         columns = result_dict.get('columns', [])
+                        print(f"      🎉 Found rows! row_count={len(rows)}, columns={len(columns)}")
                         
+                        # Skip if no rows, but continue checking other steps
                         if not rows:
-                            return {
-                                "total_records": 0,
-                                "message": "No records found",
-                                "description": "The query returned no matching records."
-                            }
+                            print(f"      ⚠️ No rows in this step, continuing to next step...")
+                            continue
                         
                         summary = {
                             "total_records": len(rows),
@@ -766,12 +781,19 @@ class AgentService:
                         if numeric_summary:
                             full_summary_parts.append("## 💰 Numbers\n")
                             for col, data in numeric_summary.items():
-                                if data.get('is_quantity'):
-                                    full_summary_parts.append(f"**{col}:** {data['sum']:,.0f} total, {data['average']:,.1f} avg ({data['min']:,.0f} - {data['max']:,.0f})")
+                                # Handle header fields (duplicated values)
+                                if data.get('is_header_field'):
+                                    unique_vals = data.get('unique_values', [])
+                                    if unique_vals:
+                                        vals_str = ', '.join([f"${v:,.2f}" for v in unique_vals[:3]])
+                                        full_summary_parts.append(f"**{col}:** {data.get('unique_count', 0)} unique values ({vals_str})")
+                                # Handle regular numeric fields
+                                elif data.get('is_quantity'):
+                                    full_summary_parts.append(f"**{col}:** {data.get('sum', 0):,.0f} total, {data.get('average', 0):,.1f} avg ({data.get('min', 0):,.0f} - {data.get('max', 0):,.0f})")
                                 elif data.get('is_currency'):
-                                    full_summary_parts.append(f"**{col}:** ${data['sum']:,.2f} total, ${data['average']:,.2f} avg")
+                                    full_summary_parts.append(f"**{col}:** ${data.get('sum', 0):,.2f} total, ${data.get('average', 0):,.2f} avg")
                                 else:
-                                    full_summary_parts.append(f"**{col}:** {data['average']:,.2f} avg ({data['min']:,.2f} - {data['max']:,.2f})")
+                                    full_summary_parts.append(f"**{col}:** {data.get('average', 0):,.2f} avg ({data.get('min', 0):,.2f} - {data.get('max', 0):,.2f})")
                             full_summary_parts.append("")
                         
                         if date_summary:
@@ -801,20 +823,37 @@ class AgentService:
                         print(f"\n🤖 Attempting to generate AI summary...")
                         try:
                             ai_summary = self._generate_ai_summary(rows, columns, summary)
-                            if ai_summary:
+                            if ai_summary and ai_summary.strip():
                                 summary["ai_summary"] = ai_summary
                                 # Prepend AI summary to full summary
                                 summary["full_summary"] = f"# 🤖 AI-Generated Insights\n\n{ai_summary}\n\n---\n\n{summary['full_summary']}"
-                                print(f"✅ AI summary successfully added to response")
+                                print(f"✅ AI summary successfully added to response ({len(ai_summary)} chars)")
                             else:
-                                print(f"⚠️ AI summary returned None")
+                                print(f"⚠️ AI summary returned None or empty - using fallback")
+                                # Create fallback AI summary from full_summary
+                                fallback_summary = f"## Query Results\n\n{full_summary_parts[1] if len(full_summary_parts) > 1 else 'Data retrieved successfully.'}"
+                                summary["ai_summary"] = fallback_summary
+                                print(f"✅ Using fallback AI summary")
                         except Exception as e:
                             print(f"❌ Could not generate AI summary: {e}")
                             import traceback
                             traceback.print_exc()
+                            # Always provide SOME ai_summary even if generation fails
+                            fallback_summary = f"## Query Results\n\n**{len(rows)}** records found with **{len(columns)}** columns.\n\nData retrieved successfully."
+                            summary["ai_summary"] = fallback_summary
+                            print(f"✅ Using emergency fallback AI summary")
                         
-                        return summary
+                        # 🔧 FIX: Save this summary and continue checking other steps
+                        # We want the LAST successful query with data
+                        last_successful_summary = summary
+                        print(f"      💾 Saved summary from step {idx}, will use this if no later steps have data")
             
+            # Return the last successful summary found
+            if last_successful_summary:
+                print(f"\n✅ Returning summary with {last_successful_summary.get('total_records', 0)} records")
+                return last_successful_summary
+            
+            print(f"\n⚠️ No postgres_query steps with rows found in any step")
             return None
             
         except Exception as e:
@@ -853,20 +892,46 @@ class AgentService:
 {self._format_sample_data(sample_rows, columns)}
 
 **Instructions:**
-Provide a detailed, insightful summary (4-6 sentences) that:
-1. Identifies the key findings and patterns in the data
-2. Highlights any notable trends, concentrations, or anomalies
-3. Provides business-relevant observations and actionable insights
-4. Mentions specific numbers, vendors, or amounts when relevant
-5. Uses natural, professional language suitable for business stakeholders
+Provide a detailed, insightful summary using **STRICT MARKDOWN FORMATTING**:
 
-Do NOT:
-- Simply repeat the raw statistics without interpretation
+**Required Format:**
+1. Start with a ## Main Heading
+2. Use **bold** for important terms (vendors, amounts, invoice numbers)
+3. Use bullet points (- or *) for lists
+4. Use numbered lists (1., 2., 3.) for sequential findings
+5. Use ### subheadings to organize sections
+6. Use > blockquotes for key insights or warnings
+
+**Content Requirements:**
+1. Identify key findings and patterns in the data
+2. Highlight notable trends, concentrations, or anomalies
+3. Provide business-relevant observations and actionable insights
+4. Mention specific numbers, vendors, or amounts when relevant
+5. Use natural, professional language suitable for business stakeholders
+
+**Do NOT:**
+- Write plain paragraphs without markdown formatting
+- Simply repeat raw statistics without interpretation
 - Use overly technical jargon
 - Make assumptions or recommendations beyond the data
-- Use markdown formatting (plain text only)
 
-Provide a comprehensive analysis:"""
+**Example Format:**
+```markdown
+## Duplicate Invoice Analysis
+
+### Key Findings
+- Found **10 duplicate groups** affecting **30 invoices**
+- Vendor **meat Hub** has invoice **#328** duplicated **4 times** (Total: **$1.00**)
+
+### Business Impact
+> ⚠️ High-priority duplicates detected in vendor payments
+
+### Recommendations
+1. Review invoices with 4+ duplicates first
+2. Implement validation checks
+```
+
+Provide a comprehensive markdown-formatted analysis:"""
             
             # Use the LLM to generate summary
             from langchain_core.messages import HumanMessage
@@ -954,6 +1019,80 @@ Provide a comprehensive analysis:"""
             lines.append(f"... ({len(rows) - 5} more rows)")
         
         return '\n'.join(lines)
+    
+    def _ensure_markdown_format(self, text: str) -> str:
+        """
+        Ensure text output is properly formatted as markdown
+        If the LLM returns plain text, convert it to markdown
+        Also removes markdown code block wrappers if present
+        
+        Args:
+            text: Raw text output from LLM
+            
+        Returns:
+            Markdown-formatted text
+        """
+        try:
+            # 🧹 CLEAN: Remove markdown code block wrappers if present
+            # LLM sometimes wraps markdown in ```markdown...``` which breaks rendering
+            import re
+            if '```markdown' in text or '```' in text:
+                print("  🧹 Removing markdown code block wrapper...")
+                # Extract content from ```markdown\n...\n``` or ```\n...\n```
+                code_match = re.search(r'```(?:markdown)?\n(.*)\n```', text, re.DOTALL)
+                if code_match:
+                    text = code_match.group(1).strip()
+                    print(f"  ✅ Extracted markdown from code block ({len(text)} chars)")
+            
+            # Check if text already has markdown formatting
+            has_headers = any(line.strip().startswith('#') for line in text.split('\n'))
+            has_bold = '**' in text
+            has_lists = any(line.strip().startswith(('-', '*', '1.', '2.', '3.')) for line in text.split('\n'))
+            
+            # If it has any markdown, assume it's properly formatted
+            if has_headers or (has_bold and has_lists):
+                print("  ✅ Output already has markdown formatting")
+                return text
+            
+            # Text is plain - use LLM to convert to markdown
+            print("  🎨 Converting plain text output to markdown...")
+            
+            from langchain_core.messages import HumanMessage
+            
+            conversion_prompt = f"""Convert the following plain text response into proper markdown format.
+
+Original Text:
+{text}
+
+IMPORTANT REQUIREMENTS:
+1. Start with a ## main heading
+2. Use ### for subheadings
+3. Use **bold** for important terms (amounts, names, invoice numbers, dates)
+4. Use bullet points (-) for lists
+5. Use numbered lists (1., 2., 3.) for sequential items
+6. Use > for important warnings or highlights
+7. Keep the original content and meaning EXACTLY - just add markdown formatting
+8. Do NOT add new information or change the facts
+
+Return ONLY the markdown-formatted version:"""
+            
+            response = self.llm.invoke([HumanMessage(content=conversion_prompt)])
+            markdown_text = response.content.strip()
+            
+            # Remove any markdown code blocks if present
+            if '```' in markdown_text:
+                import re
+                code_match = re.search(r'```(?:markdown)?\n(.*?)\n```', markdown_text, re.DOTALL)
+                if code_match:
+                    markdown_text = code_match.group(1).strip()
+            
+            print(f"  ✅ Converted to markdown ({len(markdown_text)} chars)")
+            return markdown_text
+            
+        except Exception as e:
+            print(f"  ⚠️ Error converting to markdown: {e}")
+            # Fallback: return original text
+            return text
     
     def _execute_with_guidance(self, agent_data: Dict, user_query: str, input_data: Dict = None) -> Dict[str, Any]:
         """
@@ -1273,6 +1412,212 @@ CORRECTED QUERY:"""
             print(f"  ⚠️ Error saving corrected query template: {e}")
             import traceback
             traceback.print_exc()
+    
+    def _extract_successful_query_from_steps(self, intermediate_steps: List) -> str:
+        """
+        Extract the successful SQL query from intermediate steps
+        
+        Args:
+            intermediate_steps: List of execution steps from LangChain
+            
+        Returns:
+            SQL query string if found, otherwise None
+        """
+        try:
+            for step in intermediate_steps:
+                # Handle tuple format (action, result)
+                if isinstance(step, tuple) and len(step) >= 2:
+                    action, result = step[0], step[1]
+                    tool_name = getattr(action, 'tool', None)
+                    
+                    if tool_name == 'postgres_query':
+                        # Extract query from tool input
+                        tool_input = getattr(action, 'tool_input', {})
+                        if isinstance(tool_input, dict):
+                            query = tool_input.get('query')
+                            if query:
+                                # Verify the query was successful by checking result
+                                if isinstance(result, str):
+                                    try:
+                                        result_dict = eval(result)
+                                        if result_dict.get('success'):
+                                            return query
+                                    except:
+                                        pass
+                                elif isinstance(result, dict) and result.get('success'):
+                                    return query
+            
+            return None
+            
+        except Exception as e:
+            print(f"  ⚠️ Error extracting query from steps: {e}")
+            return None
+    
+    def _save_successful_query_to_agent(self, agent_id: str, agent_data: Dict, successful_query: str, 
+                                        user_query: str, input_data: Dict = None) -> None:
+        """
+        Save a successful query to the agent's execution_guidance for future reuse
+        This is called when a query executes successfully, whether it's a new query or a corrected one
+        
+        Args:
+            agent_id: Agent ID
+            agent_data: Agent configuration dictionary
+            successful_query: The SQL query that executed successfully
+            user_query: The original user query/request
+            input_data: Optional structured input data (month, year, etc.)
+        """
+        try:
+            workflow_config = agent_data.get('workflow_config', {})
+            trigger_type = workflow_config.get('trigger_type', 'text_query')
+            
+            print(f"  💾 AUTO-SAVE: Saving successful query...")
+            print(f"     - Trigger type: {trigger_type}")
+            print(f"     - Query length: {len(successful_query)} chars")
+            
+            # For text_query, save the query but mark it as non-parameterized
+            if trigger_type == 'text_query':
+                print(f"  📝 Text query mode - saving exact query (no parameterization)")
+                query_template_str = successful_query
+                parameters = []
+            else:
+                # Extract parameters from the successful query based on trigger type
+                query_template_str, parameters = self._convert_query_to_template(successful_query, trigger_type, input_data)
+                
+                if not query_template_str:
+                    print(f"  ⚠️ Could not convert query to template - saving as-is")
+                    query_template_str = successful_query
+                    parameters = []
+            
+            # Get or create execution_guidance
+            execution_guidance = agent_data.get('execution_guidance', {})
+            
+            # Create query template structure
+            query_template = {
+                "full_template": query_template_str,
+                "base_query": successful_query.split('WHERE')[0].strip() if 'WHERE' in successful_query.upper() else successful_query,
+                "parameters": parameters,
+                "param_instructions": self._get_param_instructions(trigger_type, parameters),
+                "auto_saved": True,
+                "saved_from": "successful_execution",
+                "saved_at": datetime.now().isoformat(),
+                "original_query": successful_query,
+                "user_query": user_query
+            }
+            
+            # Update or create execution_guidance
+            if not execution_guidance or execution_guidance.get('error'):
+                # Create new guidance
+                execution_guidance = {
+                    "query_template": query_template,
+                    "execution_plan": self._build_execution_plan(
+                        trigger_type=trigger_type,
+                        output_format=workflow_config.get('output_format', 'text'),
+                        query_template=query_template
+                    ),
+                    "schema_context": "Auto-generated from successful execution",
+                    "generated_at": datetime.now().isoformat(),
+                    "configuration": {
+                        "trigger_type": trigger_type,
+                        "output_format": workflow_config.get('output_format', 'text'),
+                        "prompt": agent_data.get('prompt', '')
+                    }
+                }
+            else:
+                # Update existing guidance with new query template
+                execution_guidance['query_template'] = query_template
+                execution_guidance['last_updated'] = datetime.now().isoformat()
+                execution_guidance['updated_from'] = 'successful_execution'
+            
+            # Save to agent storage
+            self.storage.update_agent(agent_id, {'execution_guidance': execution_guidance})
+            
+            print(f"  ✅ Query auto-saved to agent JSON for future reuse")
+            print(f"     - Template: {query_template_str[:80]}...")
+            print(f"     - Parameters: {parameters}")
+            print(f"     - Trigger type: {trigger_type}")
+            print(f"  ℹ️  Future executions will use this successful query")
+            
+        except Exception as e:
+            print(f"  ⚠️ Error auto-saving query: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _convert_query_to_template(self, query: str, trigger_type: str, input_data: Dict = None) -> tuple:
+        """
+        Convert a successful query to a parameterized template
+        
+        Args:
+            query: The successful SQL query
+            trigger_type: Workflow trigger type
+            input_data: Optional input data used in execution
+            
+        Returns:
+            Tuple of (template_string, parameters_list)
+        """
+        try:
+            import re
+            
+            parameters = []
+            template = query
+            
+            if trigger_type == "month_year" and input_data:
+                month = input_data.get('month')
+                year = input_data.get('year')
+                
+                if month and year:
+                    # Replace specific month/year with template placeholders
+                    # Pattern: 'MM/%/YYYY' -> '{month}/%/{year}'
+                    pattern = f"'{month}/%/{year}'"
+                    if pattern in query:
+                        template = query.replace(pattern, "'{month}/%/{year}'")
+                        parameters = ['month', 'year']
+                    else:
+                        # Try without quotes
+                        pattern_no_quotes = f"{month}/%/{year}"
+                        template = query.replace(pattern_no_quotes, "{month}/%/{year}")
+                        parameters = ['month', 'year']
+            
+            elif trigger_type == "date_range" and input_data:
+                start_date = input_data.get('start_date')
+                end_date = input_data.get('end_date')
+                
+                if start_date and end_date:
+                    # Replace specific dates with template placeholders
+                    template = re.sub(rf"'{re.escape(start_date)}'", "'{start_date}'", query, count=1)
+                    template = re.sub(rf"'{re.escape(end_date)}'", "'{end_date}'", template, count=1)
+                    parameters = ['start_date', 'end_date']
+            
+            elif trigger_type == "year" and input_data:
+                year = input_data.get('year')
+                
+                if year:
+                    # Replace specific year with template placeholder
+                    # Pattern: '%/%/YYYY' -> '%/%/{year}'
+                    pattern = f"'%/%/{year}'"
+                    if pattern in query:
+                        template = query.replace(pattern, "'%/%/{year}'")
+                        parameters = ['year']
+            
+            return (template, parameters)
+            
+        except Exception as e:
+            print(f"  ⚠️ Error converting query to template: {e}")
+            return (None, [])
+    
+    def _get_param_instructions(self, trigger_type: str, parameters: List[str]) -> str:
+        """
+        Generate parameter extraction instructions based on trigger type
+        """
+        if trigger_type == "month_year":
+            return "Extract 'month' and 'year' from input_data. Month should be 2-digit format (01-12)."
+        elif trigger_type == "date_range":
+            return "Extract 'start_date' and 'end_date' from input_data. Format: MM/DD/YYYY."
+        elif trigger_type == "year":
+            return "Extract 'year' from input_data (4-digit format)."
+        elif trigger_type == "conditions":
+            return f"Extract these fields from input_data: {', '.join(parameters)}"
+        else:
+            return "Parse user query to determine filter conditions dynamically."
     
     def _inspect_schema_for_prompt(self, prompt: str, agent_tools: List) -> str:
         """
@@ -2167,7 +2512,43 @@ Trigger Type Patterns:
 ❌ WRONG final response (DO NOT DO THIS):
 "### Invoice Report\n| Invoice Number | Date |\n|---|---|\n| 123 | 01/01/2025 |"
 
-Remember: For CSV output, just confirm the query executed - don't format anything!"""
+Remember: For CSV output, just confirm the query executed - don't format anything!
+
+🎨 **MARKDOWN FORMATTING REQUIREMENT (CRITICAL):**
+Your final response MUST be in **STRICT MARKDOWN FORMAT**:
+
+✅ **REQUIRED MARKDOWN SYNTAX:**
+- Use `##` for main headings
+- Use `###` for subheadings  
+- Use `**bold**` for important terms (amounts, names, invoice numbers)
+- Use `-` or `*` for bullet lists
+- Use `1.` `2.` for numbered lists
+- Use `>` for blockquotes/warnings
+- Use blank lines between sections
+
+❌ **NEVER output plain paragraphs without markdown!**
+
+**Example CORRECT response:**
+```markdown
+## Invoice Analysis Report
+
+### Summary
+- Total invoices: **157**
+- Date range: **January 2025**
+- Vendor **ABC Corp** has highest amount: **$45,230.00**
+
+### Top 5 Vendors
+1. **ABC Corp** - $45,230.00
+2. **XYZ Inc** - $32,100.00
+
+> ⚠️ 3 invoices pending approval
+```
+
+❌ **WRONG (plain text):**
+"The report shows 157 invoices for January 2025. ABC Corp has the highest amount..."
+
+✅ **ALL responses must use markdown formatting!**
+"""
         
         elif has_postgres and not is_report_agent:
             # 🎯 FLEXIBLE MODE: Simpler PostgreSQL instructions for non-report agents
@@ -2251,9 +2632,84 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
 - ✅ Always inspect schema before querying
 - ✅ Use `->>'value'` for JSONB columns
 - ✅ Respect the `output_format` setting
+
+🎨 **MARKDOWN FORMATTING REQUIREMENT (CRITICAL):**
+Your final response MUST be in **STRICT MARKDOWN FORMAT**:
+
+✅ **REQUIRED MARKDOWN SYNTAX:**
+- Use `##` for main headings
+- Use `###` for subheadings  
+- Use `**bold**` for important terms (amounts, names, invoice numbers)
+- Use `-` or `*` for bullet lists
+- Use `1.` `2.` for numbered lists
+- Use `>` for blockquotes/warnings
+- Use blank lines between sections
+
+❌ **NEVER output plain paragraphs without markdown!**
+
+**Example CORRECT format:**
+```markdown
+## Duplicate Invoice Analysis
+
+### Key Findings
+- Found **10 duplicate groups** affecting **30 invoices**
+- Vendor **meat Hub** has invoice **#328** duplicated **4 times**
+
+### Business Impact
+> ⚠️ High-priority duplicates detected
+
+### Recommendations
+1. Review invoices with 4+ duplicates
+2. Implement validation checks
+```
+
+❌ **WRONG (plain text):**
+"Found 6 duplicate invoice groups in the data provided. The first group includes..."
+
+✅ **Markdown formatting is MANDATORY for ALL responses!**
 """
         
-        system_prompt += """\n\nUse these tools to help users accomplish their tasks. Always be helpful and provide clear explanations of your actions."""
+        system_prompt += """\n\nUse these tools to help users accomplish their tasks. Always be helpful and provide clear explanations of your actions.
+
+🚨🚨🚨 CRITICAL OUTPUT FORMATTING RULE 🚨🚨🚨
+
+Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
+
+✅ REQUIRED:
+- Start with `## Main Heading`
+- Use `### Subheading` for sections
+- Use `**bold**` for important terms (invoice numbers, amounts, vendor names, dates)
+- Use `-` for bullet lists
+- Use `1.` `2.` for numbered lists  
+- Use `>` for warnings/highlights
+- Add blank lines between sections
+
+❌ FORBIDDEN:
+- Plain text paragraphs without any markdown
+- Missing headings
+- No bullet points or formatting
+
+**CORRECT Example:**
+```markdown
+## Duplicate Invoice Analysis
+
+### Overview
+- Total duplicates: **10 groups**
+- Vendor **meat Hub** has invoice **#328** appearing **4 times**
+
+### Critical Issues  
+> ⚠️ Requires immediate attention
+
+### Next Steps
+1. Review high-priority duplicates
+2. Contact vendors for clarification
+```
+
+❌ WRONG (plain text):
+"Found 10 duplicate groups in the data. The first group is invoice 328 from meat Hub..."
+
+🔴 YOU MUST FORMAT YOUR RESPONSE IN MARKDOWN - NO EXCEPTIONS! 🔴
+"""
           
         return system_prompt
       
@@ -2548,12 +3004,34 @@ Remember: For CSV output, just confirm the query executed - don't format anythin
                 # Execute
                 result = agent_executor.invoke({"input": user_query})
                 
+                # 💾 AUTO-SAVE: Extract and save successful query to agent JSON
+                successful_query = self._extract_successful_query_from_steps(result.get("intermediate_steps", []))
+                if successful_query:
+                    print(f"\n💾 AUTO-SAVE: Successful query detected, saving to agent JSON...")
+                    self._save_successful_query_to_agent(
+                        agent_id=agent_id,
+                        agent_data=agent_data,
+                        successful_query=successful_query,
+                        user_query=user_query,
+                        input_data=input_data
+                    )
+                
                 # Format output based on output_format
+                raw_output = result.get("output", "")
+                
+                # 🎨 FORCE MARKDOWN: If output doesn't have markdown, convert it
+                markdown_output = self._ensure_markdown_format(raw_output)
+                
                 formatted_result = self._format_output(
-                    result.get("output", ""),
+                    markdown_output,
                     output_format,
                     result.get("intermediate_steps", [])
                 )
+                
+                # Add flag if query was auto-saved
+                if successful_query:
+                    formatted_result['query_auto_saved'] = True
+                    formatted_result['saved_query'] = successful_query
                 
                 return formatted_result
 

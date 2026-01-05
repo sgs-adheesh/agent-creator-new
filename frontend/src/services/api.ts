@@ -49,6 +49,10 @@ export interface ExecuteAgentResponse {
   output?: string;
   error?: string;
   intermediate_steps?: unknown[];
+  query_auto_saved?: boolean;
+  saved_query?: string;
+  query_corrected?: boolean;
+  query_attempts?: number;
 }
 
 export interface WorkflowNode {

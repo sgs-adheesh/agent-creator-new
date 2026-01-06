@@ -19,9 +19,7 @@ import remarkGfm from 'remark-gfm';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-// ============================================================================
-// MARKDOWN RENDERER COMPONENT
-// ============================================================================
+
 function MarkdownRenderer({ content }: { content: string }) {
   return (
     <div className="markdown-content max-w-none" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -63,9 +61,7 @@ function MarkdownRenderer({ content }: { content: string }) {
   );
 }
 
-// ============================================================================
-// TOOL CONFIGURATION FORM COMPONENT
-// ============================================================================
+
 interface ToolConfigFormProps {
   toolName: string;
   initialConfig: Record<string, string>;
@@ -158,23 +154,18 @@ function ToolConfigForm({ toolName, initialConfig, onSave, onCancel }: ToolConfi
   );
 }
 
-// ============================================================================
-// DATA VISUALIZATION WRAPPER
-// ============================================================================
+
 function ResultDataVisualization({ data }: { data: unknown }) {  
   return <DataVisualization data={data} title="Data Analysis" />;
 }
 
-// ============================================================================
-// MAIN WORKFLOW CANVAS COMPONENT
-// ============================================================================
+
 interface WorkflowCanvasProps {
   agentId: string;
   viewMode?: 'full' | 'workflow-only' | 'playground-only';
 }
 
 export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowCanvasProps) {
-  // State management
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [loading, setLoading] = useState(true);
@@ -182,6 +173,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   const [showPlayground, setShowPlayground] = useState(viewMode === 'playground-only');
   const [query, setQuery] = useState('');
   const [executing, setExecuting] = useState(false);
+  const [executionStatus, setExecutionStatus] = useState<string>('Idle...');
   const [result, setResult] = useState<ExecuteAgentResponse | null>(null);
   const [toolConfigs, setToolConfigs] = useState<Record<string, Record<string, string>>>({});
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -189,19 +181,15 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   const [workflowConfig, setWorkflowConfig] = useState<WorkflowConfig>({
     trigger_type: 'text_query',
     input_fields: [],
-    output_format: 'text',  // Standardized to 'text' for markdown output
+    output_format: 'text',
   });
   const [executedQuery, setExecutedQuery] = useState<string | null>(null);
   const [cachingQuery, setCachingQuery] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const [showInputForm, setShowInputForm] = useState(true);
-  
-  // Progress tracking
   const [executionProgress, setExecutionProgress] = useState<ProgressStep[]>([]);
 
-  // ============================================================================
-  // WORKFLOW LOADING
-  // ============================================================================
+
   const loadWorkflow = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -237,10 +225,8 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     loadWorkflow();
   }, [loadWorkflow]);
 
-  // Create a ref to access ReactFlow instance
   const reactFlowInstance = React.useRef<{ fitView: (options?: { padding?: number; maxZoom?: number }) => void } | null>(null);
 
-  // Re-trigger fitView when panel resizes
   useEffect(() => {
     if (!reactFlowInstance.current) return;
 
@@ -252,7 +238,6 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       }, 0);
     };
 
-    // Create ResizeObserver for this component's container
     const container = document.getElementById('workflow-container');
     let resizeObserver: ResizeObserver | null = null;
     
@@ -263,7 +248,6 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       resizeObserver.observe(container);
     }
 
-    // Also listen to window resize
     window.addEventListener('resize', handleResize);
     
     return () => {
@@ -276,7 +260,6 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
 
   const onInit = (instance: { fitView: (options?: { padding?: number; maxZoom?: number }) => void }) => {
     reactFlowInstance.current = instance;
-    // Initial fit
     instance.fitView({ padding: 0.2, maxZoom: 1 });
   };
 
@@ -297,13 +280,13 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         format: 'a4',
       });
 
-      const imgWidth = 210; // A4 width in mm
+      const imgWidth = 210; 
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= 297; // A4 height in mm
+      heightLeft -= 297; 
 
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
@@ -319,9 +302,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     }
   };
 
-  // ============================================================================
-  // TOOL CONFIGURATION HANDLERS
-  // ============================================================================
+
   const handleToolConfigure = (toolName: string) => {
     const excludedTools = ['postgres_query', 'postgres_inspect_schema', 'qdrant_connector', 'qdrant_search', 'QdrantConnector', 'PostgresConnector'];
     if (excludedTools.some(excluded => toolName.toLowerCase().includes(excluded.toLowerCase()))) {
@@ -354,9 +335,6 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     setShowConfigModal(false);
   };
 
-  // ============================================================================
-  // NODE ANIMATION HANDLERS
-  // ============================================================================
   const highlightNode = (nodeId: string, skipEdges: boolean = false) => {
     setNodes((nds) =>
       nds.map((node) => ({
@@ -417,9 +395,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     );
   };
 
-  // ============================================================================
-  // QUERY EXECUTION HANDLERS
-  // ============================================================================
+
   const handleExecute = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -516,6 +492,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   };
 
   const executeAgent = async (inputData: Record<string, string | number | boolean>) => {
+    setExecutionStatus('Initializing execution...');
     setExecuting(true);
     setError(null);
     setResult(null);
@@ -531,9 +508,11 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     setExecutionProgress(steps);
 
     try {
+      setExecutionStatus('Highlighting input node...');
       highlightNode('input');
       await new Promise((resolve) => setTimeout(resolve, 400));
 
+      setExecutionStatus('Activating agent...');
       highlightNode('agent', true);
       
       let queryString = '';
@@ -543,6 +522,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         queryString = JSON.stringify(inputData);
       }
       
+      setExecutionStatus('Connecting to server...');
       // Use Server-Sent Events for real-time progress
       const response = await new Promise<ExecuteAgentResponse>((resolve, reject) => {
         fetch(`http://localhost:8000/api/agents/${agentId}/execute/stream`, {
@@ -557,8 +537,12 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
           })
         })
         .then(response => {
-          if (!response.ok) throw new Error('Streaming request failed');
+          if (!response.ok) {
+            setExecutionStatus('Server request failed');
+            throw new Error('Streaming request failed');
+          }
           
+          setExecutionStatus('Streaming execution updates...');
           const reader = response.body?.getReader();
           if (!reader) throw new Error('No reader available');
           
@@ -577,6 +561,9 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                     const data = JSON.parse(line.substring(6));
                     
                     if (data.type === 'progress') {
+                      // Update execution status with current step
+                      setExecutionStatus(data.message || `Step ${data.step}: ${data.status}`);
+                      
                       // Update progress step
                       const stepIndex = data.step - 1;
                       if (stepIndex >= 0 && stepIndex < steps.length) {
@@ -589,9 +576,11 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                       }
                     } else if (data.type === 'result') {
                       // Execution complete - got final result
+                      setExecutionStatus('Execution completed successfully');
                       resolve(data.data);
                       return;
                     } else if (data.type === 'error') {
+                      setExecutionStatus(`Error: ${data.message}`);
                       reject(new Error(data.message));
                       return;
                     }
@@ -601,20 +590,29 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                 }
               }
               
-              readStream(); // Continue reading
-            }).catch(reject);
+              readStream();
+            }).catch((err) => {
+              setExecutionStatus('Stream reading failed');
+              reject(err);
+            });
           };
           
           readStream();
         })
-        .catch(reject);
+        .catch((err) => {
+          setExecutionStatus('Connection error');
+          reject(err);
+        });
+        
       });
 
       // Process response (same as before)
+      setExecutionStatus('Processing response...');
       const usedToolIds = new Set<string>();
       const toolNodes = nodes.filter(n => n.type === 'tool');
       
       if (toolNodes.length > 0 && response.intermediate_steps && response.intermediate_steps.length > 0) {
+        setExecutionStatus('Identifying used tools...');
         const usedTools = new Set<string>();
         response.intermediate_steps.forEach((step: unknown) => {
           if (typeof step === 'object' && step !== null) {
@@ -637,6 +635,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       }
 
       if (usedToolIds.size > 0) {
+        setExecutionStatus(`Highlighting ${usedToolIds.size} used tool(s)...`);
         for (const toolId of usedToolIds) {
           setNodes((nds) =>
             nds.map((node) => ({
@@ -663,12 +662,14 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         }
       }
 
+      setExecutionStatus('Highlighting output...');
       highlightNode('output');
       await new Promise((resolve) => setTimeout(resolve, 400));
 
       setResult(response);
       
       // Extract SQL query from intermediate steps
+      setExecutionStatus('Extracting executed query...');
       if (response.intermediate_steps && response.intermediate_steps.length > 0) {
         response.intermediate_steps.forEach((step: unknown) => {
           if (typeof step === 'object' && step !== null) {
@@ -686,11 +687,14 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         });
       }
       
+      setExecutionStatus('Finalizing...');
       await new Promise((resolve) => setTimeout(resolve, 300));
       resetNodeHighlights();
+      setExecutionStatus('Execution complete');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to execute agent';
       setError(message);
+      setExecutionStatus(`Error: ${message}`);
       
       // Mark current in-progress step as error
       const currentStep = steps.findIndex(s => s.status === 'in_progress');
@@ -701,7 +705,8 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       }
       
       resetNodeHighlights();
-    } finally {
+    }
+    finally {
       setExecuting(false);
     }
   };
@@ -837,18 +842,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               )}
               </div>
               )}
-              </div>
-
-              {/* Progress Panel */}
-              {executing && executionProgress.length > 0 && (
-                <div className="my-4 px-6">
-                  <ProgressPanel
-                    title="Executing Agent..."
-                    steps={executionProgress}
-                    isExpanded={true}
-                  />
-                </div>
-              )}
+              </div>              
 
               {/* Error Display */}
               {error && (
@@ -859,6 +853,14 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
 
               {/* Results Section with Scroll */}
               <div className="flex-1 overflow-y-auto mt-2 bg-indigo-50 rounded-xl">
+                {executionProgress.length > 0 && (
+                <div className="my-4 px-6">
+                  <ProgressPanel
+                    title={executionStatus}
+                    steps={executionProgress}
+                  />
+                </div>
+              )}
               {result && (
                 <div className="space-y-4 bg-indigo-50">
                   <div className="px-6">
@@ -882,42 +884,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                     <div className="space-y-4">
                       {/* Success indicator */}
                       <div className="space-y-8 p-6">
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-1 border-green-200 rounded-xl p-4">
-                        <div className="flex items-start gap-3">
-                          <span className="text-green-600 text-xl">✓</span>
-                          <span className="text-sm font-medium text-green-700 mt-1">Execution Successful</span>
-                        </div>
-                        
-                        {/* Auto-saved query notification */}
-                        {result.query_auto_saved && (
-                          <div className="mt-3 pt-3 border-t border-green-200">
-                            <div className="flex items-start gap-2">
-                              <span className="text-green-600">💾</span>
-                              <div className="flex-1">
-                                <p className="text-xs font-semibold text-green-700 mt-1">Query Auto-Saved</p>
-                                <p className="text-xs text-green-600 mt-1">
-                                  This successful query has been saved to the agent. Future executions will be faster!
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Query correction notification */}
-                        {result.query_corrected && (
-                          <div className="mt-3 pt-3 border-t border-green-200">
-                            <div className="flex items-start gap-2">
-                              <span className="text-green-600">🔧</span>
-                              <div className="flex-1">
-                                <p className="text-xs font-semibold text-green-700">Query Corrected & Saved</p>
-                                <p className="text-xs text-green-600 mt-1">
-                                  AI corrected the query and saved it for future use. Attempt {result.query_attempts || 'N/A'}.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      
                       
                       {/* Text output */}
                       {result.output && (

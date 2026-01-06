@@ -111,7 +111,7 @@ class AgentService:
         """Reload all tools from directory (useful after generating new tools)"""
         self.tools = self._load_all_tools()
     
-    def _format_output(self, output: str, output_format: str, intermediate_steps: List) -> Dict[str, Any]:
+    def _format_output(self, output: str, output_format: str, intermediate_steps: List, agent_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Format agent output based on the specified output_format
         
@@ -119,6 +119,7 @@ class AgentService:
             output: Raw output from agent
             output_format: Desired format (text, json, csv, table)
             intermediate_steps: Execution steps from LangChain (list of tuples)
+            agent_data: Full agent metadata (name, description, use_cases, etc.)
             
         Returns:
             Formatted response dictionary
@@ -147,7 +148,7 @@ class AgentService:
         }
         
         # Generate summary from query results
-        summary = self._generate_summary_from_results(intermediate_steps)
+        summary = self._generate_summary_from_results(intermediate_steps, agent_data=agent_data)
         if summary:
             base_response["summary"] = summary
             print(f"\n📊 Summary Generated:")
@@ -389,7 +390,7 @@ class AgentService:
             traceback.print_exc()
             return None
     
-    def _generate_summary_from_results(self, intermediate_steps: List) -> Dict[str, Any]:
+    def _generate_summary_from_results(self, intermediate_steps: List, agent_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Generate an elaborated summary of query results from intermediate steps
         
@@ -834,7 +835,7 @@ class AgentService:
                         # Generate AI-powered summary if LLM is available
                         print(f"\n🤖 Attempting to generate AI summary...")
                         try:
-                            ai_summary = self._generate_ai_summary(rows, columns, summary)
+                            ai_summary = self._generate_ai_summary(rows, columns, summary, agent_data=agent_data)
                             if ai_summary and ai_summary.strip():
                                 # 🧹 CLEAN: Remove code block wrappers from AI summary too
                                 import re
@@ -894,7 +895,7 @@ class AgentService:
             traceback.print_exc()
             return None
     
-    def _generate_ai_summary(self, rows: List[Dict], columns: List[str], summary: Dict[str, Any]) -> str:
+    def _generate_ai_summary(self, rows: List[Dict], columns: List[str], summary: Dict[str, Any], agent_data: Dict[str, Any] = None) -> str:
         """
         Generate AI-powered natural language summary from query results
         
@@ -902,6 +903,7 @@ class AgentService:
             rows: Query result rows
             columns: Column names
             summary: Statistical summary data
+            agent_data: Full agent metadata (name, description, use_cases, prompt, category)
             
         Returns:
             AI-generated markdown summary text
@@ -909,6 +911,23 @@ class AgentService:
         try:
             # Prepare data snapshot for AI analysis (limit to first 10 rows for context)
             sample_rows = rows[:10] if len(rows) > 10 else rows
+            
+            # 🎯 Build context from agent metadata (NO hardcoded instructions!)
+            agent_context = ""
+            if agent_data:
+                agent_name = agent_data.get('name', '')
+                agent_desc = agent_data.get('description', '')
+                use_cases = agent_data.get('use_cases', [])
+                agent_category = agent_data.get('category', '')
+                
+                agent_context = f"""\n\n🎯 AGENT CONTEXT:
+- Name: {agent_name}
+- Description: {agent_desc}
+- Category: {agent_category}
+- Use Cases: {', '.join(use_cases)}
+
+⚠️ CRITICAL: Analyze the data according to THIS SPECIFIC agent's purpose and use cases.
+"""
             
             # Build prompt for AI summary generation
             analysis_prompt = f"""Analyze the following database query results and provide a concise, business-focused summary.
@@ -922,6 +941,7 @@ class AgentService:
 
 **Sample Data (first {len(sample_rows)} records):**
 {self._format_sample_data(sample_rows, columns)}
+{agent_context}
 
 **Instructions:**
 Provide a detailed, insightful summary using **STRICT MARKDOWN FORMATTING**:
@@ -1126,7 +1146,7 @@ Return ONLY the markdown-formatted version:"""
             # Fallback: return original text
             return text
     
-    def _execute_with_guidance(self, agent_data: Dict, user_query: str, input_data: Dict = None) -> Dict[str, Any]:
+    def _execute_with_guidance(self, agent_data: Dict, user_query: str, input_data: Dict = None, progress_callback = None) -> Dict[str, Any]:
         """
         Execute agent using pre-built execution guidance (FAST PATH)
         Includes automatic SQL error correction with retry logic (max 3 attempts)
@@ -1136,11 +1156,15 @@ Return ONLY the markdown-formatted version:"""
             agent_data: Agent configuration with execution_guidance
             user_query: User query string
             input_data: Optional input data from frontend (month, year, dates, etc.)
+            progress_callback: Optional callback for progress updates
             
         Returns:
             Execution results or None to trigger fallback
         """
         try:
+            if progress_callback:
+                progress_callback(1, 'completed', 'Preparing execution', 'Loading agent configuration')
+            
             print("\n⚡ FAST PATH: Using pre-built execution guidance")
             
             execution_guidance = agent_data.get('execution_guidance')
@@ -1193,6 +1217,9 @@ Return ONLY the markdown-formatted version:"""
                 return None
             
             # Step 3: Execute query with retry logic (max 3 attempts)
+            if progress_callback:
+                progress_callback(2, 'in_progress', 'Running tools', 'Executing database query')
+            
             from tools.postgres_connector import PostgresConnector
             pg_connector = PostgresConnector()
             
@@ -1208,6 +1235,9 @@ Return ONLY the markdown-formatted version:"""
                 if result.get('success'):
                     print(f"  ✅ Query executed successfully: {result.get('row_count', 0)} rows returned")
                     
+                    if progress_callback:
+                        progress_callback(2, 'completed', 'Running tools', f"Query executed: {result.get('row_count', 0)} rows")
+                    
                     # 💾 SAVE CORRECTED QUERY to agent JSON if it was fixed
                     if query_was_corrected and attempt > 1:
                         print(f"\n💾 Saving corrected query template to agent JSON...")
@@ -1219,6 +1249,9 @@ Return ONLY the markdown-formatted version:"""
                         )
                     
                     # Step 4: Format based on output_format
+                    if progress_callback:
+                        progress_callback(3, 'in_progress', 'Processing data', 'Analyzing results')
+                    
                     output_format = workflow_config.get('output_format', 'text')
                     
                     # 🎯 Generate purpose-driven output message using agent's prompt
@@ -1229,14 +1262,20 @@ Return ONLY the markdown-formatted version:"""
                     
                     print("\n🤖 Generating purpose-driven output based on agent's mission...")
                     purpose_output = self._generate_cached_query_output(
-                        agent_prompt=agent_prompt,
+                        agent_data=agent_data,
                         output_format=output_format,
                         row_count=row_count,
                         rows=rows,
                         columns=columns
                     )
                     
+                    if progress_callback:
+                        progress_callback(3, 'completed', 'Processing data', 'Data analyzed successfully')
+                    
                     # 🎨 FORCE MARKDOWN: Convert output to markdown format (same as traditional execution)
+                    if progress_callback:
+                        progress_callback(4, 'in_progress', 'Generating output', 'Formatting results')
+                    
                     print("🎨 Converting output to markdown format...")
                     markdown_output = self._ensure_markdown_format(purpose_output)
                     
@@ -1254,7 +1293,8 @@ Return ONLY the markdown-formatted version:"""
                     formatted_result = self._format_output(
                         output=markdown_output,  # Use markdown-formatted output
                         output_format=output_format,
-                        intermediate_steps=intermediate_steps
+                        intermediate_steps=intermediate_steps,
+                        agent_data=agent_data  # Pass full agent data for context-aware summaries
                     )
                     
                     formatted_result['used_guidance'] = True
@@ -1263,6 +1303,10 @@ Return ONLY the markdown-formatted version:"""
                     if query_was_corrected:
                         formatted_result['query_corrected'] = True
                         formatted_result['correction_saved'] = True
+                    
+                    if progress_callback:
+                        progress_callback(4, 'completed', 'Generating output', 'Output formatted successfully')
+                        progress_callback(5, 'completed', 'Complete', 'Execution completed successfully')
                     
                     print("✅ Fast path execution completed successfully!")
                     return formatted_result
@@ -1311,7 +1355,8 @@ Return ONLY the markdown-formatted version:"""
     
     def _fix_sql_syntax_error(self, query: str, error: str, schema_context: Dict) -> str:
         """
-        Use LLM to fix SQL syntax errors
+        Use LLM to fix SQL syntax errors with full schema cache context
+        Dynamically fetches actual column types from schema to provide accurate correction guidance
         
         Args:
             query: The failing SQL query
@@ -1323,6 +1368,95 @@ Return ONLY the markdown-formatted version:"""
         """
         try:
             from langchain_core.messages import HumanMessage
+            from tools.postgres_connector import PostgresConnector
+            
+            # 🔍 Extract table names from the failing query to get relevant schema
+            import re
+            table_pattern = r'(?:FROM|JOIN)\s+([\w_]+)'
+            tables_in_query = re.findall(table_pattern, query, re.IGNORECASE)
+            
+            print(f"  🔍 Detected tables in query: {tables_in_query}")
+            
+            # 📦 Fetch schema details for each table from schema cache
+            pg_connector = PostgresConnector()
+            schema_details = []
+            all_columns_info = {}  # Store column info for all tables: {table.column: {type, is_jsonb}}
+            
+            for table_name in tables_in_query:
+                print(f"  📊 Fetching schema for table: {table_name}")
+                table_schema = pg_connector.get_table_schema(table_name)
+                
+                if table_schema.get('success'):
+                    columns = table_schema.get('columns', [])
+                    jsonb_cols = table_schema.get('jsonb_columns', [])
+                    foreign_keys = table_schema.get('foreign_keys', [])
+                    
+                    # Build detailed column list with types and operators
+                    column_details = []
+                    for col in columns[:30]:  # Show more columns with types
+                        col_name = col['name']
+                        col_type = col.get('data_type', col.get('type', 'unknown'))
+                        is_jsonb = col_name in jsonb_cols
+                        
+                        # Store for later reference
+                        all_columns_info[f"{table_name}.{col_name}"] = {
+                            'type': col_type,
+                            'is_jsonb': is_jsonb
+                        }
+                        
+                        # Build column description with appropriate operator guidance
+                        if is_jsonb:
+                            column_details.append(f"{col_name} ({col_type}, JSONB - use ->>'value')")
+                        elif col_type.lower() in ['varchar', 'text', 'character varying']:
+                            column_details.append(f"{col_name} ({col_type}, TEXT - access directly, NO ->>)")
+                        elif col_type.lower() in ['uuid', 'int4', 'int8', 'numeric', 'bool', 'timestamp', 'date']:
+                            column_details.append(f"{col_name} ({col_type}, {col_type.upper()} - access directly)")
+                        else:
+                            column_details.append(f"{col_name} ({col_type})")
+                    
+                    # Separate JSONB and non-JSONB for clarity
+                    jsonb_list = [col['name'] for col in columns if col['name'] in jsonb_cols]
+                    non_jsonb_list = [col['name'] for col in columns[:15] if col['name'] not in jsonb_cols]
+                    
+                    schema_info = f"""\nTable: {table_name}
+  Total columns: {len(columns)}
+  Column details: {', '.join(column_details)}
+  ⚠️ JSONB columns (MUST use ->>'value'): {', '.join(jsonb_list) if jsonb_list else 'None'}
+  ⚠️ Regular columns (NO ->> operator): {', '.join(non_jsonb_list[:10]) if non_jsonb_list else 'None'}
+  Foreign keys: {', '.join([f"{fk['column']} → {fk['references_table']}.{fk['references_column']}" for fk in foreign_keys[:5]]) if foreign_keys else 'None'}"""
+                    schema_details.append(schema_info)
+                else:
+                    print(f"  ⚠️ Could not fetch schema for {table_name}")
+            
+            schema_context_str = "\n".join(schema_details) if schema_details else "Schema information not available"
+            
+            # 🎯 Analyze the error to provide specific guidance
+            error_guidance = ""
+            if "operator does not exist" in error.lower() and "->" in error:
+                error_guidance = """\n⚠️ ERROR ANALYSIS: Operator issue detected!
+  - The ->> operator ONLY works on JSONB columns
+  - The LIKE operator does NOT work on DATE/TIMESTAMP types
+  - Check the schema above to see which columns are JSONB vs regular types
+  - For VARCHAR/TEXT columns, access them directly: v.name, v.company
+  - For JSONB nested data: If VARCHAR contains JSON, cast first: (v.address::jsonb)->>'street'
+  - For DATE filtering: Use string comparison BEFORE casting: invoice_date->>'value' LIKE 'MM/%/YYYY'
+  - Example WRONG: CAST(date AS date) LIKE 'pattern' ❌
+  - Example CORRECT: date->>'value' LIKE 'pattern' ✅"""
+            elif "column" in error.lower() and "does not exist" in error.lower():
+                # Extract column name from error if possible
+                col_match = re.search(r'column "([^"]+)"', error)
+                missing_col = col_match.group(1) if col_match else "unknown"
+                error_guidance = f"""\n⚠️ ERROR ANALYSIS: Column '{missing_col}' doesn't exist!
+  - Check the exact column names in the schema above
+  - This column is NOT in any of the tables in your query
+  - Look for typos or wrong table aliases (i. vs v.)
+  - DO NOT invent columns - use ONLY what's in the schema
+  - If you need nested data, check if it exists in JSONB columns"""
+            elif "must appear in the group by" in error.lower():
+                error_guidance = """\n⚠️ ERROR ANALYSIS: GROUP BY clause incomplete!
+  - All non-aggregated columns in SELECT must be in GROUP BY
+  - Add missing columns to GROUP BY clause
+  - Or use aggregate functions (COUNT, SUM, MAX, etc.) for those columns"""
             
             fix_prompt = f"""You are a PostgreSQL expert. Fix this SQL query that is causing an error.
 
@@ -1330,16 +1464,39 @@ FAILING QUERY:
 {query}
 
 ERROR MESSAGE:
-{error}
+{error}{error_guidance}
 
-IMPORTANT RULES:
-1. Use LEFT JOIN (not INNER JOIN) to preserve all records
-2. Never include ID columns in SELECT (no invoice_id, vendor_id, document_id, etc.)
-3. Use JSONB operators (->>'value') for JSONB columns
-4. Use proper PostgreSQL syntax
-5. Ensure all referenced columns exist in the tables
-6. Fix any syntax errors, typos, or invalid operators
-7. Return ONLY the corrected SQL query, no explanations
+DATABASE SCHEMA CONTEXT:
+{schema_context_str}
+
+IMPORTANT RULES (Based on Actual Schema):
+1. **CHECK COLUMN TYPES FIRST** - Look at the schema above to see each column's data type
+2. **ONLY USE COLUMNS THAT EXIST** - DO NOT invent or assume columns exist
+   - Cross-reference EVERY column with the schema above
+   - If a column doesn't appear in schema, DO NOT use it
+3. **JSONB Columns**: Use ->>'value' operator (listed in schema as "JSONB")
+   Example: i.invoice_date->>'value' (if invoice_date is JSONB)
+4. **VARCHAR/TEXT Columns**: Access directly, NO ->> operator
+   Example: v.name, v.address (if these are VARCHAR/TEXT)
+   If VARCHAR contains JSON: Cast first: (v.address::jsonb)->>'street'
+5. **Date Filtering on JSONB**: Use string comparison BEFORE casting
+   WRONG: NULLIF(field->>'value', '')::date LIKE 'pattern' ❌ (can't LIKE on DATE)
+   CORRECT: field->>'value' LIKE 'pattern' ✅ (string comparison)
+6. **Other Types** (uuid, int, numeric, bool, timestamp, date): Access directly
+   Example: i.id, v.tenant_id, i.created_on
+7. For numeric JSONB fields: NULLIF((field->>'value'), '')::numeric
+8. Use LEFT JOIN (not INNER JOIN) to preserve all records
+9. Never include ID columns in SELECT (user-facing)
+10. Use column names EXACTLY as shown in schema
+11. Verify JOIN conditions match foreign key relationships
+12. **CRITICAL**: If you're not sure a column exists, DON'T use it - check schema first
+13. **RESOLVE ID COLUMNS TO NAMES** - NEVER expose raw ID values:
+   - If you see category_id (JSONB): JOIN icap_tenant_category_master and show category.name instead
+   - If you see product_id (JSONB): JOIN icap_product_master and show product.name instead
+   - ID columns stored as JSONB contain {"value": "uuid-string"}, extract with ->>'value'
+   - Example JOIN: LEFT JOIN icap_tenant_category_master cat ON (d.category_id->>'value')::uuid = cat.id
+   - Then SELECT: cat.name as category_name (NOT d.category_id)
+14. Return ONLY the corrected SQL query, no explanations
 
 CORRECTED QUERY:"""
             
@@ -1358,6 +1515,7 @@ CORRECTED QUERY:"""
                 print("  ⚠️ AI response is not a valid SELECT query")
                 return ""
             
+            print(f"  ✅ AI provided corrected query (length: {len(corrected_query)} chars)")
             return corrected_query
             
         except Exception as e:
@@ -1820,6 +1978,16 @@ IMPORTANT Requirements:
     - CORRECT: NULLIF((total->>'value'), '')::numeric AS total
     - WRONG: (total->>'value')::numeric AS total
     This prevents "invalid input syntax for type numeric" errors when empty strings are encountered
+13. **CRITICAL - RESOLVE ID COLUMNS TO NAMES**: 
+    ⚠️ If you see icap_invoice_detail table with category_id or product_id JSONB columns:
+    - category_id: JOIN icap_tenant_category_master to resolve to category name
+      * JOIN condition: LEFT JOIN icap_tenant_category_master cat ON NULLIF(detail.category_id->>'value', '') IS NOT NULL AND (detail.category_id->>'value')::uuid = cat.id
+      * SELECT: CASE WHEN detail.category_id->>'value' != '' THEN cat.name ELSE NULL END AS category_name
+    - product_id: JOIN icap_product_master to resolve to product name
+      * JOIN condition: LEFT JOIN icap_product_master prod ON NULLIF(detail.product_id->>'value', '') IS NOT NULL AND (detail.product_id->>'value')::uuid = prod.id
+      * SELECT: CASE WHEN detail.product_id->>'value' != '' THEN prod.name ELSE NULL END AS product_name
+    ⚠️ NEVER expose raw category_id or product_id values - ALWAYS resolve to names from master tables
+    ⚠️ Use NULLIF checks in JOIN conditions to prevent empty string to UUID casting errors
 
 Generate ONLY the SQL query without date filters. Return just the SQL, no explanations.
 
@@ -2894,15 +3062,23 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
         - detail: str (optional additional info)
         - result: dict (final result, sent in last event)
         """
-        try:
-            # Step 1: Preparing execution
-            yield {
-                "step": 1,
-                "status": "in_progress",
-                "message": "Preparing execution",
+        # List to collect progress events from the callback
+        progress_events = []
+        
+        def capturing_callback(step, status, message, detail=None):
+            """Callback that captures progress events"""
+            event = {
+                "step": step,
+                "status": status,
+                "message": message,
                 "type": "progress"
             }
-            
+            if detail:
+                event["detail"] = detail
+            progress_events.append(event)
+        
+        try:
+            # Validate agent exists
             agent_data = self.storage.get_agent(agent_id)
             if not agent_data:
                 yield {
@@ -2911,83 +3087,57 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                 }
                 return
             
-            yield {
-                "step": 1,
-                "status": "completed",
-                "message": "Preparing execution",
-                "detail": f"Agent: {agent_data.get('name', 'Unnamed')}",
-                "type": "progress"
-            }
+            # Execute agent with callback - this will populate progress_events
+            # We need to yield events AS they're added to progress_events
+            # To do this, we'll track the last yielded index
+            import threading
+            import time
             
-            # Step 2: Running tools / Executing query
-            yield {
-                "step": 2,
-                "status": "in_progress",
-                "message": "Running tools",
-                "type": "progress"
-            }
+            result_container = {'result': None, 'error': None}
+            execution_complete = threading.Event()
             
-            # Actually execute the agent (this is the heavy lifting)
-            result = self.execute_agent(agent_id, user_query, tool_configs, input_data)
+            def execute_in_thread():
+                try:
+                    result_container['result'] = self.execute_agent(
+                        agent_id, user_query, tool_configs, input_data, capturing_callback
+                    )
+                except Exception as e:
+                    result_container['error'] = e
+                finally:
+                    execution_complete.set()
             
-            # Determine tool count from intermediate_steps
-            tool_count = 0
-            if result.get("intermediate_steps"):
-                tool_count = len(result["intermediate_steps"])
+            # Start execution in background thread
+            exec_thread = threading.Thread(target=execute_in_thread)
+            exec_thread.start()
             
-            yield {
-                "step": 2,
-                "status": "completed",
-                "message": "Running tools",
-                "detail": f"{tool_count} tools executed",
-                "type": "progress"
-            }
+            # Stream progress events as they come in
+            last_yielded_index = 0
+            while not execution_complete.is_set() or last_yielded_index < len(progress_events):
+                # Yield any new events
+                while last_yielded_index < len(progress_events):
+                    yield progress_events[last_yielded_index]
+                    last_yielded_index += 1
+                
+                # Small delay to avoid busy-waiting
+                if not execution_complete.is_set():
+                    time.sleep(0.05)  # 50ms
             
-            # Step 3: Processing results
-            yield {
-                "step": 3,
-                "status": "in_progress",
-                "message": "Processing results",
-                "type": "progress"
-            }
+            # Wait for thread to complete
+            exec_thread.join()
             
-            yield {
-                "step": 3,
-                "status": "completed",
-                "message": "Processing results",
-                "type": "progress"
-            }
-            
-            # Step 4: Generating AI summary
-            yield {
-                "step": 4,
-                "status": "in_progress",
-                "message": "Generating AI summary",
-                "type": "progress"
-            }
-            
-            has_summary = result.get("summary", {}).get("ai_summary") if result.get("summary") else False
-            
-            yield {
-                "step": 4,
-                "status": "completed",
-                "message": "Generating AI summary",
-                "detail": "Summary generated" if has_summary else "No summary",
-                "type": "progress"
-            }
-            
-            # Step 5: Complete
-            yield {
-                "step": 5,
-                "status": "completed",
-                "message": "Complete",
-                "type": "progress"
-            }
+            # Check for errors
+            if result_container['error']:
+                yield {
+                    "type": "error",
+                    "message": str(result_container['error']),
+                    "error_type": type(result_container['error']).__name__
+                }
+                return
             
             # Send final result
             yield {
                 "type": "result",
-                "data": result
+                "data": result_container['result']
             }
             
         except Exception as e:
@@ -2997,18 +3147,20 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                 "error_type": type(e).__name__
             }
     
-    def execute_agent(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None) -> Dict[str, Any]:
+    def execute_agent(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None, progress_callback = None) -> Dict[str, Any]:
         """
         Execute an agent with a user query
         
         Args:
             agent_id: Unique agent identifier
             user_query: User's query/request
-            tool_configs: Optional runtime tool configurations (e.g., API keys)
-            input_data: Optional structured input data (month, year, dates, etc.)
-            
+            tool_configs: Runtime tool configurations (API keys, etc.)
+            input_data: Dynamic input data (dates, parameters, etc.)
+            progress_callback: Optional callback function for progress updates
+                             Called with (step, status, message, detail)
+        
         Returns:
-            Dictionary with execution results and formatted output
+            Execution results dictionary
         """
         # 1. Load agent data
         agent_data = self.storage.get_agent(agent_id)
@@ -3028,7 +3180,7 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
         # This is the NEW pre-built execution guidance system
         if agent_data.get("execution_guidance"):
             print("\n⚡⚡⚡ ULTRA-FAST PATH: Using pre-built execution guidance")
-            guidance_result = self._execute_with_guidance(agent_data, user_query, input_data)
+            guidance_result = self._execute_with_guidance(agent_data, user_query, input_data, progress_callback)
             if guidance_result and guidance_result.get("success"):
                 print("✅ Execution guidance succeeded - returning result")
                 return guidance_result
@@ -3134,6 +3286,10 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
             # ✅ BRANCH 1: Agent HAS tools (Standard Agent Execution)
             # -----------------------------------------------------------
             if agent_tools and len(agent_tools) > 0:
+                if progress_callback:
+                    progress_callback(1, 'completed', 'Preparing execution', 'Tools loaded')
+                    progress_callback(2, 'in_progress', 'Running tools', 'Executing agent with tools')
+                
                 prompt_template = ChatPromptTemplate.from_messages([
                     ("system", system_prompt),
                     ("human", "{input}"),
@@ -3160,6 +3316,10 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                 # Execute
                 result = agent_executor.invoke({"input": user_query})
                 
+                if progress_callback:
+                    progress_callback(2, 'completed', 'Running tools', 'Tools executed successfully')
+                    progress_callback(3, 'in_progress', 'Processing data', 'Processing results')
+                
                 # 💾 AUTO-SAVE: Extract and save successful query to agent JSON
                 successful_query = self._extract_successful_query_from_steps(result.get("intermediate_steps", []))
                 if successful_query:
@@ -3175,19 +3335,28 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                 # Format output based on output_format
                 raw_output = result.get("output", "")
                 
+                if progress_callback:
+                    progress_callback(3, 'completed', 'Processing data', 'Data processed successfully')
+                    progress_callback(4, 'in_progress', 'Generating output', 'Formatting output')
+                
                 # 🎨 FORCE MARKDOWN: If output doesn't have markdown, convert it
                 markdown_output = self._ensure_markdown_format(raw_output)
                 
                 formatted_result = self._format_output(
                     markdown_output,
                     output_format,
-                    result.get("intermediate_steps", [])
+                    result.get("intermediate_steps", []),
+                    agent_data=agent_data  # Pass full agent data for context-aware summaries
                 )
                 
                 # Add flag if query was auto-saved
                 if successful_query:
                     formatted_result['query_auto_saved'] = True
                     formatted_result['saved_query'] = successful_query
+                
+                if progress_callback:
+                    progress_callback(4, 'completed', 'Generating output', 'Output formatted successfully')
+                    progress_callback(5, 'completed', 'Complete', 'Execution completed successfully')
                 
                 return formatted_result
 
@@ -3197,6 +3366,10 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
             else:
                 print(f"ℹ️ Agent {agent_id} has no tools selected. Running as standard LLM chat.")
                 
+                if progress_callback:
+                    progress_callback(1, 'completed', 'Preparing execution', 'No tools required')
+                    progress_callback(2, 'in_progress', 'Running tools', 'Querying LLM')
+                
                 messages = [
                     SystemMessage(content=system_prompt),
                     HumanMessage(content=user_query)
@@ -3205,12 +3378,22 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                 # Direct LLM call since we can't use an AgentExecutor without tools
                 response = self.llm.invoke(messages)
                 
+                if progress_callback:
+                    progress_callback(2, 'completed', 'Running tools', 'LLM response received')
+                    progress_callback(3, 'completed', 'Processing data', 'Processing complete')
+                    progress_callback(4, 'in_progress', 'Generating output', 'Formatting output')
+                
                 # Format output
                 formatted_result = self._format_output(
                     response.content,
                     output_format,
-                    []
+                    [],
+                    agent_data=agent_data  # Pass full agent data for context-aware summaries
                 )
+                
+                if progress_callback:
+                    progress_callback(4, 'completed', 'Generating output', 'Output formatted successfully')
+                    progress_callback(5, 'completed', 'Complete', 'Execution completed successfully')
                 
                 return formatted_result
 
@@ -3219,6 +3402,8 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
         # -----------------------------------------------------------
         except Exception as e:
             print(f"❌ Error executing agent {agent_id}: {str(e)}")
+            if progress_callback:
+                progress_callback(5, 'error', 'Error', str(e))
             return {
                 "success": False,
                 "error": str(e),
@@ -3601,12 +3786,12 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
         
         return params if params else None
     
-    def _generate_cached_query_output(self, agent_prompt: str, output_format: str, row_count: int, rows: List[Dict], columns: List[str]) -> str:
+    def _generate_cached_query_output(self, agent_data: Dict[str, Any], output_format: str, row_count: int, rows: List[Dict], columns: List[str]) -> str:
         """
         Generate purpose-driven output message for cached query execution using AI
         
         Args:
-            agent_prompt: The agent's original purpose/prompt
+            agent_data: Full agent metadata (name, description, use_cases, prompt, category)
             output_format: Output format (csv, table, json, text)
             row_count: Number of rows returned
             rows: Query result rows
@@ -3627,35 +3812,21 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                 for row in sample_rows
             ])
             
-            # 🎯 Detect agent intent for specialized analysis
-            prompt_lower = agent_prompt.lower()
-            is_duplicate_finder = any(keyword in prompt_lower for keyword in ['duplicate', 'duplicates', 'repeated', 'same'])
-            is_anomaly_detector = any(keyword in prompt_lower for keyword in ['anomaly', 'unusual', 'outlier', 'fraud', 'suspicious'])
-            is_comparison = any(keyword in prompt_lower for keyword in ['compare', 'difference', 'vs', 'versus', 'gap'])
+            # 🎯 Build context from agent metadata (NO hardcoded instructions!)
+            agent_name = agent_data.get('name', '')
+            agent_desc = agent_data.get('description', '')
+            use_cases = agent_data.get('use_cases', [])
+            agent_category = agent_data.get('category', '')
+            agent_prompt = agent_data.get('prompt', '')
             
-            # Build specialized instructions based on agent purpose
-            specialized_instructions = ""
-            if is_duplicate_finder:
-                specialized_instructions = """\n\n🔍 CRITICAL - This is a DUPLICATE FINDER agent:
-- Explicitly identify WHICH records are duplicates (mention invoice numbers, IDs, or identifying fields)
-- State WHAT makes them duplicates (same vendor? same amount? same date?)
-- Count how many duplicate groups were found
-- Example: "Found 3 duplicate invoice groups: INV-001 and INV-002 share vendor 'ABC Corp' and amount $500; INV-003 and INV-004 both charged $1,200 on 01/15/2024."""
-            elif is_anomaly_detector:
-                specialized_instructions = """\n\n⚠️ CRITICAL - This is an ANOMALY DETECTOR agent:
-- Explicitly identify WHICH records are anomalies/outliers
-- State WHY they are unusual (amount too high/low? date mismatch? vendor pattern?)
-- Mention specific values that triggered the anomaly detection"""
-            elif is_comparison:
-                specialized_instructions = """\n\n📊 CRITICAL - This is a COMPARISON agent:
-- Explicitly state the differences found
-- Mention specific values being compared
-- Highlight the variance or gap"""
-            else:
-                specialized_instructions = """\n\n📋 Provide insights based on the agent's purpose:
-- Mention key patterns or findings
-- Reference specific data points when relevant
-- Be analytical, not just descriptive"""
+            agent_context = f"""\n\n🎯 AGENT CONTEXT:
+- Name: {agent_name}
+- Description: {agent_desc}
+- Category: {agent_category}
+- Use Cases: {', '.join(use_cases)}
+
+⚠️ CRITICAL: Analyze the data according to THIS SPECIFIC agent's purpose and use cases.
+"""
             
             ai_prompt = f"""You are an AI assistant helping with this task:
 "{agent_prompt}"
@@ -3665,7 +3836,7 @@ A database query was executed and returned {row_count} record(s) with the follow
 
 Sample data (first {len(sample_rows)} rows):
 {sample_data}
-{specialized_instructions}
+{agent_context}
 
 Provide a comprehensive, analytical summary (3-5 sentences) that directly addresses the agent's purpose.
 Be SPECIFIC with data points - mention actual values, IDs, names, amounts, dates from the results.
@@ -3740,7 +3911,7 @@ Do NOT format as markdown, just plain text."""
                     
                     # 🎯 Generate purpose-driven output message using AI
                     output = self._generate_cached_query_output(
-                        agent_prompt=agent_prompt,
+                        agent_data=agent_data,
                         output_format=output_format,
                         row_count=row_count,
                         rows=rows,
@@ -3761,7 +3932,7 @@ Do NOT format as markdown, just plain text."""
                     ]
                     
                     # ✅ Use _format_output to handle CSV generation and summary
-                    formatted_result = self._format_output(output, output_format, intermediate_steps)
+                    formatted_result = self._format_output(output, output_format, intermediate_steps, agent_data=agent_data)
                     formatted_result["cached_execution"] = True
                     formatted_result["used_cache"] = True
                     

@@ -13,6 +13,7 @@ import { nodeTypes } from './nodeTypes';
 import { agentApi, type WorkflowGraph, type ExecuteAgentResponse, type WorkflowConfig } from '../services/api';
 import { DynamicPlayground } from './DynamicPlayground';
 import { DataVisualization } from './DataVisualization';
+import ProgressPanel, { type ProgressStep } from './ProgressPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import jsPDF from 'jspdf';
@@ -188,12 +189,15 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   const [workflowConfig, setWorkflowConfig] = useState<WorkflowConfig>({
     trigger_type: 'text_query',
     input_fields: [],
-    output_format: 'text',
+    output_format: 'text',  // Standardized to 'text' for markdown output
   });
   const [executedQuery, setExecutedQuery] = useState<string | null>(null);
   const [cachingQuery, setCachingQuery] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const [showInputForm, setShowInputForm] = useState(true);
+  
+  // Progress tracking
+  const [executionProgress, setExecutionProgress] = useState<ProgressStep[]>([]);
 
   // ============================================================================
   // WORKFLOW LOADING
@@ -516,6 +520,16 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     setError(null);
     setResult(null);
 
+    // Initialize progress steps
+    const steps: ProgressStep[] = [
+      { id: '1', label: 'Preparing execution', status: 'pending' },
+      { id: '2', label: 'Running tools', status: 'pending' },
+      { id: '3', label: 'Processing results', status: 'pending' },
+      { id: '4', label: 'Generating AI summary', status: 'pending' },
+      { id: '5', label: 'Complete', status: 'pending' },
+    ];
+    setExecutionProgress(steps);
+
     try {
       highlightNode('input');
       await new Promise((resolve) => setTimeout(resolve, 400));
@@ -529,11 +543,74 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         queryString = JSON.stringify(inputData);
       }
       
-      const executionPromise = agentApi.executeAgent(agentId, queryString, toolConfigs, inputData);
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Use Server-Sent Events for real-time progress
+      const response = await new Promise<ExecuteAgentResponse>((resolve, reject) => {
+        fetch(`http://localhost:8000/api/agents/${agentId}/execute/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: queryString,
+            tool_configs: toolConfigs,
+            input_data: inputData
+          })
+        })
+        .then(response => {
+          if (!response.ok) throw new Error('Streaming request failed');
+          
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error('No reader available');
+          
+          const decoder = new TextDecoder();
+          
+          const readStream = () => {
+            reader.read().then(({ done, value }) => {
+              if (done) return;
+              
+              const text = decoder.decode(value);
+              const lines = text.split('\n');
+              
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.substring(6));
+                    
+                    if (data.type === 'progress') {
+                      // Update progress step
+                      const stepIndex = data.step - 1;
+                      if (stepIndex >= 0 && stepIndex < steps.length) {
+                        steps[stepIndex].status = data.status;
+                        steps[stepIndex].label = data.message;
+                        if (data.detail) {
+                          steps[stepIndex].detail = data.detail;
+                        }
+                        setExecutionProgress([...steps]);
+                      }
+                    } else if (data.type === 'result') {
+                      // Execution complete - got final result
+                      resolve(data.data);
+                      return;
+                    } else if (data.type === 'error') {
+                      reject(new Error(data.message));
+                      return;
+                    }
+                  } catch (parseErr) {
+                    console.error('Failed to parse SSE data:', parseErr);
+                  }
+                }
+              }
+              
+              readStream(); // Continue reading
+            }).catch(reject);
+          };
+          
+          readStream();
+        })
+        .catch(reject);
+      });
 
-      const response = await executionPromise;
-
+      // Process response (same as before)
       const usedToolIds = new Set<string>();
       const toolNodes = nodes.filter(n => n.type === 'tool');
       
@@ -614,6 +691,15 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to execute agent';
       setError(message);
+      
+      // Mark current in-progress step as error
+      const currentStep = steps.findIndex(s => s.status === 'in_progress');
+      if (currentStep !== -1) {
+        steps[currentStep].status = 'error';
+        steps[currentStep].detail = message;
+        setExecutionProgress([...steps]);
+      }
+      
       resetNodeHighlights();
     } finally {
       setExecuting(false);
@@ -753,6 +839,17 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               )}
               </div>
 
+              {/* Progress Panel */}
+              {executing && executionProgress.length > 0 && (
+                <div className="my-4 px-6">
+                  <ProgressPanel
+                    title="Executing Agent..."
+                    steps={executionProgress}
+                    isExpanded={true}
+                  />
+                </div>
+              )}
+
               {/* Error Display */}
               {error && (
                 <div className="my-2 bg-red-50 border border-red-100 text-red-700 px-6 py-4 rounded-xl flex-shrink-0">
@@ -770,7 +867,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                     {result.success && (
                       <button
                         onClick={handleDownloadPDF}
-                        className="bg-green-600 text-white px-3 py-2 rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center gap-2"
+                        className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

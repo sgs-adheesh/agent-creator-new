@@ -549,10 +549,14 @@ export function DataVisualization({ data, title }: DataVisualizationProps) {
                 console.warn('Raw content:', content.substring(0, 200));
               } else {
                 console.log('✅ Markdown detected! Headers:', content.match(/^#{1,4}\s+.+$/gm)?.length || 0);
+                console.log('📝 Content being passed to ReactMarkdown:');
+                console.log(content.substring(0, 300));
               }
               
               return (
                 <div key={key} className="max-w-none" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  {/* Debug indicator */}
+                  <div style={{ display: 'none' }}>🟢 ReactMarkdown Component Loaded</div>
                   <div className="markdown-content text-gray-800 leading-relaxed" style={{ fontFamily: 'inherit' }}>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}

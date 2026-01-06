@@ -18,7 +18,7 @@ export default function CreateAgent() {
   
   // Workflow configuration state
   const [triggerType, setTriggerType] = useState<string>('text_query');
-  const [outputFormat] = useState<string>('table');
+  const [outputFormat] = useState<string>('text');  // Standardized to 'text' for markdown output
   const [inputFields, setInputFields] = useState<WorkflowConfig['input_fields']>([]);
   
   const navigate = useNavigate();

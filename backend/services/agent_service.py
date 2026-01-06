@@ -155,11 +155,15 @@ class AgentService:
             print(f"  - Has numeric analysis: {'numeric_analysis' in summary}")
             print(f"  - Has date analysis: {'date_analysis' in summary}")
             print(f"  - Has categorical analysis: {'categorical_analysis' in summary}")
+            if 'ai_summary' in summary:
+                print(f"  - Has AI summary: YES ({len(summary.get('ai_summary', ''))} chars)")
             if 'full_summary' in summary:
                 print(f"\n  Full Summary Preview:")
                 print(f"  {summary['full_summary'][:500]}...")
         else:
             print(f"\n⚠️ No summary generated (no query results found)")
+            print(f"  🔍 Intermediate steps count: {len(intermediate_steps)}")
+            print(f"  🔍 Steps preview: {[type(s).__name__ for s in intermediate_steps[:3]]}")
         
         # 🎨 ALWAYS extract table_data for visualization (regardless of output_format)
         table_data = self._extract_table_from_output(output, intermediate_steps)
@@ -425,13 +429,21 @@ class AgentService:
                     print(f"    ✅ Found postgres_query step!")
                     # Parse result
                     if isinstance(result, str):
-                        print(f"      Result is string, attempting eval()...")
+                        print(f"      Result is string, attempting to parse...")
                         try:
-                            result_dict = eval(result)
-                            print(f"      ✅ Eval successful, type={type(result_dict)}")
-                        except Exception as eval_err:
-                            print(f"      ❌ Eval failed: {eval_err}")
-                            continue
+                            # Try JSON loads first (safer than eval)
+                            import json
+                            result_dict = json.loads(result)
+                            print(f"      ✅ JSON parse successful, type={type(result_dict)}")
+                        except json.JSONDecodeError:
+                            # Fallback to eval with Decimal support
+                            try:
+                                from decimal import Decimal
+                                result_dict = eval(result)
+                                print(f"      ✅ Eval successful (with Decimal), type={type(result_dict)}")
+                            except Exception as eval_err:
+                                print(f"      ❌ Parse failed: {eval_err}")
+                                continue
                     else:
                         print(f"      Result is already dict: {type(result)}")
                         result_dict = result
@@ -824,6 +836,15 @@ class AgentService:
                         try:
                             ai_summary = self._generate_ai_summary(rows, columns, summary)
                             if ai_summary and ai_summary.strip():
+                                # 🧹 CLEAN: Remove code block wrappers from AI summary too
+                                import re
+                                if '```markdown' in ai_summary or '```' in ai_summary:
+                                    print("  🧹 Removing code block wrapper from AI summary...")
+                                    code_match = re.search(r'```(?:markdown)?\n(.*)\n```', ai_summary, re.DOTALL)
+                                    if code_match:
+                                        ai_summary = code_match.group(1).strip()
+                                        print(f"  ✅ Extracted clean markdown from AI summary ({len(ai_summary)} chars)")
+                                
                                 summary["ai_summary"] = ai_summary
                                 # Prepend AI summary to full summary
                                 summary["full_summary"] = f"# 🤖 AI-Generated Insights\n\n{ai_summary}\n\n---\n\n{summary['full_summary']}"
@@ -854,6 +875,17 @@ class AgentService:
                 return last_successful_summary
             
             print(f"\n⚠️ No postgres_query steps with rows found in any step")
+            print(f"  📝 Debug Info:")
+            print(f"    - Total steps processed: {len(intermediate_steps)}")
+            print(f"    - Step types: {[type(s).__name__ for s in intermediate_steps]}")
+            if intermediate_steps:
+                # Show first step structure
+                first_step = intermediate_steps[0]
+                if isinstance(first_step, dict):
+                    print(f"    - First step keys: {list(first_step.keys())}")
+                    print(f"    - First step action: {first_step.get('action', 'N/A')}")
+                elif isinstance(first_step, tuple):
+                    print(f"    - First step tuple length: {len(first_step)}")
             return None
             
         except Exception as e:
@@ -1204,6 +1236,10 @@ Return ONLY the markdown-formatted version:"""
                         columns=columns
                     )
                     
+                    # 🎨 FORCE MARKDOWN: Convert output to markdown format (same as traditional execution)
+                    print("🎨 Converting output to markdown format...")
+                    markdown_output = self._ensure_markdown_format(purpose_output)
+                    
                     # Create intermediate_steps format for _format_output
                     intermediate_steps = [{
                         "action": {
@@ -1214,9 +1250,9 @@ Return ONLY the markdown-formatted version:"""
                         "result": result
                     }]
                     
-                    # Use existing _format_output method with purpose-driven output
+                    # Use existing _format_output method with markdown output
                     formatted_result = self._format_output(
-                        output=purpose_output,  # Use purpose-driven message instead of generic
+                        output=markdown_output,  # Use markdown-formatted output
                         output_format=output_format,
                         intermediate_steps=intermediate_steps
                     )
@@ -1236,6 +1272,8 @@ Return ONLY the markdown-formatted version:"""
                     error_msg = result.get('error', 'Unknown error')
                     last_error = error_msg
                     print(f"  ❌ Query execution failed: {error_msg}")
+                    print(f"  🔍 Failed query: {current_query[:200]}...")
+                    print(f"  🔍 Parameters used: {params}")
                     
                     if attempt < max_retries:
                         print(f"  🔧 Attempting to fix SQL syntax error (attempt {attempt}/{max_retries})...")
@@ -1778,6 +1816,10 @@ IMPORTANT Requirements:
 11. When using GROUP BY with aggregate functions (COUNT, SUM, AVG, MAX, MIN, etc.) in HAVING clause, ALWAYS include those aggregates in the SELECT clause with meaningful aliases
     Example: If using HAVING count(*) > 1, then SELECT must include "count(*) as duplicate_count" or similar
     This allows users to see the aggregate values, not just filter by them
+12. **CRITICAL**: For numeric fields that might contain empty strings, use NULLIF to handle empty values gracefully:
+    - CORRECT: NULLIF((total->>'value'), '')::numeric AS total
+    - WRONG: (total->>'value')::numeric AS total
+    This prevents "invalid input syntax for type numeric" errors when empty strings are encountered
 
 Generate ONLY the SQL query without date filters. Return just the SQL, no explanations.
 
@@ -2840,6 +2882,120 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
         self.storage.save_agent(agent_data)
         
         return agent_data
+    
+    def execute_agent_with_progress(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None):
+        """
+        Execute an agent with real-time progress updates (generator function for SSE)
+        
+        Yields progress events as dictionaries with:
+        - step: int (1-5)
+        - status: str ('in_progress', 'completed', 'error')
+        - message: str (description)
+        - detail: str (optional additional info)
+        - result: dict (final result, sent in last event)
+        """
+        try:
+            # Step 1: Preparing execution
+            yield {
+                "step": 1,
+                "status": "in_progress",
+                "message": "Preparing execution",
+                "type": "progress"
+            }
+            
+            agent_data = self.storage.get_agent(agent_id)
+            if not agent_data:
+                yield {
+                    "type": "error",
+                    "message": f"Agent {agent_id} not found"
+                }
+                return
+            
+            yield {
+                "step": 1,
+                "status": "completed",
+                "message": "Preparing execution",
+                "detail": f"Agent: {agent_data.get('name', 'Unnamed')}",
+                "type": "progress"
+            }
+            
+            # Step 2: Running tools / Executing query
+            yield {
+                "step": 2,
+                "status": "in_progress",
+                "message": "Running tools",
+                "type": "progress"
+            }
+            
+            # Actually execute the agent (this is the heavy lifting)
+            result = self.execute_agent(agent_id, user_query, tool_configs, input_data)
+            
+            # Determine tool count from intermediate_steps
+            tool_count = 0
+            if result.get("intermediate_steps"):
+                tool_count = len(result["intermediate_steps"])
+            
+            yield {
+                "step": 2,
+                "status": "completed",
+                "message": "Running tools",
+                "detail": f"{tool_count} tools executed",
+                "type": "progress"
+            }
+            
+            # Step 3: Processing results
+            yield {
+                "step": 3,
+                "status": "in_progress",
+                "message": "Processing results",
+                "type": "progress"
+            }
+            
+            yield {
+                "step": 3,
+                "status": "completed",
+                "message": "Processing results",
+                "type": "progress"
+            }
+            
+            # Step 4: Generating AI summary
+            yield {
+                "step": 4,
+                "status": "in_progress",
+                "message": "Generating AI summary",
+                "type": "progress"
+            }
+            
+            has_summary = result.get("summary", {}).get("ai_summary") if result.get("summary") else False
+            
+            yield {
+                "step": 4,
+                "status": "completed",
+                "message": "Generating AI summary",
+                "detail": "Summary generated" if has_summary else "No summary",
+                "type": "progress"
+            }
+            
+            # Step 5: Complete
+            yield {
+                "step": 5,
+                "status": "completed",
+                "message": "Complete",
+                "type": "progress"
+            }
+            
+            # Send final result
+            yield {
+                "type": "result",
+                "data": result
+            }
+            
+        except Exception as e:
+            yield {
+                "type": "error",
+                "message": str(e),
+                "error_type": type(e).__name__
+            }
     
     def execute_agent(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """

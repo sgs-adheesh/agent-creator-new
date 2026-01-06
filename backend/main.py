@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -364,6 +365,64 @@ Return ONLY year {year} records."""
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/agents/{agent_id}/execute/stream")
+async def execute_agent_stream(agent_id: str, request: ExecuteAgentRequest):
+    """
+    Execute an agent with real-time progress streaming via Server-Sent Events (SSE)
+    """
+    async def event_generator():
+        try:
+            # Get agent to check trigger type
+            agent = agent_service.get_agent(agent_id)
+            if not agent:
+                yield f"data: {{\"error\": \"Agent not found\"}}\n\n"
+                return
+            
+            workflow_config = agent.get("workflow_config", {})
+            trigger_type = workflow_config.get("trigger_type", "text_query")
+            
+            # Build execution query from dynamic inputs
+            query = request.query or ""
+            
+            # Handle different trigger types (same logic as regular execute)
+            if request.input_data:
+                if trigger_type == "month_year":
+                    month = request.input_data.get("month", "")
+                    year = request.input_data.get("year", "")
+                    if month and year:
+                        month_names = {
+                            "01": "January", "02": "February", "03": "March",
+                            "04": "April", "05": "May", "06": "June",
+                            "07": "July", "08": "August", "09": "September",
+                            "10": "October", "11": "November", "12": "December"
+                        }
+                        month_name = month_names.get(month, month)
+                        query = f"Generate report for {month_name} {year}.\n\nReturn ALL {month_name} {year} records."
+            
+            # Execute agent with progress streaming
+            for progress_event in agent_service.execute_agent_with_progress(
+                agent_id, query, request.tool_configs, request.input_data
+            ):
+                # Send progress update as SSE
+                yield f"data: {json.dumps(progress_event)}\n\n"
+            
+        except Exception as e:
+            error_event = {
+                "type": "error",
+                "message": str(e)
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+    )
 
 
 @app.delete("/api/agents/{agent_id}")

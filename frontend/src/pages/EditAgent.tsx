@@ -28,7 +28,7 @@ export default function EditAgent() {
 
   // Workflow configuration state
   const [triggerType, setTriggerType] = useState<string>('text_query');
-  const [outputFormat] = useState<string>('table');
+  const [outputFormat] = useState<string>('text');  // Standardized to 'text' for markdown output
   const [inputFields, setInputFields] = useState<WorkflowConfig['input_fields']>([]);
 
   // 1. Load Agent Data on Mount

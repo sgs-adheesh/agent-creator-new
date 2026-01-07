@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { agentApi, toolApi } from '../services/api';
+import { toolApi } from '../services/api';
 import type { ToolSpec, WorkflowConfig } from '../services/api';
 import ToolConfirmationModal from '../components/ToolConfirmationModal';
+import ProgressPanel from '../components/ProgressPanel';
+import type { ProgressStep } from '../components/ProgressPanel';
 
 export default function CreateAgent() {
   const [prompt, setPrompt] = useState('');
@@ -21,7 +23,19 @@ export default function CreateAgent() {
   const [outputFormat] = useState<string>('text');  // Standardized to 'text' for markdown output
   const [inputFields, setInputFields] = useState<WorkflowConfig['input_fields']>([]);
   
+  // NEW: Progress tracking for agent creation
+  const [creationProgress, setCreationProgress] = useState<ProgressStep[]>([]);
+  const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
+  
   const navigate = useNavigate();
+
+  // Navigate to workflow viewer when agent is created
+  useEffect(() => {
+    if (createdAgentId) {
+      console.log('✅ Agent created, navigating to:', `/agents/${createdAgentId}/execute`);
+      navigate(`/agents/${createdAgentId}/execute`);
+    }
+  }, [createdAgentId, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,18 +89,80 @@ export default function CreateAgent() {
         output_format: outputFormat,
       };
       
-      // If no tools were matched or selected, let the AI decide during execution
-      // rather than assigning all tools
-      const agent = await agentApi.createAgent({
-        prompt,
-        name: name || undefined,
-        selected_tools: toolsToUse.length > 0 ? toolsToUse : [],  // Send empty array instead of undefined
-        workflow_config: workflowConfig,
+      // Initialize progress steps
+      const steps: ProgressStep[] = [
+        { id: '1', label: 'Analyzing requirements...', status: 'pending' },
+        { id: '2', label: 'AI is thinking...', status: 'pending' },
+        { id: '3', label: 'Configuring workflow...', status: 'pending' },
+        { id: '4', label: 'Finalizing agent...', status: 'pending' },
+        { id: '5', label: 'Saving agent...', status: 'pending' },
+      ];
+      setCreationProgress(steps);
+      
+      // Use streaming API
+      const response = await fetch('http://localhost:8000/api/agents/create/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          name: name || undefined,
+          selected_tools: toolsToUse.length > 0 ? toolsToUse : [],
+          workflow_config: workflowConfig,
+        })
       });
-      navigate(`/agents/${agent.id}/execute`);
+      
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      const readStream = () => {
+        reader!.read().then(({ done, value }) => {
+          if (done) return;
+          
+          const text = decoder.decode(value);
+          const lines = text.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = JSON.parse(line.substring(6));
+              
+              if (data.type === 'progress') {
+                // Update progress step
+                const stepIndex = data.step - 1;
+                steps[stepIndex].status = data.status;
+                steps[stepIndex].label = data.message;
+                if (data.detail) {
+                  steps[stepIndex].detail = data.detail;
+                }
+                // Handle substeps for AI operations
+                if (data.substeps) {
+                  steps[stepIndex].substeps = data.substeps;
+                }
+                setCreationProgress([...steps]);
+              }
+              else if (data.type === 'result') {
+                // Agent created successfully
+                setCreatedAgentId(data.data.id);
+                setLoading(false);
+              }
+              else if (data.type === 'error') {
+                setError(data.message);
+                setLoading(false);
+                return;
+              }
+            }
+          }
+          
+          readStream();
+        }).catch(err => {
+          setError(err.message);
+          setLoading(false);
+        });
+      };
+      
+      readStream();
     } catch (err) {
-      const error = err as { response?: { data?: { detail?: string } } };
-      setError(error.response?.data?.detail || 'Failed to create agent');
+      const error = err as { response?: { data?: { detail?: string } }; message?: string };
+      setError(error.response?.data?.detail || error.message || 'Failed to create agent');
       setLoading(false);
     }
   };
@@ -425,6 +501,16 @@ export default function CreateAgent() {
               </button>
             </div>
           </form>
+          
+          {/* Progress Panel - Show during agent creation */}
+          {loading && creationProgress.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <ProgressPanel
+                title="Creating Agent..."
+                steps={creationProgress}
+              />
+            </div>
+          )}
         </div>
       </div>
 

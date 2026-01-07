@@ -1,0 +1,1418 @@
+{
+  "id": "eceda800-df01-402b-a48d-40c73fff1395",
+  "name": "Result - feb 2025, 11:44:26",
+  "timestamp": "2026-01-07T11:44:46.281144",
+  "data": {
+    "success": true,
+    "output": "## Analysis of Vendor Spending Patterns\n\nThe analysis of vendor spending patterns reveals significant insights into procurement dynamics. \n\n### Key Findings\n\n- **Fab Dairy & Trading (I) Pvt. Ltd.**\n  - Total spend: **5,955.00**\n  - Number of invoices: **3**\n  - Average invoice amount: **1,985.00**\n  - **All invoices remain unpaid.**\n\n- **Sun Shine Agencies**\n  - Total spend: **362,508.00**\n  - Number of invoices: **17**\n  - Average invoice amount: **21,324.00**\n  - **All invoices remain unpaid.**\n\n### Payment Status Distribution\n\nThe payment status distribution indicates that both vendors, along with several others, have unpaid invoices, which highlights an area for potential negotiation and review.\n\n### Product Breakdown for Sun Shine Agencies\n\nThe product breakdown for Sun Shine Agencies includes various items such as:\n- **Black Fingus 1kg**\n- **Dry Yeast 500gm**\n\nThis suggests a diverse product offering that could be leveraged for better procurement terms.",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": null,
+          "log": null
+        },
+        "result": {
+          "success": true,
+          "columns": [
+            "vendor_name",
+            "vendor_company",
+            "total_spend",
+            "number_of_invoices",
+            "average_invoice_amount",
+            "paid_invoices",
+            "unpaid_invoices",
+            "product_description",
+            "category_name",
+            "product_name",
+            "total_product_spend"
+          ],
+          "rows": [
+            {
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "total_spend": 5955,
+              "number_of_invoices": 3,
+              "average_invoice_amount": 1985,
+              "paid_invoices": 0,
+              "unpaid_invoices": 3,
+              "product_description": {
+                "value": "Premium Creamy Butterscotch",
+                "pageNo": 1,
+                "confidence": 99.930504,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 194.62875,
+                  "x1": 801.1545,
+                  "y0": 1985.0018,
+                  "y1": 2031.5508
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alarm Systems",
+              "product_name": "Premium Creamy Butterscotch",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "total_spend": 5955,
+              "number_of_invoices": 3,
+              "average_invoice_amount": 1985,
+              "paid_invoices": 0,
+              "unpaid_invoices": 3,
+              "product_description": {
+                "value": "Premium Creamy Mango",
+                "pageNo": 1,
+                "confidence": 99.9313,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 194.53716,
+                  "x1": 678.5036,
+                  "y0": 2034.5507,
+                  "y1": 2080.6584
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "Premium Creamy Mango",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "total_spend": 5955,
+              "number_of_invoices": 3,
+              "average_invoice_amount": 1985,
+              "paid_invoices": 0,
+              "unpaid_invoices": 3,
+              "product_description": {
+                "value": "Premium Creamy Vanilla",
+                "pageNo": 1,
+                "confidence": 99.94669,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 194.72113,
+                  "x1": 678.0717,
+                  "y0": 1935.4757,
+                  "y1": 1981.0924
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "Premium Creamy Vanilla",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "meat Hub",
+              "vendor_company": "meat Hub",
+              "total_spend": 1,
+              "number_of_invoices": 2,
+              "average_invoice_amount": 1,
+              "paid_invoices": 1,
+              "unpaid_invoices": 1,
+              "product_description": {
+                "value": "one",
+                "pageNo": 0,
+                "confidence": 100,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 0,
+                  "x1": 0,
+                  "y0": 0,
+                  "y1": 0
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "one",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "S.P. SOAP OIL",
+              "vendor_company": "S.P. SOAP OIL",
+              "total_spend": 150,
+              "number_of_invoices": 1,
+              "average_invoice_amount": 150,
+              "paid_invoices": 0,
+              "unpaid_invoices": 1,
+              "product_description": {
+                "value": "SOAP OIL\nPHENYLE\nFUEL GEL",
+                "pageNo": 1,
+                "confidence": 43.12273,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 1096.42,
+                  "x1": 1247.785,
+                  "y0": 1092.1204,
+                  "y1": 1244.5354
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "SOAP OIL\nPHENYLE\nFUEL GEL",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "S.P. SOAP OIL",
+              "vendor_company": "S.P. SOAP OIL",
+              "total_spend": 150,
+              "number_of_invoices": 1,
+              "average_invoice_amount": 150,
+              "paid_invoices": 0,
+              "unpaid_invoices": 1,
+              "product_description": {
+                "value": "testNew",
+                "pageNo": 0,
+                "confidence": 100,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 0,
+                  "x1": 0,
+                  "y0": 0,
+                  "y1": 0
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "testNew",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Black Fingus 1kg",
+                "pageNo": 1,
+                "confidence": 93.86058,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 175.52925,
+                  "x1": 522.29834,
+                  "y0": 1538.639,
+                  "y1": 1573.7445
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "Black Fingus 1kg",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Dry Yeast 500gm",
+                "pageNo": 1,
+                "confidence": 99.835526,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 175.13287,
+                  "x1": 503.7207,
+                  "y0": 1169.9143,
+                  "y1": 1205.5828
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "Dry Yeast 500gm",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "HABIT SESAME OIL 500ML",
+                "pageNo": 1,
+                "confidence": 99.746925,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 172.9208,
+                  "x1": 705.92474,
+                  "y0": 1206.7244,
+                  "y1": 1236.67
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "HABIT SESAME OIL 500ML",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "KIKOMAN SOYA SAUCE 1LIT ORG",
+                "pageNo": 1,
+                "confidence": 99.59214,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 173.48267,
+                  "x1": 857.9927,
+                  "y0": 1279.8428,
+                  "y1": 1310.8793
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alarm Systems",
+              "product_name": "KIKOMAN SOYA SAUCE 1LIT ORG",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Lkk Hoisin Sauce 240gm",
+                "pageNo": 1,
+                "confidence": 99.930916,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 174.66066,
+                  "x1": 668.1905,
+                  "y0": 1393.4952,
+                  "y1": 1426.4645
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "Lkk Hoisin Sauce 240gm",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Lkk Oyster Sauce 2.2kg",
+                "pageNo": 1,
+                "confidence": 99.468056,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 175.39337,
+                  "x1": 635.7976,
+                  "y0": 1243.2793,
+                  "y1": 1279.4264
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alarm Systems",
+              "product_name": "Lkk Oyster Sauce 2.2kg",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Lkk Teriyaki 250ml",
+                "pageNo": 1,
+                "confidence": 99.81246,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 172.93738,
+                  "x1": 539.0028,
+                  "y0": 1355.9698,
+                  "y1": 1389.3821
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alarm Systems",
+              "product_name": "Lkk Teriyaki 250ml",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "PANKO BREAD CRUMS 1 KG",
+                "pageNo": 1,
+                "confidence": 99.101135,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 175.54324,
+                  "x1": 747.9551,
+                  "y0": 1574.8706,
+                  "y1": 1604.7412
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alarm Systems",
+              "product_name": "PANKO BREAD CRUMS 1 KG",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Pickel Ginger 1.8kg",
+                "pageNo": 1,
+                "confidence": 99.78045,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 175.5573,
+                  "x1": 550.44354,
+                  "y0": 1612.3292,
+                  "y1": 1646.6401
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "Pickel Ginger 1.8kg",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "PRAWN CRACKERS 500GM",
+                "pageNo": 1,
+                "confidence": 99.86943,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 171.66096,
+                  "x1": 716.8549,
+                  "y0": 1429.3094,
+                  "y1": 1457.9271
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alarm Systems",
+              "product_name": "PRAWN CRACKERS 500GM",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Red Curry Paste 1kg",
+                "pageNo": 1,
+                "confidence": 99.94928,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 174.39714,
+                  "x1": 574.5325,
+                  "y0": 1060.3712,
+                  "y1": 1094.6515
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alarm Systems",
+              "product_name": "Red Curry Paste 1kg",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "SUSHI RICE 1 KG",
+                "pageNo": 1,
+                "confidence": 99.39014,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 174.75914,
+                  "x1": 515.6953,
+                  "y0": 1022.38446,
+                  "y1": 1052.5037
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "SUSHI RICE 1 KG",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Tempura Flour 1 Kg 5%",
+                "pageNo": 1,
+                "confidence": 99.117325,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 173.01877,
+                  "x1": 631.6998,
+                  "y0": 1464.629,
+                  "y1": 1501.163
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "Tempura Flour 1 Kg 5%",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Tom Yum Curry Paste 1kg",
+                "pageNo": 1,
+                "confidence": 99.962,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 172.8786,
+                  "x1": 685.5928,
+                  "y0": 1095.7394,
+                  "y1": 1131.9412
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "Tom Yum Curry Paste 1kg",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Veg Yellow Curry 1 Kg",
+                "pageNo": 1,
+                "confidence": 99.516174,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 172.79659,
+                  "x1": 612.25256,
+                  "y0": 1132.4701,
+                  "y1": 1168.8553
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alarm Systems",
+              "product_name": "Veg Yellow Curry 1 Kg",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "Wheat Starch 500gm",
+                "pageNo": 1,
+                "confidence": 99.88415,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 170.48103,
+                  "x1": 577.3691,
+                  "y0": 1319.1742,
+                  "y1": 1352.7804
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alcohol Licenses",
+              "product_name": "Wheat Starch 500gm",
+              "total_product_spend": null
+            },
+            {
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "total_spend": 362508,
+              "number_of_invoices": 17,
+              "average_invoice_amount": 21324,
+              "paid_invoices": 0,
+              "unpaid_invoices": 17,
+              "product_description": {
+                "value": "WHITE FUNGES 1 KG",
+                "pageNo": 1,
+                "confidence": 95.171646,
+                "sequenceNo": 0,
+                "coordinates": {
+                  "x0": 172.47041,
+                  "x1": 595.4751,
+                  "y0": 1502.5481,
+                  "y1": 1531.5956
+                },
+                "reviewRequired": false
+              },
+              "category_name": "Alarm Systems",
+              "product_name": "WHITE FUNGES 1 KG",
+              "total_product_spend": null
+            }
+          ],
+          "row_count": 23,
+          "has_more": false,
+          "note": null,
+          "schema_info": null
+        }
+      }
+    ],
+    "output_format": "text",
+    "summary": {
+      "total_records": 23,
+      "columns": [
+        "vendor_name",
+        "vendor_company",
+        "total_spend",
+        "number_of_invoices",
+        "average_invoice_amount",
+        "paid_invoices",
+        "unpaid_invoices",
+        "product_description",
+        "category_name",
+        "product_name",
+        "total_product_spend"
+      ],
+      "description": "Query returned 23 record(s) with 11 column(s).",
+      "invoice_breakdown": {
+        "1": {
+          "invoice_number": "1",
+          "line_items": 2,
+          "vendor": "S.P. SOAP OIL"
+        },
+        "2": {
+          "invoice_number": "2",
+          "line_items": 1,
+          "vendor": "meat Hub"
+        },
+        "3": {
+          "invoice_number": "3",
+          "line_items": 3,
+          "vendor": "Fab Dairy & Trading (I) Pvt. Ltd."
+        },
+        "17": {
+          "invoice_number": "17",
+          "line_items": 17,
+          "vendor": "Sun Shine Agencies"
+        }
+      },
+      "invoice_summary_text": "**1** | Vendor: S.P. SOAP OIL | Line Items: 2\n**17** | Vendor: Sun Shine Agencies | Line Items: 17\n**2** | Vendor: meat Hub | Line Items: 1\n**3** | Vendor: Fab Dairy & Trading (I) Pvt. Ltd. | Line Items: 3",
+      "numeric_analysis": {
+        "total_spend": {
+          "unique_values": [
+            362508,
+            5955,
+            150,
+            1
+          ],
+          "unique_count": 4,
+          "total_entries": 23,
+          "min": 1,
+          "max": 362508,
+          "is_header_field": true,
+          "description": "**total_spend** (Header Field): 4 unique values across 23 entries. Range: $1.00 - $362,508.00"
+        },
+        "average_invoice_amount": {
+          "unique_values": [
+            21324,
+            1985,
+            150,
+            1
+          ],
+          "unique_count": 4,
+          "total_entries": 23,
+          "min": 1,
+          "max": 21324,
+          "is_header_field": true,
+          "description": "**average_invoice_amount** (Header Field): 4 unique values across 23 entries. Range: $1.00 - $21,324.00"
+        }
+      },
+      "numeric_summary_text": "**total_spend** (Header Field): 4 unique values across 23 entries. Range: $1.00 - $362,508.00\n**average_invoice_amount** (Header Field): 4 unique values across 23 entries. Range: $1.00 - $21,324.00",
+      "categorical_analysis": {
+        "vendor_name": {
+          "unique_count": 4,
+          "total_entries": 23,
+          "description": "**vendor_name**: 4 unique value(s) across 23 entries",
+          "top_values": [
+            {
+              "value": "Sun Shine Agencies",
+              "count": 17
+            },
+            {
+              "value": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "count": 3
+            },
+            {
+              "value": "S.P. SOAP OIL",
+              "count": 2
+            },
+            {
+              "value": "meat Hub",
+              "count": 1
+            }
+          ]
+        },
+        "vendor_company": {
+          "unique_count": 4,
+          "total_entries": 23,
+          "description": "**vendor_company**: 4 unique value(s)",
+          "top_values": [
+            {
+              "value": "Sun Shine Agencies",
+              "count": 17
+            },
+            {
+              "value": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "count": 3
+            },
+            {
+              "value": "S.P. SOAP OIL",
+              "count": 2
+            },
+            {
+              "value": "meat Hub",
+              "count": 1
+            }
+          ]
+        },
+        "number_of_invoices": {
+          "unique_count": 4,
+          "total_entries": 23,
+          "description": "**number_of_invoices**: 4 unique value(s) across 23 entries",
+          "top_values": [
+            {
+              "value": "17",
+              "count": 17
+            },
+            {
+              "value": "3",
+              "count": 3
+            },
+            {
+              "value": "1",
+              "count": 2
+            },
+            {
+              "value": "2",
+              "count": 1
+            }
+          ]
+        },
+        "paid_invoices": {
+          "unique_count": 1,
+          "total_entries": 1,
+          "description": "**paid_invoices**: 1 unique value(s)",
+          "top_values": [
+            {
+              "value": "1",
+              "count": 1
+            }
+          ]
+        },
+        "unpaid_invoices": {
+          "unique_count": 3,
+          "total_entries": 23,
+          "description": "**unpaid_invoices**: 3 unique value(s)",
+          "top_values": [
+            {
+              "value": "17",
+              "count": 17
+            },
+            {
+              "value": "3",
+              "count": 3
+            },
+            {
+              "value": "1",
+              "count": 3
+            }
+          ]
+        },
+        "category_name": {
+          "unique_count": 2,
+          "total_entries": 23,
+          "description": "**category_name**: 2 unique value(s) across 23 entries",
+          "top_values": [
+            {
+              "value": "Alcohol Licenses",
+              "count": 14
+            },
+            {
+              "value": "Alarm Systems",
+              "count": 9
+            }
+          ]
+        },
+        "product_name": {
+          "unique_count": 23,
+          "total_entries": 23,
+          "description": "**product_name**: 23 unique value(s) across 23 entries"
+        }
+      },
+      "categorical_summary_text": "**vendor_name**: 4 unique value(s) across 23 entries\n**vendor_company**: 4 unique value(s)\n**number_of_invoices**: 4 unique value(s) across 23 entries\n**paid_invoices**: 1 unique value(s)\n**unpaid_invoices**: 3 unique value(s)\n**category_name**: 2 unique value(s) across 23 entries\n**product_name**: 23 unique value(s) across 23 entries",
+      "text_analysis": {
+        "product_description": {
+          "unique_count": 23,
+          "total_entries": 23,
+          "avg_length": 192.9,
+          "description": "**product_description**: 23 unique entries (avg length: 193 chars)"
+        }
+      },
+      "text_summary_text": "**product_description**: 23 unique entries (avg length: 193 chars)",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Vendor Spend Analysis\n\n### Key Findings\n- The dataset contains **23 records** from **4 unique vendors**, with a **total spend** ranging from **$1.00 to $362,508.00**.\n- The **top vendor**, **Sun Shine Agencies**, dominates with **17 invoices** and the highest overall spend, indicating a strong reliance on this supplier for procurement.\n- The **average invoice amount** varies significantly, from **$1.00 to $21,324.00**, suggesting diverse spending patterns across different products and vendors.\n\n### Vendor Performance Insights\n1. **Sun Shine Agencies**\n   - **Total Invoices:** 17 \n   - **Total Spend:** Highest among all vendors, indicating they are a critical supplier.\n   - **Actionable Insight:** Consider negotiating better rates or terms due to high volume.\n\n2. **Fab Dairy & Trading (I) Pvt. Ltd.**\n   - **Total Invoices:** 3\n   - **Total Spend:** **$5,955.00**, with no paid invoices, indicating potential cash flow issues or disputes.\n   - **Actionable Insight:** Investigate unpaid invoices to clarify reasons and resolve any outstanding issues swiftly.\n\n3. **meat Hub**\n   - **Total Invoices:** 2\n   - **Total Spend:** **$1.00**, suggesting minimal engagement with this vendor.\n   - **Actionable Insight:** Assess whether to continue utilizing this vendor or consolidate purchases with more significant suppliers.\n\n4. **S.P. SOAP OIL**\n   - **Total Invoices:** 1 \n   - **Total Spend:** **$150.00** \n   - **Actionable Insight:** Evaluate the necessity of this vendor in future procurement strategies, given their low spend.\n\n### Invoice Analysis\n- A total of **17 unpaid invoices** exist across vendors, which could impact supplier relationships and procurement strategies.\n- **Sun Shine Agencies** accounts for the majority of these unpaid invoices, which should be prioritized for resolution.\n\n### Category Insights\n- The products are categorized under **2 unique categories**: \n  - **Alcohol Licenses** (14 items)\n  - **Alarm Systems** (9 items)\n  \n> ⚠️ Concentration in specific categories indicates dependency that may need diversification.\n\n### Recommendations\n1. **Vendor Negotiation:** Open negotiations with **Sun Shine Agencies** to secure better pricing based on volume.\n2. **Review Unpaid Invoices:** Prioritize addressing the **unpaid invoices** with **Fab Dairy & Trading (I) Pvt. Ltd.** and **Sun Shine Agencies** to maintain supplier goodwill.\n3. **Consolidate Spend:** Consider consolidating purchases with high-performing vendors to streamline procurement and potentially reduce costs.\n4. **Diversification Strategy:** Investigate opportunities to engage with additional vendors or products to reduce the risk associated with heavy reliance on a few suppliers.\n\n### Conclusion\nThis analysis highlights critical spending patterns and vendor performances that are essential for optimizing procurement strategies. Addressing the unpaid invoices and exploring vendor negotiations will help enhance supplier relationships and improve financial outcomes.\n\n---\n\n# 📊 Query Results Summary\n\n**23** records found with **11** columns\n\n## 📎 Invoices\n\n**3** - Fab Dairy & Trading (I) Pvt. Ltd. (No date)\n  └ 3 items, 0 units\n\n**2** - meat Hub (No date)\n  └ 1 items, 0 units\n\n**1** - S.P. SOAP OIL (No date)\n  └ 2 items, 0 units\n\n**17** - Sun Shine Agencies (No date)\n  └ 17 items, 0 units\n\n## 💰 Numbers\n\n**total_spend:** 4 unique values ($362,508.00, $5,955.00, $150.00)\n**average_invoice_amount:** 4 unique values ($21,324.00, $1,985.00, $150.00)\n\n## 🏷️ Categories\n\n**vendor_name:** Sun Shine Agencies (17), Fab Dairy & Trading (I) Pvt. Ltd. (3), S.P. SOAP OIL (2)\n**vendor_company:** Sun Shine Agencies (17), Fab Dairy & Trading (I) Pvt. Ltd. (3), S.P. SOAP OIL (2)\n**number_of_invoices:** 17 (17), 3 (3), 1 (2)\n**paid_invoices:** 1 (1)\n**unpaid_invoices:** 17 (17), 3 (3), 1 (3)\n**category_name:** Alcohol Licenses (14), Alarm Systems (9)\n\n## 📝 Text Fields\n\n**product_description:** 23 unique entries, avg 192.9 chars\n",
+      "ai_summary": "## Vendor Spend Analysis\n\n### Key Findings\n- The dataset contains **23 records** from **4 unique vendors**, with a **total spend** ranging from **$1.00 to $362,508.00**.\n- The **top vendor**, **Sun Shine Agencies**, dominates with **17 invoices** and the highest overall spend, indicating a strong reliance on this supplier for procurement.\n- The **average invoice amount** varies significantly, from **$1.00 to $21,324.00**, suggesting diverse spending patterns across different products and vendors.\n\n### Vendor Performance Insights\n1. **Sun Shine Agencies**\n   - **Total Invoices:** 17 \n   - **Total Spend:** Highest among all vendors, indicating they are a critical supplier.\n   - **Actionable Insight:** Consider negotiating better rates or terms due to high volume.\n\n2. **Fab Dairy & Trading (I) Pvt. Ltd.**\n   - **Total Invoices:** 3\n   - **Total Spend:** **$5,955.00**, with no paid invoices, indicating potential cash flow issues or disputes.\n   - **Actionable Insight:** Investigate unpaid invoices to clarify reasons and resolve any outstanding issues swiftly.\n\n3. **meat Hub**\n   - **Total Invoices:** 2\n   - **Total Spend:** **$1.00**, suggesting minimal engagement with this vendor.\n   - **Actionable Insight:** Assess whether to continue utilizing this vendor or consolidate purchases with more significant suppliers.\n\n4. **S.P. SOAP OIL**\n   - **Total Invoices:** 1 \n   - **Total Spend:** **$150.00** \n   - **Actionable Insight:** Evaluate the necessity of this vendor in future procurement strategies, given their low spend.\n\n### Invoice Analysis\n- A total of **17 unpaid invoices** exist across vendors, which could impact supplier relationships and procurement strategies.\n- **Sun Shine Agencies** accounts for the majority of these unpaid invoices, which should be prioritized for resolution.\n\n### Category Insights\n- The products are categorized under **2 unique categories**: \n  - **Alcohol Licenses** (14 items)\n  - **Alarm Systems** (9 items)\n  \n> ⚠️ Concentration in specific categories indicates dependency that may need diversification.\n\n### Recommendations\n1. **Vendor Negotiation:** Open negotiations with **Sun Shine Agencies** to secure better pricing based on volume.\n2. **Review Unpaid Invoices:** Prioritize addressing the **unpaid invoices** with **Fab Dairy & Trading (I) Pvt. Ltd.** and **Sun Shine Agencies** to maintain supplier goodwill.\n3. **Consolidate Spend:** Consider consolidating purchases with high-performing vendors to streamline procurement and potentially reduce costs.\n4. **Diversification Strategy:** Investigate opportunities to engage with additional vendors or products to reduce the risk associated with heavy reliance on a few suppliers.\n\n### Conclusion\nThis analysis highlights critical spending patterns and vendor performances that are essential for optimizing procurement strategies. Addressing the unpaid invoices and exploring vendor negotiations will help enhance supplier relationships and improve financial outcomes."
+    },
+    "table_data": {
+      "columns": [
+        "vendor_name",
+        "vendor_company",
+        "total_spend",
+        "number_of_invoices",
+        "average_invoice_amount",
+        "paid_invoices",
+        "unpaid_invoices",
+        "product_description",
+        "category_name",
+        "product_name",
+        "total_product_spend"
+      ],
+      "rows": [
+        {
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "total_spend": 5955,
+          "number_of_invoices": 3,
+          "average_invoice_amount": 1985,
+          "paid_invoices": 0,
+          "unpaid_invoices": 3,
+          "product_description": {
+            "value": "Premium Creamy Butterscotch",
+            "pageNo": 1,
+            "confidence": 99.930504,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 194.62875,
+              "x1": 801.1545,
+              "y0": 1985.0018,
+              "y1": 2031.5508
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alarm Systems",
+          "product_name": "Premium Creamy Butterscotch",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "total_spend": 5955,
+          "number_of_invoices": 3,
+          "average_invoice_amount": 1985,
+          "paid_invoices": 0,
+          "unpaid_invoices": 3,
+          "product_description": {
+            "value": "Premium Creamy Mango",
+            "pageNo": 1,
+            "confidence": 99.9313,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 194.53716,
+              "x1": 678.5036,
+              "y0": 2034.5507,
+              "y1": 2080.6584
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "Premium Creamy Mango",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "total_spend": 5955,
+          "number_of_invoices": 3,
+          "average_invoice_amount": 1985,
+          "paid_invoices": 0,
+          "unpaid_invoices": 3,
+          "product_description": {
+            "value": "Premium Creamy Vanilla",
+            "pageNo": 1,
+            "confidence": 99.94669,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 194.72113,
+              "x1": 678.0717,
+              "y0": 1935.4757,
+              "y1": 1981.0924
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "Premium Creamy Vanilla",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "total_spend": 1,
+          "number_of_invoices": 2,
+          "average_invoice_amount": 1,
+          "paid_invoices": 1,
+          "unpaid_invoices": 1,
+          "product_description": {
+            "value": "one",
+            "pageNo": 0,
+            "confidence": 100,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 0,
+              "x1": 0,
+              "y0": 0,
+              "y1": 0
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "one",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "total_spend": 150,
+          "number_of_invoices": 1,
+          "average_invoice_amount": 150,
+          "paid_invoices": 0,
+          "unpaid_invoices": 1,
+          "product_description": {
+            "value": "SOAP OIL\nPHENYLE\nFUEL GEL",
+            "pageNo": 1,
+            "confidence": 43.12273,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 1096.42,
+              "x1": 1247.785,
+              "y0": 1092.1204,
+              "y1": 1244.5354
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "SOAP OIL\nPHENYLE\nFUEL GEL",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "total_spend": 150,
+          "number_of_invoices": 1,
+          "average_invoice_amount": 150,
+          "paid_invoices": 0,
+          "unpaid_invoices": 1,
+          "product_description": {
+            "value": "testNew",
+            "pageNo": 0,
+            "confidence": 100,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 0,
+              "x1": 0,
+              "y0": 0,
+              "y1": 0
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "testNew",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Black Fingus 1kg",
+            "pageNo": 1,
+            "confidence": 93.86058,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 175.52925,
+              "x1": 522.29834,
+              "y0": 1538.639,
+              "y1": 1573.7445
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "Black Fingus 1kg",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Dry Yeast 500gm",
+            "pageNo": 1,
+            "confidence": 99.835526,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 175.13287,
+              "x1": 503.7207,
+              "y0": 1169.9143,
+              "y1": 1205.5828
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "Dry Yeast 500gm",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "HABIT SESAME OIL 500ML",
+            "pageNo": 1,
+            "confidence": 99.746925,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 172.9208,
+              "x1": 705.92474,
+              "y0": 1206.7244,
+              "y1": 1236.67
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "HABIT SESAME OIL 500ML",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "KIKOMAN SOYA SAUCE 1LIT ORG",
+            "pageNo": 1,
+            "confidence": 99.59214,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 173.48267,
+              "x1": 857.9927,
+              "y0": 1279.8428,
+              "y1": 1310.8793
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alarm Systems",
+          "product_name": "KIKOMAN SOYA SAUCE 1LIT ORG",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Lkk Hoisin Sauce 240gm",
+            "pageNo": 1,
+            "confidence": 99.930916,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 174.66066,
+              "x1": 668.1905,
+              "y0": 1393.4952,
+              "y1": 1426.4645
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "Lkk Hoisin Sauce 240gm",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Lkk Oyster Sauce 2.2kg",
+            "pageNo": 1,
+            "confidence": 99.468056,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 175.39337,
+              "x1": 635.7976,
+              "y0": 1243.2793,
+              "y1": 1279.4264
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alarm Systems",
+          "product_name": "Lkk Oyster Sauce 2.2kg",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Lkk Teriyaki 250ml",
+            "pageNo": 1,
+            "confidence": 99.81246,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 172.93738,
+              "x1": 539.0028,
+              "y0": 1355.9698,
+              "y1": 1389.3821
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alarm Systems",
+          "product_name": "Lkk Teriyaki 250ml",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "PANKO BREAD CRUMS 1 KG",
+            "pageNo": 1,
+            "confidence": 99.101135,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 175.54324,
+              "x1": 747.9551,
+              "y0": 1574.8706,
+              "y1": 1604.7412
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alarm Systems",
+          "product_name": "PANKO BREAD CRUMS 1 KG",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Pickel Ginger 1.8kg",
+            "pageNo": 1,
+            "confidence": 99.78045,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 175.5573,
+              "x1": 550.44354,
+              "y0": 1612.3292,
+              "y1": 1646.6401
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "Pickel Ginger 1.8kg",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "PRAWN CRACKERS 500GM",
+            "pageNo": 1,
+            "confidence": 99.86943,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 171.66096,
+              "x1": 716.8549,
+              "y0": 1429.3094,
+              "y1": 1457.9271
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alarm Systems",
+          "product_name": "PRAWN CRACKERS 500GM",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Red Curry Paste 1kg",
+            "pageNo": 1,
+            "confidence": 99.94928,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 174.39714,
+              "x1": 574.5325,
+              "y0": 1060.3712,
+              "y1": 1094.6515
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alarm Systems",
+          "product_name": "Red Curry Paste 1kg",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "SUSHI RICE 1 KG",
+            "pageNo": 1,
+            "confidence": 99.39014,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 174.75914,
+              "x1": 515.6953,
+              "y0": 1022.38446,
+              "y1": 1052.5037
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "SUSHI RICE 1 KG",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Tempura Flour 1 Kg 5%",
+            "pageNo": 1,
+            "confidence": 99.117325,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 173.01877,
+              "x1": 631.6998,
+              "y0": 1464.629,
+              "y1": 1501.163
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "Tempura Flour 1 Kg 5%",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Tom Yum Curry Paste 1kg",
+            "pageNo": 1,
+            "confidence": 99.962,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 172.8786,
+              "x1": 685.5928,
+              "y0": 1095.7394,
+              "y1": 1131.9412
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "Tom Yum Curry Paste 1kg",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Veg Yellow Curry 1 Kg",
+            "pageNo": 1,
+            "confidence": 99.516174,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 172.79659,
+              "x1": 612.25256,
+              "y0": 1132.4701,
+              "y1": 1168.8553
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alarm Systems",
+          "product_name": "Veg Yellow Curry 1 Kg",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "Wheat Starch 500gm",
+            "pageNo": 1,
+            "confidence": 99.88415,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 170.48103,
+              "x1": 577.3691,
+              "y0": 1319.1742,
+              "y1": 1352.7804
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alcohol Licenses",
+          "product_name": "Wheat Starch 500gm",
+          "total_product_spend": null
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "total_spend": 362508,
+          "number_of_invoices": 17,
+          "average_invoice_amount": 21324,
+          "paid_invoices": 0,
+          "unpaid_invoices": 17,
+          "product_description": {
+            "value": "WHITE FUNGES 1 KG",
+            "pageNo": 1,
+            "confidence": 95.171646,
+            "sequenceNo": 0,
+            "coordinates": {
+              "x0": 172.47041,
+              "x1": 595.4751,
+              "y0": 1502.5481,
+              "y1": 1531.5956
+            },
+            "reviewRequired": false
+          },
+          "category_name": "Alarm Systems",
+          "product_name": "WHITE FUNGES 1 KG",
+          "total_product_spend": null
+        }
+      ],
+      "row_count": 23
+    },
+    "used_guidance": true,
+    "execution_time": "Fast (pre-built template, attempt 1)",
+    "query_attempts": 1,
+    "query_corrected": true,
+    "correction_saved": true
+  }
+}

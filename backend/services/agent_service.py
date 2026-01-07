@@ -39,6 +39,10 @@ class AgentService:
                 api_key=settings.openai_api_key,
                 temperature=0.7
             )
+            # Store OpenAI config for streaming
+            self.use_openai = True
+            self.openai_api_key = settings.openai_api_key
+            self.openai_model = settings.openai_model
         else:
             self.llm = ChatOllama(
                 base_url=settings.ollama_base_url,
@@ -124,10 +128,15 @@ class AgentService:
         Returns:
             Formatted response dictionary
         """
+        print(f"\n🔧 _format_output called with {len(intermediate_steps)} intermediate steps")
+        
         # Convert LangChain intermediate_steps tuples to serializable dictionaries
         serialized_steps = []
         if intermediate_steps:
-            for step in intermediate_steps:
+            for idx, step in enumerate(intermediate_steps):
+                print(f"  Step {idx}: type={type(step)}, is_tuple={isinstance(step, tuple)}, is_dict={isinstance(step, dict)}")
+                
+                # Handle tuple format (standard LangChain execution)
                 if isinstance(step, tuple) and len(step) >= 2:
                     action, result = step[0], step[1]
                     step_dict = {
@@ -139,6 +148,36 @@ class AgentService:
                         "result": str(result)
                     }
                     serialized_steps.append(step_dict)
+                    print(f"    ✓ Serialized tuple - tool: {step_dict['action']['tool']}")
+                
+                # Handle dict format (fast path execution guidance)
+                elif isinstance(step, dict):
+                    # Already in dict format from fast path
+                    tool_name = step.get('tool_name') or step.get('action', {}).get('tool')
+                    result_data = step.get('result', '')
+                    
+                    # Keep result as-is if it's already a dict, otherwise convert to string
+                    if isinstance(result_data, dict):
+                        # Keep dict structure for query results
+                        result_value = result_data
+                    else:
+                        result_value = str(result_data)
+                    
+                    step_dict = {
+                        "action": {
+                            "tool": tool_name,
+                            "tool_input": step.get('tool_input'),
+                            "log": step.get('log')
+                        },
+                        "result": result_value
+                    }
+                    serialized_steps.append(step_dict)
+                    print(f"    ✓ Serialized dict - tool: {tool_name}, result type: {type(result_value)}")
+                
+                else:
+                    print(f"    ✗ Skipped - unknown format")
+        
+        print(f"  → Serialized {len(serialized_steps)} steps")
         
         base_response = {
             "success": True,
@@ -1001,6 +1040,88 @@ Provide a comprehensive markdown-formatted analysis:"""
             traceback.print_exc()
             return None
     
+    def _generate_ai_summary_streaming(self, rows: List[Dict], columns: List[str], summary: Dict[str, Any], agent_data: Dict[str, Any] = None):
+        """
+        Generate AI-powered summary with streaming (generator for real-time display)
+        
+        Yields:
+            String tokens as they arrive from the AI
+        """
+        try:
+            # Prepare data snapshot
+            sample_rows = rows[:10] if len(rows) > 10 else rows
+            
+            # Build agent context
+            agent_context = ""
+            if agent_data:
+                agent_name = agent_data.get('name', '')
+                agent_desc = agent_data.get('description', '')
+                use_cases = agent_data.get('use_cases', [])
+                agent_category = agent_data.get('category', '')
+                
+                agent_context = f"""\n\n🎯 AGENT CONTEXT:
+- Name: {agent_name}
+- Description: {agent_desc}
+- Category: {agent_category}
+- Use Cases: {', '.join(use_cases)}
+
+⚠️ CRITICAL: Analyze the data according to THIS SPECIFIC agent's purpose and use cases.
+"""
+            
+            # Build prompt
+            analysis_prompt = f"""Analyze the following database query results and provide a concise, business-focused summary.
+
+**Dataset Overview:**
+- Total Records: {len(rows)}
+- Columns: {', '.join(columns)}
+
+**Statistical Summary:**
+{self._format_summary_for_ai(summary)}
+
+**Sample Data (first {len(sample_rows)} records):**
+{self._format_sample_data(sample_rows, columns)}
+{agent_context}
+
+**Instructions:**
+Provide a detailed, insightful summary using **STRICT MARKDOWN FORMATTING**:
+
+**Required Format:**
+1. Start with a ## Main Heading
+2. Use **bold** for important terms (vendors, amounts, invoice numbers)
+3. Use bullet points (- or *) for lists
+4. Use numbered lists (1., 2., 3.) for sequential findings
+5. Use ### subheadings to organize sections
+6. Use > blockquotes for key insights or warnings
+
+**Content Requirements:**
+1. Identify key findings and patterns in the data
+2. Highlight notable trends, concentrations, or anomalies
+3. Provide business-relevant observations and actionable insights
+4. Mention specific numbers, vendors, or amounts when relevant
+5. Use natural, professional language suitable for business stakeholders
+
+**Do NOT:**
+- Write plain paragraphs without markdown formatting
+- Simply repeat raw statistics without interpretation
+- Use overly technical jargon
+- Make assumptions or recommendations beyond the data
+
+Provide a comprehensive markdown-formatted analysis:"""
+            
+            # Stream AI response
+            messages = [
+                {"role": "user", "content": analysis_prompt}
+            ]
+            
+            for token in self._stream_ai_response(messages):
+                yield token
+                
+        except Exception as e:
+            print(f"Error generating AI summary (streaming): {e}")
+            import traceback
+            traceback.print_exc()
+            yield f"\n\n_Error generating summary: {str(e)}_"
+    
     def _format_summary_for_ai(self, summary: Dict[str, Any]) -> str:
         """
         Format statistical summary for AI consumption
@@ -1149,7 +1270,7 @@ Return ONLY the markdown-formatted version:"""
     def _execute_with_guidance(self, agent_data: Dict, user_query: str, input_data: Dict = None, progress_callback = None) -> Dict[str, Any]:
         """
         Execute agent using pre-built execution guidance (FAST PATH)
-        Includes automatic SQL error correction with retry logic (max 3 attempts)
+        Includes automatic SQL error correction with retry logic (max 5 attempts)
         Falls back to AI-based query generation if template fails
         
         Args:
@@ -1223,10 +1344,17 @@ Return ONLY the markdown-formatted version:"""
             from tools.postgres_connector import PostgresConnector
             pg_connector = PostgresConnector()
             
-            max_retries = 3
+            max_retries = 5
             current_query = filled_query
             last_error = None
             query_was_corrected = False  # Track if we corrected the query
+            
+            # 🔍 PRE-EXECUTION VALIDATION: Check and fix common errors BEFORE attempting execution
+            validated_query, was_fixed = self._validate_and_fix_query(current_query, execution_guidance.get('schema_snapshot', {}))
+            if was_fixed:
+                print("  ✅ Query was proactively fixed before execution")
+                current_query = validated_query
+                query_was_corrected = True  # Mark that we made changes
             
             for attempt in range(1, max_retries + 1):
                 print(f"\n  🔄 Attempt {attempt}/{max_retries}: Executing query...")
@@ -1260,6 +1388,15 @@ Return ONLY the markdown-formatted version:"""
                     columns = result.get('columns', [])
                     row_count = result.get('row_count', 0)
                     
+                    if progress_callback:
+                        progress_callback(3, 'in_progress', 'Processing data', None, substeps=[
+                            {
+                                "id": "ai-output-generation",
+                                "label": "AI is generating output message...",
+                                "status": "in_progress"
+                            }
+                        ])
+                    
                     print("\n🤖 Generating purpose-driven output based on agent's mission...")
                     purpose_output = self._generate_cached_query_output(
                         agent_data=agent_data,
@@ -1268,6 +1405,16 @@ Return ONLY the markdown-formatted version:"""
                         rows=rows,
                         columns=columns
                     )
+                    
+                    if progress_callback:
+                        progress_callback(3, 'in_progress', 'Processing data', None, substeps=[
+                            {
+                                "id": "ai-output-generation",
+                                "label": "Output message generated",
+                                "status": "completed",
+                                "detail": f"Generated {len(purpose_output)} character message"
+                            }
+                        ])
                     
                     if progress_callback:
                         progress_callback(3, 'completed', 'Processing data', 'Data analyzed successfully')
@@ -1322,6 +1469,16 @@ Return ONLY the markdown-formatted version:"""
                     if attempt < max_retries:
                         print(f"  🔧 Attempting to fix SQL syntax error (attempt {attempt}/{max_retries})...")
                         
+                        # Show AI query correction substep
+                        if progress_callback:
+                            progress_callback(2, 'in_progress', 'Running tools', None, substeps=[
+                                {
+                                    "id": "ai-query-fix",
+                                    "label": "AI is fixing SQL query...",
+                                    "status": "in_progress"
+                                }
+                            ])
+                        
                         # Use LLM to fix the query
                         corrected_query = self._fix_sql_syntax_error(
                             query=current_query,
@@ -1335,8 +1492,27 @@ Return ONLY the markdown-formatted version:"""
                             print(f"  Corrected: {corrected_query[:100]}...")
                             current_query = corrected_query
                             query_was_corrected = True  # Mark that we made a correction
+                            
+                            # Show success substep
+                            if progress_callback:
+                                progress_callback(2, 'in_progress', 'Running tools', None, substeps=[
+                                    {
+                                        "id": "ai-query-fix",
+                                        "label": "Query corrected successfully",
+                                        "status": "completed",
+                                        "detail": f"Retry attempt {attempt}/{max_retries}"
+                                    }
+                                ])
                         else:
                             print(f"  ⚠️ AI could not suggest a fix - breaking retry loop")
+                            if progress_callback:
+                                progress_callback(2, 'in_progress', 'Running tools', None, substeps=[
+                                    {
+                                        "id": "ai-query-fix",
+                                        "label": "Could not fix query",
+                                        "status": "error"
+                                    }
+                                ])
                             break
                     else:
                         print(f"  ❌ Max retries ({max_retries}) reached")
@@ -1345,6 +1521,17 @@ Return ONLY the markdown-formatted version:"""
             print(f"\n⚠️ Pre-built query template failed after {max_retries} attempts")
             print(f"  Last error: {last_error}")
             print(f"  🔄 Falling back to AI-based query generation during execution...")
+            
+            # Show fallback substep
+            if progress_callback:
+                progress_callback(2, 'in_progress', 'Running tools', None, substeps=[
+                    {
+                        "id": "ai-fallback",
+                        "label": "Query correction failed, using AI to generate new query...",
+                        "status": "in_progress"
+                    }
+                ])
+            
             return None  # Signal to use traditional execution
             
         except Exception as e:
@@ -1432,16 +1619,48 @@ Return ONLY the markdown-formatted version:"""
             
             # 🎯 Analyze the error to provide specific guidance
             error_guidance = ""
+            
+            # Extract specific error line if available
+            line_info = ""
+            if "LINE" in error:
+                line_match = re.search(r'LINE (\d+):\s*(.+?)(?:\n|$)', error)
+                if line_match:
+                    line_num = line_match.group(1)
+                    line_content = line_match.group(2).strip()
+                    line_info = f"\n**ERROR ON LINE {line_num}:** {line_content}"
+            
             if "operator does not exist" in error.lower() and "->" in error:
-                error_guidance = """\n⚠️ ERROR ANALYSIS: Operator issue detected!
+                # Try to extract the specific column causing the issue
+                col_match = re.search(r'(\w+)\.(\w+)->>', error)
+                problematic_col = f"{col_match.group(1)}.{col_match.group(2)}" if col_match else "unknown"
+                
+                # Print debug info about the problematic column
+                if col_match:
+                    table_alias = col_match.group(1)
+                    col_name = col_match.group(2)
+                    print(f"  📍 Problematic column: {table_alias}.{col_name}")
+                    
+                    # Try to find the actual column info
+                    for key, info in all_columns_info.items():
+                        if col_name in key:
+                            print(f"    Column info: {key} - Type: {info['type']}, Is JSONB: {info['is_jsonb']}")
+                
+                error_guidance = f"""\n⚠️ ERROR ANALYSIS: Operator issue detected!{line_info}
   - The ->> operator ONLY works on JSONB columns
+  - **Problematic column: {problematic_col}**
+  - Check the schema above: Is this column JSONB or a regular type (UUID, VARCHAR, etc.)?
+  - If it's UUID/VARCHAR/INT: Access directly WITHOUT ->>'value'
+  - If it's JSONB: Use ->>'value' to extract the string value
   - The LIKE operator does NOT work on DATE/TIMESTAMP types
-  - Check the schema above to see which columns are JSONB vs regular types
-  - For VARCHAR/TEXT columns, access them directly: v.name, v.company
-  - For JSONB nested data: If VARCHAR contains JSON, cast first: (v.address::jsonb)->>'street'
   - For DATE filtering: Use string comparison BEFORE casting: invoice_date->>'value' LIKE 'MM/%/YYYY'
-  - Example WRONG: CAST(date AS date) LIKE 'pattern' ❌
-  - Example CORRECT: date->>'value' LIKE 'pattern' ✅"""
+  - Example WRONG: cat.id (UUID) ->> 'value' ❌
+  - Example CORRECT: (jsonb_field->>'value')::uuid = cat.id ✅
+  
+  **STEP-BY-STEP FIX:**
+  1. Find the column mentioned in the error in the schema above
+  2. Check if it's listed under 'JSONB columns' or 'Regular columns'
+  3. If Regular: Remove ->>'value' and access directly
+  4. If JSONB: Keep ->>'value' but ensure proper casting"""
             elif "column" in error.lower() and "does not exist" in error.lower():
                 # Extract column name from error if possible
                 col_match = re.search(r'column "([^"]+)"', error)
@@ -1457,6 +1676,13 @@ Return ONLY the markdown-formatted version:"""
   - All non-aggregated columns in SELECT must be in GROUP BY
   - Add missing columns to GROUP BY clause
   - Or use aggregate functions (COUNT, SUM, MAX, etc.) for those columns"""
+            elif "foreign key" in error.lower() or "violates" in error.lower():
+                error_guidance = """\n⚠️ ERROR ANALYSIS: JOIN condition issue!
+  - Check the "Foreign keys" section in the schema above
+  - Verify your JOIN conditions match the actual foreign key relationships
+  - Example: If schema shows "vendor_id → icap_vendor.id", use: ON i.vendor_id = v.id
+  - For JSONB foreign keys: Cast the JSONB value: (detail.product_id->>'value')::uuid = prod.id
+  - DO NOT guess JOIN conditions - use exact relationships from schema"""
             
             fix_prompt = f"""You are a PostgreSQL expert. Fix this SQL query that is causing an error.
 
@@ -1486,17 +1712,40 @@ IMPORTANT RULES (Based on Actual Schema):
    Example: i.id, v.tenant_id, i.created_on
 7. For numeric JSONB fields: NULLIF((field->>'value'), '')::numeric
 8. Use LEFT JOIN (not INNER JOIN) to preserve all records
-9. Never include ID columns in SELECT (user-facing)
+9. **NEVER EXPOSE ID COLUMNS** - ID columns must NEVER appear in SELECT:
+   - ❌ WRONG: SELECT d.id, v.vendor_id, cat.id
+   - ✅ CORRECT: SELECT d.description, v.name, cat.name
+   - If you need to reference an entity, JOIN its table and show the name/description column
+   - ID columns are: id, document_id, vendor_id, product_id, category_id, tenant_id, user_id, etc.
+   - **CRITICAL**: Remove ALL id/ID columns from SELECT, even if they were in the original query
 10. Use column names EXACTLY as shown in schema
-11. Verify JOIN conditions match foreign key relationships
+11. **USE SCHEMA FOREIGN KEYS FOR JOINS** - DO NOT hallucinate JOIN conditions:
+   - Look at "Foreign keys" section in schema above
+   - Use ONLY the foreign key relationships shown in schema
+   - Example from schema: "vendor_id → icap_vendor.id" means JOIN icap_vendor v ON i.vendor_id = v.id
+   - ❌ WRONG: Guessing JOIN conditions based on column names
+   - ✅ CORRECT: Using exact foreign key relationships from schema
+   - If a foreign key is JSONB (contains ->>'value'), cast it: (detail.product_id->>'value')::uuid = prod.id
 12. **CRITICAL**: If you're not sure a column exists, DON'T use it - check schema first
 13. **RESOLVE ID COLUMNS TO NAMES** - NEVER expose raw ID values:
    - If you see category_id (JSONB): JOIN icap_tenant_category_master and show category.name instead
    - If you see product_id (JSONB): JOIN icap_product_master and show product.name instead
-   - ID columns stored as JSONB contain {"value": "uuid-string"}, extract with ->>'value'
+   - ID columns stored as JSONB contain {{"value": "uuid-string"}}, extract with ->>'value'
    - Example JOIN: LEFT JOIN icap_tenant_category_master cat ON (d.category_id->>'value')::uuid = cat.id
    - Then SELECT: cat.name as category_name (NOT d.category_id)
-14. Return ONLY the corrected SQL query, no explanations
+14. **GROUP BY VALIDATION** - Check if all non-aggregated columns in SELECT are in GROUP BY:
+   - If SELECT has cat.name, GROUP BY must include cat.name (or cat.id)
+   - If using CASE expressions with table columns, add those columns to GROUP BY
+   - Better: Use aggregate function MAX(cat.name) if grouping doesn't need cat.name
+15. **PROACTIVE ERROR CHECKING** - Before returning the query, verify:
+   ✅ All columns in SELECT exist in the schema
+   ✅ All non-aggregated SELECT columns are in GROUP BY
+   ✅ All table aliases are defined in FROM/JOIN clauses
+   ✅ No ->> operator on non-JSONB columns
+   ✅ WHERE clause comes before GROUP BY
+   ✅ **NO ID COLUMNS in SELECT** (check for: .id, _id, document_id, vendor_id, product_id, category_id, etc.)
+   ✅ **JOIN conditions match schema's foreign keys** - verify each JOIN uses the exact foreign key relationship from schema
+16. Return ONLY the corrected SQL query, no explanations
 
 CORRECTED QUERY:"""
             
@@ -1515,12 +1764,230 @@ CORRECTED QUERY:"""
                 print("  ⚠️ AI response is not a valid SELECT query")
                 return ""
             
+            # 🚫 POST-PROCESSING: Remove any ID columns that AI might have included
+            corrected_query = self._remove_id_columns_from_query(corrected_query)
+            
             print(f"  ✅ AI provided corrected query (length: {len(corrected_query)} chars)")
             return corrected_query
             
         except Exception as e:
             print(f"  ❌ Error in SQL fix attempt: {e}")
             return ""
+    
+    def _remove_id_columns_from_query(self, query: str) -> str:
+        """
+        Post-process query to remove any ID columns from SELECT clause
+        
+        Args:
+            query: SQL query string
+            
+        Returns:
+            Query with ID columns removed from SELECT
+        """
+        try:
+            import re
+            
+            # Split query to isolate SELECT clause
+            select_match = re.search(r'SELECT\s+(.*?)\s+FROM', query, re.IGNORECASE | re.DOTALL)
+            if not select_match:
+                return query  # Can't parse, return as-is
+            
+            select_clause = select_match.group(1)
+            select_start = select_match.start(1)
+            select_end = select_match.end(1)
+            
+            # Split into individual column expressions
+            columns = []
+            current = ""
+            paren_depth = 0
+            
+            for char in select_clause:
+                if char == '(':
+                    paren_depth += 1
+                elif char == ')':
+                    paren_depth -= 1
+                elif char == ',' and paren_depth == 0:
+                    columns.append(current.strip())
+                    current = ""
+                    continue
+                current += char
+            
+            if current.strip():
+                columns.append(current.strip())
+            
+            # Filter out ID columns
+            id_patterns = [
+                r'\b\w+\.id\s+as\s+\w*id\w*',  # Match: d.id as document_id, v.id as vendor_id
+                r'\b\w+\.id$',  # Match: d.id, v.id (without alias)
+                r'\b\w+\s+as\s+\w*_id$',  # Match: column as something_id
+                r'\b\w+\s+as\s+id$',  # Match: column as id
+            ]
+            
+            filtered_columns = []
+            removed_columns = []
+            
+            for col in columns:
+                is_id_column = False
+                col_lower = col.lower()
+                
+                # Check against ID patterns
+                for pattern in id_patterns:
+                    if re.search(pattern, col_lower):
+                        is_id_column = True
+                        removed_columns.append(col)
+                        break
+                
+                if not is_id_column:
+                    filtered_columns.append(col)
+            
+            if removed_columns:
+                print(f"  🚫 Removed {len(removed_columns)} ID column(s) from query:")
+                for removed in removed_columns:
+                    print(f"     - {removed[:80]}")
+            
+            # Reconstruct query
+            if filtered_columns:
+                new_select_clause = ',\n    '.join(filtered_columns)
+                new_query = query[:select_start] + new_select_clause + query[select_end:]
+                return new_query
+            else:
+                print("  ⚠️ All columns were ID columns - returning original query")
+                return query
+                
+        except Exception as e:
+            print(f"  ⚠️ Error removing ID columns: {e}")
+            return query  # Return original on error
+    
+    def _validate_and_fix_query(self, query: str, schema_context: Dict) -> tuple[str, bool]:
+        """
+        Proactively validate query for common errors and attempt to fix them before execution
+        
+        Args:
+            query: SQL query to validate
+            schema_context: Schema information for validation
+            
+        Returns:
+            Tuple of (fixed_query, was_modified)
+        """
+        try:
+            import re
+            from langchain_core.messages import HumanMessage
+            from tools.postgres_connector import PostgresConnector
+            
+            print("\n🔍 PRE-EXECUTION VALIDATION: Checking query for common errors...")
+            
+            issues_found = []
+            
+            # 1. Check for ID columns in SELECT
+            id_patterns = [
+                r'\b\w+\.id\s+as\s+\w*id\w*',
+                r'\b\w+\.id(?!\s*=)',  # Match .id not followed by =
+                r'\b\w+\s+as\s+\w*_id$',
+            ]
+            
+            select_match = re.search(r'SELECT\s+(.*?)\s+FROM', query, re.IGNORECASE | re.DOTALL)
+            if select_match:
+                select_clause = select_match.group(1).lower()
+                for pattern in id_patterns:
+                    if re.search(pattern, select_clause):
+                        issues_found.append("⚠️ ID columns detected in SELECT clause")
+                        break
+            
+            # 2. Check for GROUP BY completeness
+            if 'group by' in query.lower():
+                # Extract non-aggregated columns from SELECT
+                if select_match:
+                    select_text = select_match.group(1)
+                    # Check for columns that should be in GROUP BY
+                    case_expr = re.findall(r'case\s+when.*?then\s+(\w+\.\w+)', select_text, re.IGNORECASE)
+                    if case_expr:
+                        group_by_match = re.search(r'GROUP BY\s+(.*?)(?:ORDER BY|HAVING|$)', query, re.IGNORECASE | re.DOTALL)
+                        if group_by_match:
+                            group_by_clause = group_by_match.group(1).lower()
+                            for col in case_expr:
+                                if col.lower() not in group_by_clause:
+                                    issues_found.append(f"⚠️ Column {col} used in CASE but not in GROUP BY")
+            
+            # 3. Check for WHERE after GROUP BY
+            where_pos = query.lower().find('where')
+            group_pos = query.lower().find('group by')
+            if where_pos > 0 and group_pos > 0 and where_pos > group_pos:
+                issues_found.append("⚠️ WHERE clause appears after GROUP BY (should be before)")
+            
+            if not issues_found:
+                print("  ✅ Pre-validation passed: No common errors detected")
+                return query, False
+            
+            # Issues found - attempt to fix
+            print(f"  🔧 Found {len(issues_found)} potential issue(s):")
+            for issue in issues_found:
+                print(f"     {issue}")
+            
+            print("  🤖 Asking AI to fix issues proactively...")
+            
+            # Get schema details
+            table_pattern = r'(?:FROM|JOIN)\s+([\w_]+)'
+            tables_in_query = re.findall(table_pattern, query, re.IGNORECASE)
+            
+            pg_connector = PostgresConnector()
+            schema_details = []
+            
+            for table_name in tables_in_query[:5]:  # Limit to 5 tables
+                table_schema = pg_connector.get_table_schema(table_name)
+                if table_schema.get('success'):
+                    columns = table_schema.get('columns', [])
+                    jsonb_cols = table_schema.get('jsonb_columns', [])
+                    foreign_keys = table_schema.get('foreign_keys', [])
+                    
+                    schema_info = f"""\nTable: {table_name}
+  Columns: {', '.join([c['name'] for c in columns[:20]])}
+  JSONB columns: {', '.join(jsonb_cols) if jsonb_cols else 'None'}
+  Foreign keys: {', '.join([f"{fk['column']} → {fk['references_table']}.{fk['references_column']}" for fk in foreign_keys[:5]]) if foreign_keys else 'None'}"""
+                    schema_details.append(schema_info)
+            
+            schema_context_str = "\n".join(schema_details) if schema_details else "Schema not available"
+            
+            fix_prompt = f"""You are a PostgreSQL expert. Fix the issues in this SQL query BEFORE execution.
+
+CURRENT QUERY:
+{query}
+
+ISSUES DETECTED:
+{chr(10).join(issues_found)}
+
+SCHEMA CONTEXT:
+{schema_context_str}
+
+FIX THESE ISSUES:
+1. Remove ANY ID columns from SELECT (d.id, v.id, document_id, vendor_id, etc.)
+2. Ensure all non-aggregated SELECT columns are in GROUP BY
+3. Move WHERE clause before GROUP BY if needed
+4. Use schema foreign keys for JOIN conditions
+5. Use MAX() or another aggregate for columns that don't need grouping
+
+Return ONLY the corrected SQL query, no explanations.
+
+CORRECTED QUERY:"""
+            
+            response = self.llm.invoke([HumanMessage(content=fix_prompt)])
+            fixed_query = response.content.strip()
+            
+            # Remove markdown code blocks
+            if '```' in fixed_query:
+                code_match = re.search(r'```(?:sql)?\n(.*?)\n```', fixed_query, re.DOTALL)
+                if code_match:
+                    fixed_query = code_match.group(1).strip()
+            
+            if fixed_query and fixed_query.upper().strip().startswith('SELECT'):
+                print(f"  ✅ AI proactively fixed query ({len(fixed_query)} chars)")
+                return fixed_query, True
+            else:
+                print("  ⚠️ AI fix failed, using original query")
+                return query, False
+                
+        except Exception as e:
+            print(f"  ⚠️ Error in pre-validation: {e}")
+            return query, False
     
     def _save_corrected_query_template(self, agent_data: Dict, corrected_query: str, original_query: str, attempt_number: int) -> None:
         """
@@ -2212,7 +2679,7 @@ SQL QUERY:"""
                 "message": "Execution guidance generation failed. Agent will use traditional execution."
             }
     
-    def _generate_system_prompt(self, prompt: str, agent_tools: List, selected_tool_names: List[str]) -> str:
+    def _generate_system_prompt(self, prompt: str, agent_tools: List, selected_tool_names: List[str], reference_template: str = None) -> str:
         """
         Generate comprehensive system prompt with entity-specific guidance and schema inspection
         
@@ -2220,6 +2687,7 @@ SQL QUERY:"""
             prompt: User prompt
             agent_tools: Available tools
             selected_tool_names: Names of selected tools
+            reference_template: Optional SQL template query that failed (for context in fallback scenarios)
             
         Returns:
             System prompt string
@@ -2253,6 +2721,28 @@ SQL QUERY:"""
 
 📌 CRITICAL SUCCESS CRITERIA:
 Your response MUST directly address the above mission. Every action, every query, every output must serve this exact purpose.
+"""
+        
+        # 📖 Add reference template context if provided (from failed execution guidance)
+        if reference_template:
+            system_prompt += f"""\n📚 REFERENCE QUERY TEMPLATE (Use as Structure Guide):
+A pre-built query template was attempted but failed. Use this as a REFERENCE for:
+- Understanding the expected data structure
+- Identifying which tables and columns are relevant
+- Seeing the intended output format
+- Learning the query pattern that aligns with the agent's goal
+
+REFERENCE TEMPLATE:
+```sql
+{reference_template}
+```
+
+⚠️ IMPORTANT:
+- This template may have syntax errors - that's why it failed
+- DO NOT copy it blindly - understand its INTENT
+- Use it to guide your query structure, table joins, and column selection
+- Ensure your new query maintains the same PURPOSE and OUTPUT GOALS
+- Fix any syntax issues while preserving the data structure intent
 """
         
         # 🎯 Add specialized instructions based on detected agent type
@@ -3051,6 +3541,291 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
         
         return agent_data
     
+    def create_agent_with_streaming(self, prompt: str, name: str = None, selected_tools: List[str] = None, workflow_config: Dict[str, Any] = None, description: str = None, category: str = None, icon: str = None, use_cases: List[str] = None):
+        """
+        Create an agent with streaming AI reasoning (generator for SSE)
+        
+        Yields progress events showing AI thinking process
+        """
+        try:
+            agent_id = str(uuid.uuid4())
+            agent_name = name or f"Agent-{agent_id[:8]}"
+            
+            # Step 1: Initial setup
+            yield {
+                "type": "progress",
+                "step": 1,
+                "status": "in_progress",
+                "message": "Analyzing your requirements...",
+                "detail": "Understanding agent purpose and configuration"
+            }
+            
+            # Set default workflow config
+            if workflow_config is None:
+                workflow_config = {
+                    "trigger_type": "text_query",
+                    "input_fields": [],
+                    "output_format": "text"
+                }
+            
+            # Auto-add postgres_inspect_schema
+            if selected_tools is not None and 'postgres_query' in selected_tools:
+                if 'postgres_inspect_schema' not in selected_tools:
+                    selected_tools.append('postgres_inspect_schema')
+            
+            # Filter tools
+            if selected_tools is not None and len(selected_tools) > 0:
+                agent_tools = [t for t in self.tools if t.name in selected_tools]
+                tool_count = len(agent_tools)
+            else:
+                agent_tools = self.tools
+                tool_count = len(self.tools)
+            
+            yield {
+                "type": "progress",
+                "step": 1,
+                "status": "completed",
+                "message": "Requirements analyzed",
+                "detail": f"Selected {tool_count} tools for this agent"
+            }
+            
+            # Step 2: AI thinking - Generate system prompt with streaming
+            yield {
+                "type": "progress",
+                "step": 2,
+                "status": "in_progress",
+                "message": "Designing agent",
+                "substeps": [
+                    {
+                        "id": "ai-system-prompt",
+                        "label": "AI is generating system prompt...",
+                        "status": "in_progress"
+                    }
+                ]
+            }
+            
+            # Build AI reasoning prompt
+            tool_descriptions = "\n".join([f"- {tool.name}: {tool.description}" for tool in agent_tools])
+            
+            reasoning_prompt = f"""You are an AI assistant helping to create an intelligent agent.
+
+**Agent Purpose:**
+{prompt}
+
+**Available Tools:**
+{tool_descriptions}
+
+**Your Task:**
+Think step-by-step and explain your reasoning as you design this agent.
+
+1. First, explain what this agent needs to do
+2. Identify which tools are required and why
+3. Describe the key challenges this agent will face
+4. Outline the main instructions the agent needs
+
+Start by explaining your understanding and reasoning:"""
+            
+            messages = [
+                {"role": "user", "content": reasoning_prompt}
+            ]
+            
+            # Generate AI reasoning (collect tokens but don't stream them)
+            ai_reasoning = []
+            for token in self._stream_ai_response(messages):
+                ai_reasoning.append(token)
+            
+            # Now generate actual system prompt (non-streaming for simplicity)
+            selected_tool_names = selected_tools if selected_tools is not None else [t.name for t in self.tools]
+            system_prompt = self._generate_system_prompt(prompt, agent_tools, selected_tool_names)
+            
+            # Mark AI substep complete
+            yield {
+                "type": "progress",
+                "step": 2,
+                "status": "in_progress",
+                "message": "Designing agent",
+                "substeps": [
+                    {
+                        "id": "ai-system-prompt",
+                        "label": "System prompt generated",
+                        "status": "completed",
+                        "detail": f"Created {len(system_prompt)} character prompt"
+                    }
+                ]
+            }
+            
+            yield {
+                "type": "progress",
+                "step": 2,
+                "status": "completed",
+                "message": "Agent designed"
+            }
+            
+            # Step 3: Configure workflow
+            yield {
+                "type": "progress",
+                "step": 3,
+                "status": "in_progress",
+                "message": "Configuring workflow...",
+                "detail": f"Setting up {workflow_config.get('trigger_type', 'text_query')} trigger"
+            }
+            
+            # Create agent prompt template
+            prompt_template = ChatPromptTemplate.from_messages([
+                ("system", system_prompt),
+                ("human", "{input}"),
+                MessagesPlaceholder(variable_name="agent_scratchpad"),
+            ])
+            
+            # Create agent
+            agent = create_openai_functions_agent(
+                llm=self.llm,
+                tools=agent_tools,
+                prompt=prompt_template
+            )
+            
+            agent_executor = AgentExecutor(
+                agent=agent,
+                tools=agent_tools,
+                verbose=True,
+                handle_parsing_errors=True
+            )
+            
+            yield {
+                "type": "progress",
+                "step": 3,
+                "status": "completed",
+                "message": "Workflow configured"
+            }
+            
+            # Step 4: Generate execution guidance if needed
+            execution_guidance = None
+            has_postgres = selected_tools is not None and any(tool in selected_tools for tool in ['postgres_query', 'postgres_inspect_schema'])
+            trigger_type = workflow_config.get('trigger_type', 'text_query')
+            should_generate_guidance = has_postgres
+            
+            if should_generate_guidance:
+                yield {
+                    "type": "progress",
+                    "step": 4,
+                    "status": "in_progress",
+                    "message": "Optimizing execution",
+                    "substeps": [
+                        {
+                            "id": "ai-query-template",
+                            "label": "AI is generating query template...",
+                            "status": "in_progress"
+                        }
+                    ]
+                }
+                
+                try:
+                    execution_guidance = self._generate_execution_guidance(
+                        prompt=prompt,
+                        trigger_type=trigger_type,
+                        output_format=workflow_config.get('output_format', 'text'),
+                        agent_tools=agent_tools,
+                        workflow_config=workflow_config
+                    )
+                    
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "in_progress",
+                        "message": "Optimizing execution",
+                        "substeps": [
+                            {
+                                "id": "ai-query-template",
+                                "label": "Query template generated",
+                                "status": "completed",
+                                "detail": "Agent will use optimized fast-path"
+                            }
+                        ]
+                    }
+                    
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "completed",
+                        "message": "Execution optimized"
+                    }
+                except Exception as e:
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "in_progress",
+                        "message": "Optimizing execution",
+                        "substeps": [
+                            {
+                                "id": "ai-query-template",
+                                "label": "Optimization failed",
+                                "status": "error",
+                                "detail": "Will use standard execution"
+                            }
+                        ]
+                    }
+                    
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "completed",
+                        "message": "Using standard execution"
+                    }
+            else:
+                yield {
+                    "type": "progress",
+                    "step": 4,
+                    "status": "completed",
+                    "message": "Configuration complete"
+                }
+            
+            # Step 5: Save agent
+            yield {
+                "type": "progress",
+                "step": 5,
+                "status": "in_progress",
+                "message": "Saving agent...",
+                "detail": "Writing configuration to storage"
+            }
+            
+            agent_data = {
+                "id": agent_id,
+                "name": agent_name,
+                "description": description or prompt[:100],
+                "category": category or "General",
+                "icon": icon or "🤖",
+                "prompt": prompt,
+                "system_prompt": system_prompt,
+                "selected_tools": selected_tools or [t.name for t in self.tools],
+                "workflow_config": workflow_config,
+                "created_at": datetime.now().isoformat(),
+                "use_cases": use_cases or []
+            }
+            
+            if execution_guidance:
+                agent_data["execution_guidance"] = execution_guidance
+            
+            self.storage.save_agent(agent_data)
+            
+            yield {
+                "type": "progress",
+                "step": 5,
+                "status": "completed",
+                "message": "Agent saved successfully"
+            }
+            
+            # Final result
+            yield {
+                "type": "result",
+                "data": agent_data
+            }
+            
+        except Exception as e:
+            yield {
+                "type": "error",
+                "message": str(e)
+            }
+    
     def execute_agent_with_progress(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None):
         """
         Execute an agent with real-time progress updates (generator function for SSE)
@@ -3065,7 +3840,7 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
         # List to collect progress events from the callback
         progress_events = []
         
-        def capturing_callback(step, status, message, detail=None):
+        def capturing_callback(step, status, message, detail=None, substeps=None):
             """Callback that captures progress events"""
             event = {
                 "step": step,
@@ -3075,6 +3850,8 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
             }
             if detail:
                 event["detail"] = detail
+            if substeps:
+                event["substeps"] = substeps
             progress_events.append(event)
         
         try:
@@ -3147,6 +3924,268 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                 "error_type": type(e).__name__
             }
     
+    def execute_agent_with_ai_streaming(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None):
+        """
+        Execute an agent with AI thinking streams (enhanced version of execute_agent_with_progress)
+        
+        This method adds real-time AI reasoning display during summary generation.
+        Yields both progress events AND ai_thinking events.
+        """
+        import threading
+        import time
+        
+        # Storage for progress and AI thinking
+        progress_events = []
+        ai_thinking_buffer = []
+        execution_complete = threading.Event()
+        result_container = {'result': None, 'error': None}
+        
+        def capturing_callback(step, status, message, detail=None, substeps=None):
+            """Callback that captures progress events"""
+            # Skip step 4 and 5 completions - AI streaming will handle these
+            if step in [4, 5] and status == 'completed':
+                return  # Don't capture these events
+            
+            event = {
+                "step": step,
+                "status": status,
+                "message": message,
+                "type": "progress"
+            }
+            if detail:
+                event["detail"] = detail
+            if substeps:
+                event["substeps"] = substeps
+            progress_events.append(event)
+        
+        try:
+            # Validate agent exists
+            agent_data = self.storage.get_agent(agent_id)
+            if not agent_data:
+                yield {
+                    "type": "error",
+                    "message": f"Agent {agent_id} not found"
+                }
+                return
+            
+            # Start execution in background thread
+            def execute_in_thread():
+                try:
+                    result_container['result'] = self.execute_agent(
+                        agent_id, user_query, tool_configs, input_data, capturing_callback
+                    )
+                except Exception as e:
+                    result_container['error'] = e
+                finally:
+                    execution_complete.set()
+            
+            exec_thread = threading.Thread(target=execute_in_thread)
+            exec_thread.start()
+            
+            # Stream progress events as they come in
+            last_yielded_index = 0
+            summary_streaming_started = False
+            
+            while not execution_complete.is_set() or last_yielded_index < len(progress_events):
+                # Yield any new progress events
+                while last_yielded_index < len(progress_events):
+                    event = progress_events[last_yielded_index]
+                    yield event
+                    
+                    # Check if we're at the "Generating output" step (step 4)
+                    # This is where AI summary generation happens
+                    if event['step'] == 4 and event['status'] == 'in_progress' and not summary_streaming_started:
+                        summary_streaming_started = True
+                        # We'll inject AI thinking stream here after the thread completes
+                    
+                    last_yielded_index += 1
+                
+                # Small delay to avoid busy-waiting
+                if not execution_complete.is_set():
+                    time.sleep(0.05)  # 50ms
+            
+            # Wait for thread to complete
+            exec_thread.join()
+            
+            # Check for errors
+            if result_container['error']:
+                yield {
+                    "type": "error",
+                    "message": str(result_container['error']),
+                    "error_type": type(result_container['error']).__name__
+                }
+                return
+            
+            result = result_container['result']
+            
+            print(f"\n🔍 DEBUG: Checking for AI streaming opportunity...")
+            print(f"  - Result success: {result and result.get('success')}")
+            print(f"  - Has intermediate_steps: {result and 'intermediate_steps' in result}")
+            if result:
+                print(f"  - Intermediate steps count: {len(result.get('intermediate_steps', []))}")
+            
+            # 🎯 NEW: If result has summary data, generate streaming AI analysis
+            # Check if we have intermediate_steps with query results to analyze
+            if result and result.get('success'):
+                # Try to extract rows/columns from intermediate_steps
+                intermediate_steps = result.get('intermediate_steps', [])
+                rows = None
+                columns = None
+                
+                print(f"\n🎯 Extracting query results for AI streaming...")
+                print(f"  Found {len(intermediate_steps)} intermediate steps")
+                
+                # Extract query results from intermediate steps
+                for idx, step in enumerate(intermediate_steps):
+                    print(f"  Step {idx}: {type(step)}")
+                    
+                    # Handle both dict and tuple formats
+                    if isinstance(step, dict):
+                        # Dict format (from fast path or serialized)
+                        tool_name = step.get('action', {}).get('tool')
+                        result_str = step.get('result', '')
+                        print(f"    Tool: {tool_name}, Result type: {type(result_str)}")
+                    elif isinstance(step, tuple) and len(step) >= 2:
+                        # Tuple format (from standard execution)
+                        action = step[0]
+                        result_str = str(step[1])
+                        tool_name = getattr(action, 'tool', None) if hasattr(action, 'tool') else None
+                        print(f"    Tool: {tool_name}, Result type: {type(result_str)}")
+                    else:
+                        print(f"    Skipping unknown format")
+                        continue
+                    
+                    # Check if this is a postgres_query result
+                    if tool_name == 'postgres_query':
+                        print(f"    ✓ Found postgres_query step!")
+                        # Try to parse the result
+                        try:
+                            # Result might be a dict, string, or other format
+                            if isinstance(result_str, dict):
+                                # Already a dict (from fast path or preserved serialization)
+                                if 'rows' in result_str:
+                                    rows = result_str['rows']
+                                    columns = result_str.get('columns', list(rows[0].keys()) if rows else [])
+                                    print(f"      Direct dict access: {len(rows)} rows")
+                                    break
+                            elif isinstance(result_str, str):
+                                if result_str.strip().startswith('['):
+                                    # JSON array of rows
+                                    import json
+                                    parsed = json.loads(result_str)
+                                    if isinstance(parsed, list) and len(parsed) > 0:
+                                        rows = parsed
+                                        columns = list(rows[0].keys()) if rows else []
+                                        print(f"      Parsed JSON array: {len(rows)} rows")
+                                        break
+                                elif result_str.strip().startswith('{'):
+                                    # JSON dict with rows/columns
+                                    import json
+                                    parsed = json.loads(result_str)
+                                    if isinstance(parsed, dict) and 'rows' in parsed:
+                                        rows = parsed['rows']
+                                        columns = parsed.get('columns', list(rows[0].keys()) if rows else [])
+                                        print(f"      Parsed JSON dict: {len(rows)} rows")
+                                        break
+                        except Exception as e:
+                            print(f"      ✗ Parse error: {e}")
+                            pass
+                
+                # If we found query results, show AI processing substep (without actual AI call)
+                if rows and columns and len(rows) > 0:
+                    print(f"\n🎯 Found {len(rows)} rows with {len(columns)} columns")
+                    
+                    # Signal that processing is happening with a nested substep
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "in_progress",
+                        "message": "Generating output",
+                        "substeps": [
+                            {
+                                "id": "processing",
+                                "label": "Processing query results...",
+                                "status": "in_progress"
+                            }
+                        ]
+                    }
+                    
+                    # Mark processing substep as completed
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "in_progress",
+                        "message": "Generating output",
+                        "substeps": [
+                            {
+                                "id": "processing",
+                                "label": "Processing complete",
+                                "status": "completed",
+                                "detail": f"Processed {len(rows)} records"
+                            }
+                        ]
+                    }
+                    
+                    # Now complete step 4
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "completed",
+                        "message": "Output generated"
+                    }
+                    
+                    # Mark step 5 as complete
+                    yield {
+                        "type": "progress",
+                        "step": 5,
+                        "status": "completed",
+                        "message": "Complete"
+                    }
+                else:
+                    # No AI streaming - just complete steps 4 and 5
+                    print("\n⚠️ No query results found for AI streaming, completing steps normally")
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "completed",
+                        "message": "Output generated"
+                    }
+                    yield {
+                        "type": "progress",
+                        "step": 5,
+                        "status": "completed",
+                        "message": "Complete"
+                    }
+            
+            # Send final result
+            # Convert Decimal objects to float for JSON serialization
+            import json
+            from decimal import Decimal
+            
+            def convert_decimals(obj):
+                """Recursively convert Decimal objects to float"""
+                if isinstance(obj, Decimal):
+                    return float(obj)
+                elif isinstance(obj, dict):
+                    return {k: convert_decimals(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_decimals(item) for item in obj]
+                return obj
+            
+            serializable_result = convert_decimals(result)
+            
+            yield {
+                "type": "result",
+                "data": serializable_result
+            }
+            
+        except Exception as e:
+            yield {
+                "type": "error",
+                "message": str(e),
+                "error_type": type(e).__name__
+            }
+    
     def execute_agent(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None, progress_callback = None) -> Dict[str, Any]:
         """
         Execute an agent with a user query
@@ -3157,7 +4196,7 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
             tool_configs: Runtime tool configurations (API keys, etc.)
             input_data: Dynamic input data (dates, parameters, etc.)
             progress_callback: Optional callback function for progress updates
-                             Called with (step, status, message, detail)
+                             Called with (step, status, message, detail, substeps=None)
         
         Returns:
             Execution results dictionary
@@ -3186,6 +4225,22 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                 return guidance_result
             else:
                 print("⚠️ Execution guidance failed - falling back to legacy paths")
+                # Extract reference template for context
+                execution_guidance = agent_data.get("execution_guidance", {})
+                reference_template = execution_guidance.get("query_template", {}).get("full_template", "")
+                if reference_template:
+                    print(f"📖 Using failed template as reference for AI query generation")
+                    print(f"   Template preview: {reference_template[:150]}...")
+                
+                # Show fallback substep
+                if progress_callback:
+                    progress_callback(2, 'in_progress', 'Running tools', None, substeps=[
+                        {
+                            "id": "ai-generate-query",
+                            "label": "AI is generating query from scratch...",
+                            "status": "in_progress"
+                        }
+                    ])
         
         # ============================================================
         # PRIORITY 1: TRY CACHED QUERY FIRST (Old Fast Path)
@@ -3278,9 +4333,17 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
             # 🎯 CRITICAL: REGENERATE system prompt based on agent's purpose (don't use stale stored version)
             # This ensures the latest purpose-driven prompt logic is always applied
             agent_purpose = agent_data.get("prompt", "")
-            system_prompt = self._generate_system_prompt(agent_purpose, agent_tools, selected_tool_names)
+            
+            # Get reference template if execution guidance failed
+            reference_template = None
+            if agent_data.get("execution_guidance"):
+                reference_template = agent_data.get("execution_guidance", {}).get("query_template", {}).get("full_template", "")
+            
+            system_prompt = self._generate_system_prompt(agent_purpose, agent_tools, selected_tool_names, reference_template)
             print(f"\n🎯 Regenerated purpose-driven system prompt for agent execution")
             print(f"📋 Agent purpose: {agent_purpose[:100]}...")
+            if reference_template:
+                print(f"📖 Included reference template in system prompt for structural guidance")
             
             # -----------------------------------------------------------
             # ✅ BRANCH 1: Agent HAS tools (Standard Agent Execution)
@@ -3317,6 +4380,15 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                 result = agent_executor.invoke({"input": user_query})
                 
                 if progress_callback:
+                    # Show completion of AI query generation
+                    progress_callback(2, 'in_progress', 'Running tools', None, substeps=[
+                        {
+                            "id": "ai-generate-query",
+                            "label": "Query generated and executed successfully",
+                            "status": "completed",
+                            "detail": "AI created query from scratch"
+                        }
+                    ])
                     progress_callback(2, 'completed', 'Running tools', 'Tools executed successfully')
                     progress_callback(3, 'in_progress', 'Processing data', 'Processing results')
                 
@@ -3528,7 +4600,7 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
         trigger_type = workflow_config.get('trigger_type', 'text_query')
         
         # Only regenerate for structured inputs (date_range, month_year, year)
-        should_regenerate_guidance = has_postgres and trigger_type in ['date_range', 'month_year', 'year']
+        should_regenerate_guidance = has_postgres
         
         if (prompt_changed or trigger_changed or format_changed) and should_regenerate_guidance:
             print(f"\n🔄 Configuration changed - regenerating execution guidance for {trigger_type}...")
@@ -3598,6 +4670,337 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
         
         # Return updated agent
         return self.storage.get_agent(agent_id)
+    
+    def update_agent_with_streaming(self, agent_id: str, prompt: str, name: str = None, workflow_config: Dict[str, Any] = None, selected_tools: List[str] = None, tool_configs: Dict[str, Dict[str, str]] = None):
+        """
+        Update an agent with streaming AI reasoning (generator for SSE)
+        
+        Yields progress events showing AI thinking process during update
+        """
+        try:
+            # Step 1: Loading existing agent
+            yield {
+                "type": "progress",
+                "step": 1,
+                "status": "in_progress",
+                "message": "Loading agent configuration...",
+                "detail": "Reading existing agent data"
+            }
+            
+            # Get existing agent
+            existing_agent = self.storage.get_agent(agent_id)
+            if not existing_agent:
+                yield {
+                    "type": "error",
+                    "message": f"Agent {agent_id} not found"
+                }
+                return
+            
+            agent_name = name or existing_agent.get("name")
+            
+            # Determine workflow config
+            if workflow_config is None:
+                workflow_config = existing_agent.get("workflow_config", {
+                    "trigger_type": "text_query",
+                    "input_fields": [],
+                    "output_format": "text"
+                })
+            
+            yield {
+                "type": "progress",
+                "step": 1,
+                "status": "completed",
+                "message": "Agent configuration loaded",
+                "detail": f"Editing agent: {agent_name}"
+            }
+            
+            # Step 2: Tool analysis
+            yield {
+                "type": "progress",
+                "step": 2,
+                "status": "in_progress",
+                "message": "Analyzing tool requirements...",
+                "detail": "Determining which tools are needed"
+            }
+            
+            # Determine which tools to use
+            if selected_tools is not None:
+                selected_tool_names = selected_tools
+                if 'postgres_query' in selected_tool_names and 'postgres_inspect_schema' not in selected_tool_names:
+                    selected_tool_names.append('postgres_inspect_schema')
+            elif TOOL_ANALYZER_AVAILABLE and ToolAnalyzer:
+                try:
+                    tool_analyzer = ToolAnalyzer()
+                    existing_tool_names = self.get_available_tools()
+                    tool_analysis = tool_analyzer.analyze_prompt(prompt, existing_tool_names)
+                    
+                    if tool_analysis.get("success", False):
+                        selected_tool_names = tool_analysis.get("matched_tools", existing_agent.get("selected_tools", []))
+                    else:
+                        selected_tool_names = existing_agent.get("selected_tools", [])
+                except Exception:
+                    selected_tool_names = existing_agent.get("selected_tools", [])
+            else:
+                selected_tool_names = existing_agent.get("selected_tools", [])
+            
+            agent_tools = [t for t in self.tools if t.name in selected_tool_names] if selected_tool_names else []
+            
+            yield {
+                "type": "progress",
+                "step": 2,
+                "status": "completed",
+                "message": "Tool analysis complete",
+                "detail": f"Selected {len(agent_tools)} tools"
+            }
+            
+            # Step 3: AI thinking - Regenerate system prompt with streaming
+            yield {
+                "type": "progress",
+                "step": 3,
+                "status": "in_progress",
+                "message": "Updating agent design",
+                "substeps": [
+                    {
+                        "id": "ai-update-prompt",
+                        "label": "AI is analyzing changes...",
+                        "status": "in_progress"
+                    }
+                ]
+            }
+            
+            # Build AI reasoning prompt for updates
+            tool_descriptions = "\n".join([f"- {tool.name}: {tool.description}" for tool in agent_tools])
+            
+            # Detect what changed
+            changes = []
+            if prompt != existing_agent.get('prompt', ''):
+                changes.append("purpose/prompt")
+            if workflow_config.get('trigger_type') != existing_agent.get('workflow_config', {}).get('trigger_type'):
+                changes.append("trigger type")
+            if set(selected_tool_names) != set(existing_agent.get('selected_tools', [])):
+                changes.append("tool selection")
+            
+            changes_text = ", ".join(changes) if changes else "configuration"
+            
+            reasoning_prompt = f"""You are updating an existing agent. Here's what changed:
+
+**Original Agent:**
+- Name: {existing_agent.get('name')}
+- Original Purpose: {existing_agent.get('prompt', '')[:200]}...
+
+**Updated Requirements:**
+- New Purpose: {prompt}
+- Changed: {changes_text}
+
+**Available Tools:**
+{tool_descriptions}
+
+**Your Task:**
+Explain what changed and how you're adapting the agent's instructions.
+
+1. Summarize what's different from the original agent
+2. Explain if any new tools are needed or if existing ones should be removed
+3. Describe key adjustments to the agent's behavior
+4. Note any special considerations for the updated mission
+
+Start by explaining your analysis:"""
+            
+            messages = [
+                {"role": "user", "content": reasoning_prompt}
+            ]
+            
+            # Generate AI's reasoning (collect tokens but don't stream them)
+            ai_reasoning = []
+            for token in self._stream_ai_response(messages):
+                ai_reasoning.append(token)
+            
+            # Generate actual system prompt (non-streaming)
+            system_prompt = self._generate_system_prompt(prompt, agent_tools, selected_tool_names)
+            
+            # Mark AI substep complete
+            yield {
+                "type": "progress",
+                "step": 3,
+                "status": "in_progress",
+                "message": "Updating agent design",
+                "substeps": [
+                    {
+                        "id": "ai-update-prompt",
+                        "label": "System prompt updated",
+                        "status": "completed",
+                        "detail": f"Regenerated {len(system_prompt)} character prompt"
+                    }
+                ]
+            }
+            
+            yield {
+                "type": "progress",
+                "step": 3,
+                "status": "completed",
+                "message": "Agent design updated"
+            }
+            
+            # Step 4: Regenerate execution guidance if needed
+            execution_guidance = None
+            existing_config = existing_agent.get('workflow_config', {})
+            prompt_changed = prompt != existing_agent.get('prompt', '')
+            trigger_changed = workflow_config.get('trigger_type') != existing_config.get('trigger_type')
+            format_changed = workflow_config.get('output_format') != existing_config.get('output_format')
+            
+            has_postgres = selected_tool_names and any(tool in selected_tool_names for tool in ['postgres_query', 'postgres_inspect_schema'])
+            trigger_type = workflow_config.get('trigger_type', 'text_query')
+            should_regenerate_guidance = has_postgres
+            
+            if (prompt_changed or trigger_changed or format_changed) and should_regenerate_guidance:
+                yield {
+                    "type": "progress",
+                    "step": 4,
+                    "status": "in_progress",
+                    "message": "Optimizing execution",
+                    "substeps": [
+                        {
+                            "id": "ai-regenerate-template",
+                            "label": "AI is regenerating query template...",
+                            "status": "in_progress"
+                        }
+                    ]
+                }
+                
+                try:
+                    execution_guidance = self._generate_execution_guidance(
+                        prompt=prompt,
+                        trigger_type=trigger_type,
+                        output_format=workflow_config.get('output_format', 'text'),
+                        agent_tools=agent_tools,
+                        workflow_config=workflow_config
+                    )
+                    
+                    if execution_guidance and not execution_guidance.get('error'):
+                        yield {
+                            "type": "progress",
+                            "step": 4,
+                            "status": "in_progress",
+                            "message": "Optimizing execution",
+                            "substeps": [
+                                {
+                                    "id": "ai-regenerate-template",
+                                    "label": "Query template regenerated",
+                                    "status": "completed",
+                                    "detail": "Agent will use optimized fast-path"
+                                }
+                            ]
+                        }
+                        
+                        yield {
+                            "type": "progress",
+                            "step": 4,
+                            "status": "completed",
+                            "message": "Execution optimized"
+                        }
+                    else:
+                        execution_guidance = None
+                        yield {
+                            "type": "progress",
+                            "step": 4,
+                            "status": "in_progress",
+                            "message": "Optimizing execution",
+                            "substeps": [
+                                {
+                                    "id": "ai-regenerate-template",
+                                    "label": "Optimization failed",
+                                    "status": "error",
+                                    "detail": "Will use standard execution"
+                                }
+                            ]
+                        }
+                        
+                        yield {
+                            "type": "progress",
+                            "step": 4,
+                            "status": "completed",
+                            "message": "Using standard execution"
+                        }
+                except Exception:
+                    execution_guidance = None
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "in_progress",
+                        "message": "Optimizing execution",
+                        "substeps": [
+                            {
+                                "id": "ai-regenerate-template",
+                                "label": "Optimization error",
+                                "status": "error"
+                            }
+                        ]
+                    }
+                    yield {
+                        "type": "progress",
+                        "step": 4,
+                        "status": "completed",
+                        "message": "Using standard execution"
+                    }
+            else:
+                yield {
+                    "type": "progress",
+                    "step": 4,
+                    "status": "completed",
+                    "message": "Execution configuration preserved"
+                }
+            
+            # Step 5: Save updated agent
+            yield {
+                "type": "progress",
+                "step": 5,
+                "status": "in_progress",
+                "message": "Saving changes...",
+                "detail": "Updating agent configuration"
+            }
+            
+            # Prepare updated data
+            updated_data = {
+                "name": agent_name,
+                "prompt": prompt,
+                "system_prompt": system_prompt,
+                "selected_tools": selected_tool_names,
+                "workflow_config": workflow_config
+            }
+            
+            if execution_guidance:
+                updated_data['execution_guidance'] = execution_guidance
+            
+            # Clear cached query
+            updated_data["cached_query"] = None
+            
+            # Add tool configs
+            if tool_configs is not None:
+                updated_data["tool_configs"] = tool_configs
+            elif "tool_configs" in existing_agent:
+                updated_data["tool_configs"] = existing_agent.get("tool_configs", {})
+            
+            # Update in storage
+            self.storage.update_agent(agent_id, updated_data)
+            
+            yield {
+                "type": "progress",
+                "step": 5,
+                "status": "completed",
+                "message": "Agent updated successfully"
+            }
+            
+            # Final result
+            updated_agent = self.storage.get_agent(agent_id)
+            yield {
+                "type": "result",
+                "data": updated_agent
+            }
+            
+        except Exception as e:
+            yield {
+                "type": "error",
+                "message": str(e)
+            }
     
     def get_available_tools(self) -> List[str]:
         """
@@ -3986,4 +5389,172 @@ Do NOT format as markdown, just plain text."""
                 output += "| " + " | ".join([str(row.get(col, "")) for col in columns]) + " |\n"
         
         return output
+    
+    # ============================================================================
+    # AI REASONING STREAMING METHODS
+    # ============================================================================
+    
+    def _stream_ai_response(self, messages: List[Dict[str, str]]):
+        """
+        Stream AI response token-by-token using OpenAI streaming API
+        
+        Args:
+            messages: List of message dicts with 'role' and 'content'
+            
+        Yields:
+            String tokens as they arrive from the AI
+        """
+        if not self.use_openai:
+            # Fallback for non-OpenAI: return full response at once
+            from langchain.schema import HumanMessage
+            content = "\n".join([msg['content'] for msg in messages if msg['role'] == 'user'])
+            response = self.llm.invoke([HumanMessage(content=content)])
+            yield response.content
+            return
+        
+        # Use OpenAI streaming
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=self.openai_api_key)
+            
+            stream = client.chat.completions.create(
+                model=self.openai_model,
+                messages=messages,
+                stream=True,
+                temperature=0.7
+            )
+            
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    yield chunk.choices[0].delta.content
+                    
+        except Exception as e:
+            print(f"⚠️ Streaming error: {e}")
+            # Fallback to non-streaming
+            from langchain.schema import HumanMessage
+            content = "\n".join([msg['content'] for msg in messages if msg['role'] == 'user'])
+            response = self.llm.invoke([HumanMessage(content=content)])
+            yield response.content
+
+    # ============================================================================
+    # SAVED RESULTS MANAGEMENT
+    # ============================================================================
+    
+    def save_execution_result(self, agent_id: str, result_name: str, result_data: Dict) -> str:
+        """
+        Save an execution result for an agent
+        
+        Args:
+            agent_id: Agent ID
+            result_name: Name/description for the result
+            result_data: The complete execution result to save
+            
+        Returns:
+            result_id: Unique identifier for the saved result
+        """
+        import uuid
+        from datetime import datetime
+        
+        result_id = str(uuid.uuid4())
+        timestamp = datetime.now().isoformat()
+        
+        saved_result = {
+            "id": result_id,
+            "name": result_name,
+            "timestamp": timestamp,
+            "data": result_data
+        }
+        
+        # Save to agent-specific results directory
+        results_dir = os.path.join(self.storage.storage_dir, 'results', agent_id)
+        os.makedirs(results_dir, exist_ok=True)
+        
+        result_file = os.path.join(results_dir, f"{result_id}.json")
+        with open(result_file, 'w', encoding='utf-8') as f:
+            json.dump(saved_result, f, indent=2, ensure_ascii=False)
+        
+        print(f"💾 Saved execution result: {result_name} ({result_id})")
+        return result_id
+    
+    def list_saved_results(self, agent_id: str) -> List[Dict]:
+        """
+        List all saved execution results for an agent
+        
+        Args:
+            agent_id: Agent ID
+            
+        Returns:
+            List of saved result metadata (id, name, timestamp)
+        """
+        results_dir = os.path.join(self.storage.storage_dir, 'results', agent_id)
+        
+        if not os.path.exists(results_dir):
+            return []
+        
+        results = []
+        for filename in os.listdir(results_dir):
+            if filename.endswith('.json'):
+                result_path = os.path.join(results_dir, filename)
+                try:
+                    with open(result_path, 'r', encoding='utf-8') as f:
+                        result_data = json.load(f)
+                        # Return metadata only (not full data)
+                        results.append({
+                            "id": result_data.get('id'),
+                            "name": result_data.get('name'),
+                            "timestamp": result_data.get('timestamp')
+                        })
+                except Exception as e:
+                    print(f"⚠️ Error loading result {filename}: {e}")
+        
+        # Sort by timestamp (newest first)
+        results.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        return results
+    
+    def get_saved_result(self, agent_id: str, result_id: str) -> Dict:
+        """
+        Get a specific saved execution result
+        
+        Args:
+            agent_id: Agent ID
+            result_id: Result ID
+            
+        Returns:
+            Complete saved result data
+        """
+        result_path = os.path.join(self.storage.storage_dir, 'results', agent_id, f"{result_id}.json")
+        
+        if not os.path.exists(result_path):
+            return None
+        
+        try:
+            with open(result_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"❌ Error loading result {result_id}: {e}")
+            return None
+    
+    def delete_saved_result(self, agent_id: str, result_id: str) -> bool:
+        """
+        Delete a saved execution result
+        
+        Args:
+            agent_id: Agent ID
+            result_id: Result ID
+            
+        Returns:
+            True if deleted successfully
+        """
+        result_path = os.path.join(self.storage.storage_dir, 'results', agent_id, f"{result_id}.json")
+        
+        if not os.path.exists(result_path):
+            return False
+        
+        try:
+            os.remove(result_path)
+            print(f"🗑️ Deleted result: {result_id}")
+            return True
+        except Exception as e:
+            print(f"❌ Error deleting result {result_id}: {e}")
+            return False
 

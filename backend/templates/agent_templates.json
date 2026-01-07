@@ -15,11 +15,11 @@
       ],
       "execution_guidance": {
         "query_template": {
-          "base_query": "SELECT\n  (i.invoice_number->>'value')::text AS invoice_number,\n  (i.total->>'value')::text AS total,\n  v.name AS vendor_name,\n  COUNT(*) AS duplicate_count\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nWHERE (i.total->>'value') IS NOT NULL AND (i.total->>'value') <> ''\nGROUP BY invoice_number, total, vendor_name\nHAVING COUNT(*) > 1\nORDER BY duplicate_count DESC;",
+          "base_query": "SELECT\n  STRING_AGG(d.batch_name, ', ') AS batch_names,\n  (i.invoice_number->>'value')::text AS invoice_number,\n  (i.total->>'value')::text AS total,\n  v.name AS vendor_name,\n  COUNT(*) AS duplicate_count\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nINNER JOIN icap_document d ON i.document_id = d.id\nWHERE (i.total->>'value') IS NOT NULL AND (i.total->>'value') <> ''\nGROUP BY d.batch_name, invoice_number, total, vendor_name\nHAVING COUNT(*) > 1\nORDER BY duplicate_count DESC;",
           "where_clause": "",
           "parameters": [],
           "param_instructions": "No parameters required - scans all invoices.",
-          "full_template": "SELECT\n  (i.invoice_number->>'value')::text AS invoice_number,\n  (i.total->>'value')::text AS total,\n  v.name AS vendor_name,\n  COUNT(*) AS duplicate_count\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nWHERE (i.total->>'value') IS NOT NULL AND (i.total->>'value') <> ''\nGROUP BY invoice_number, total, vendor_name\nHAVING COUNT(*) > 1\nORDER BY duplicate_count DESC;"
+          "full_template": "SELECT\n  STRING_AGG(d.batch_name, ', ') AS batch_names,\n  (i.invoice_number->>'value')::text AS invoice_number,\n  (i.total->>'value')::text AS total,\n  v.name AS vendor_name,\n  COUNT(*) AS duplicate_count\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nINNER JOIN icap_document d ON i.document_id = d.id\nWHERE (i.total->>'value') IS NOT NULL AND (i.total->>'value') <> ''\nGROUP BY invoice_number, total, vendor_name\nHAVING COUNT(*) > 1\nORDER BY duplicate_count DESC;"
         },
         "execution_plan": {
           "step_1": "Load pre-built query template from execution_guidance",
@@ -51,9 +51,17 @@
     "category": "Workflow Management",
     "icon": "✅",
     "template": {
-      "prompt": "You are an AI-driven invoice auto-approval agent.\n\nValidation Criteria:\n1. From icap_invoice (3 fields): invoice_number, invoice_date, due_date\n2. From icap_invoice_detail (3 fields): description, quantity, unit_price\n3. vendor_id is UUID (NO confidence check - skip it)\n4. ALL 6 JSONB fields must have confidence >= threshold\n5. Check BOTH header and ALL line items\n\nQuery Logic:\n- Join icap_invoice with icap_invoice_detail on document_id\n- Extract confidence: (column->>'confidence')::numeric\n- Filter: ALL 6 fields >= threshold\n- Update status='3' (Approved) for qualifying invoices\n- Use dry-run workflow\n\nDefault threshold: 95.0",
-      "trigger_type": "text_query",
-      "input_fields": [],
+    "prompt": "You are an AI-driven invoice auto-approval agent.\n\nValidation Criteria:\n1. From icap_invoice (3 fields): invoice_number, invoice_date, due_date\n2. From icap_invoice_detail (3 fields): description, quantity, unit_price\n3. vendor_id is UUID (NO confidence check - skip it)\n4. ALL 6 JSONB fields must have confidence >= threshold\n5. Check BOTH header and ALL line items\n\nQuery Logic:\n- Join icap_invoice with icap_invoice_detail on document_id\n- Extract confidence: (column->>'confidence')::numeric\n- Filter: ALL 6 fields >= threshold\n- Update status='3' (Approved) for qualifying invoices\n- Use dry-run workflow\n\nDefault threshold: 95.0",
+    "trigger_type": "conditions",
+    "input_fields": [
+      {
+        "name": "threshold",
+        "type": "text",
+        "label": "Threshold (%)",
+        "description": "Enter the confidence threshold percentage (e.g., 95.0 for 95%)"
+      }
+    ],
+    "output_format": "text",
       "tools": [
         "postgres_query",
         "postgres_inspect_schema",
@@ -61,14 +69,14 @@
       ],
       "execution_guidance": {
         "query_template": {
-          "base_query": "WITH invoice_detail_confidence AS (\n    SELECT \n        ivd.document_id,\n        MIN((ivd.description->>'confidence')::numeric) AS min_desc_conf,\n        MIN((ivd.quantity->>'confidence')::numeric) AS min_qty_conf,\n        MIN((ivd.unit_price->>'confidence')::numeric) AS min_price_conf,\n        COUNT(*) AS line_count\n    FROM icap_invoice_detail ivd\n    GROUP BY ivd.document_id\n    HAVING MIN((ivd.description->>'confidence')::numeric) >= {threshold}\n        AND MIN((ivd.quantity->>'confidence')::numeric) >= {threshold}\n        AND MIN((ivd.unit_price->>'confidence')::numeric) >= {threshold}\n)\nSELECT\n    i.id,\n    (i.invoice_number->>'value')::text AS invoice_number,\n    (i.invoice_number->>'confidence')::numeric AS inv_num_conf,\n    (i.invoice_date->>'value')::text AS invoice_date,\n    (i.invoice_date->>'confidence')::numeric AS inv_date_conf,\n    (i.due_date->>'value')::text AS due_date,\n    (i.due_date->>'confidence')::numeric AS due_date_conf,\n    v.name AS vendor_name,\n    idc.line_count,\n    idc.min_desc_conf,\n    idc.min_qty_conf,\n    idc.min_price_conf,\n    LEAST(\n        (i.invoice_number->>'confidence')::numeric,\n        (i.invoice_date->>'confidence')::numeric,\n        (i.due_date->>'confidence')::numeric,\n        idc.min_desc_conf,\n        idc.min_qty_conf,\n        idc.min_price_conf\n    ) AS overall_min_confidence,\n    i.status\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nINNER JOIN invoice_detail_confidence idc ON i.document_id = idc.document_id\nWHERE i.status = '0'\n  AND (i.invoice_number->>'confidence')::numeric >= {threshold}\n  AND (i.invoice_date->>'confidence')::numeric >= {threshold}\n  AND (i.due_date->>'confidence')::numeric >= {threshold}\nORDER BY overall_min_confidence DESC;",
+          "base_query": "WITH invoice_detail_confidence AS (\n    SELECT \n        ivd.document_id,\n        MIN((ivd.description->>'confidence')::numeric) AS min_desc_conf,\n        MIN((ivd.quantity->>'confidence')::numeric) AS min_qty_conf,\n        MIN((ivd.unit_price->>'confidence')::numeric) AS min_price_conf,\n        COUNT(*) AS line_count\n    FROM icap_invoice_detail ivd\n    GROUP BY ivd.document_id\n    HAVING MIN((ivd.description->>'confidence')::numeric) >= {threshold}\n        AND MIN((ivd.quantity->>'confidence')::numeric) >= {threshold}\n        AND MIN((ivd.unit_price->>'confidence')::numeric) >= {threshold}\n)\nSELECT\n    d.batch_name,\n    d.accuracy,\n    (i.invoice_number->>'value')::text AS invoice_number,\n    (i.invoice_number->>'confidence')::numeric AS inv_num_conf,\n    (i.invoice_date->>'value')::text AS invoice_date,\n    (i.invoice_date->>'confidence')::numeric AS inv_date_conf,\n    (i.due_date->>'value')::text AS due_date,\n    (i.due_date->>'confidence')::numeric AS due_date_conf,\n    v.name AS vendor_name,\n    idc.line_count,\n    idc.min_desc_conf,\n    idc.min_qty_conf,\n    idc.min_price_conf,\n    LEAST(\n        (i.invoice_number->>'confidence')::numeric,\n        (i.invoice_date->>'confidence')::numeric,\n        (i.due_date->>'confidence')::numeric,\n        idc.min_desc_conf,\n        idc.min_qty_conf,\n        idc.min_price_conf\n    ) AS overall_min_confidence,\n    i.status\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nINNER JOIN icap_document d ON i.document_id = d.id\nINNER JOIN invoice_detail_confidence idc ON i.document_id = idc.document_id\nWHERE i.status = '0'\n  AND (i.invoice_number->>'confidence')::numeric >= {threshold}\n  AND (i.invoice_date->>'confidence')::numeric >= {threshold}\n  AND (i.due_date->>'confidence')::numeric >= {threshold}\nORDER BY overall_min_confidence DESC;",
           "parameters": [
             "threshold"
           ],
           "param_instructions": "Extract 'threshold' from user query (e.g., 'confidence above 90' → 90.0, 'accuracy 85%' → 85.0). Default: 95.0",
           "description": "Validates 6 critical fields: invoice_number, invoice_date, due_date (header) + description, quantity, unit_price (ALL line items). vendor_id is UUID - no confidence check.",
           "where_clause": "WHERE i.status = '0' AND all 6 JSONB fields >= {threshold}",
-          "full_template": "WITH invoice_detail_confidence AS (\n    SELECT \n        ivd.document_id,\n        MIN((ivd.description->>'confidence')::numeric) AS min_desc_conf,\n        MIN((ivd.quantity->>'confidence')::numeric) AS min_qty_conf,\n        MIN((ivd.unit_price->>'confidence')::numeric) AS min_price_conf,\n        COUNT(*) AS line_count\n    FROM icap_invoice_detail ivd\n    GROUP BY ivd.document_id\n    HAVING MIN((ivd.description->>'confidence')::numeric) >= {threshold}\n        AND MIN((ivd.quantity->>'confidence')::numeric) >= {threshold}\n        AND MIN((ivd.unit_price->>'confidence')::numeric) >= {threshold}\n)\nSELECT\n    i.id,\n    (i.invoice_number->>'value')::text AS invoice_number,\n    (i.invoice_number->>'confidence')::numeric AS inv_num_conf,\n    (i.invoice_date->>'value')::text AS invoice_date,\n    (i.invoice_date->>'confidence')::numeric AS inv_date_conf,\n    (i.due_date->>'value')::text AS due_date,\n    (i.due_date->>'confidence')::numeric AS due_date_conf,\n    v.name AS vendor_name,\n    idc.line_count,\n    idc.min_desc_conf,\n    idc.min_qty_conf,\n    idc.min_price_conf,\n    LEAST(\n        (i.invoice_number->>'confidence')::numeric,\n        (i.invoice_date->>'confidence')::numeric,\n        (i.due_date->>'confidence')::numeric,\n        idc.min_desc_conf,\n        idc.min_qty_conf,\n        idc.min_price_conf\n    ) AS overall_min_confidence,\n    i.status\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nINNER JOIN invoice_detail_confidence idc ON i.document_id = idc.document_id\nWHERE i.status = '0'\n  AND (i.invoice_number->>'confidence')::numeric >= {threshold}\n  AND (i.invoice_date->>'confidence')::numeric >= {threshold}\n  AND (i.due_date->>'confidence')::numeric >= {threshold}\nORDER BY overall_min_confidence DESC;"
+          "full_template": "WITH invoice_detail_confidence AS (\n    SELECT \n        ivd.document_id,\n        MIN((ivd.description->>'confidence')::numeric) AS min_desc_conf,\n        MIN((ivd.quantity->>'confidence')::numeric) AS min_qty_conf,\n        MIN((ivd.unit_price->>'confidence')::numeric) AS min_price_conf,\n        COUNT(*) AS line_count\n    FROM icap_invoice_detail ivd\n    GROUP BY ivd.document_id\n    HAVING MIN((ivd.description->>'confidence')::numeric) >= {threshold}\n        AND MIN((ivd.quantity->>'confidence')::numeric) >= {threshold}\n        AND MIN((ivd.unit_price->>'confidence')::numeric) >= {threshold}\n)\nSELECT\n    d.batch_name,\n    d.accuracy,\n    (i.invoice_number->>'value')::text AS invoice_number,\n    (i.invoice_number->>'confidence')::numeric AS inv_num_conf,\n    (i.invoice_date->>'value')::text AS invoice_date,\n    (i.invoice_date->>'confidence')::numeric AS inv_date_conf,\n    (i.due_date->>'value')::text AS due_date,\n    (i.due_date->>'confidence')::numeric AS due_date_conf,\n    v.name AS vendor_name,\n    idc.line_count,\n    idc.min_desc_conf,\n    idc.min_qty_conf,\n    idc.min_price_conf,\n    LEAST(\n        (i.invoice_number->>'confidence')::numeric,\n        (i.invoice_date->>'confidence')::numeric,\n        (i.due_date->>'confidence')::numeric,\n        idc.min_desc_conf,\n        idc.min_qty_conf,\n        idc.min_price_conf\n    ) AS overall_min_confidence,\n    i.status\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nINNER JOIN icap_document d ON i.document_id = d.id\nINNER JOIN invoice_detail_confidence idc ON i.document_id = idc.document_id\nWHERE i.status = '0'\n  AND (i.invoice_number->>'confidence')::numeric >= {threshold}\n  AND (i.invoice_date->>'confidence')::numeric >= {threshold}\n  AND (i.due_date->>'confidence')::numeric >= {threshold}\nORDER BY overall_min_confidence DESC;"
         },
         "execution_plan": {
           "step_1": "Extract threshold from user query (default: 95.0)",
@@ -105,8 +113,16 @@
     "icon": "📑",
     "template": {
       "prompt": "You are a GL reporting specialist. Generate comprehensive GL breakdown reports for invoices from specific vendors. Include invoice details, line item descriptions, quantities, amounts, and GL category mappings for each line item. Use postgres_inspect_schema first to understand the schema structure and relationships.",
-      "trigger_type": "text_query",
-      "input_fields": [],
+      "trigger_type": "conditions",
+      "input_fields": [
+        {
+          "name": "vendor_name",
+          "type": "text",
+          "label": "Vendor Name",
+          "description": "Enter the vendor name for the GL breakdown report"
+        }
+      ],
+      "output_format": "text",
       "tools": [
         "postgres_query",
         "postgres_inspect_schema"

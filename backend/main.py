@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 import json
+import os
 import uuid
 from pathlib import Path
 
@@ -67,6 +68,10 @@ class CreateAgentRequest(BaseModel):
     name: Optional[str] = None
     selected_tools: Optional[List[str]] = None
     workflow_config: Optional[WorkflowConfig] = None  # New: workflow configuration
+    description: Optional[str] = None
+    category: Optional[str] = None
+    icon: Optional[str] = None
+    use_cases: Optional[List[str]] = None
 
 
 class ExecuteAgentRequest(BaseModel):
@@ -249,6 +254,49 @@ async def create_agent(request: CreateAgentRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/agents/create/stream")
+async def create_agent_stream(request: CreateAgentRequest):
+    """
+    Create a new agent with streaming AI reasoning via Server-Sent Events (SSE)
+    """
+    async def event_generator():
+        try:
+            # Convert workflow_config to dict if provided
+            workflow_config_dict = None
+            if request.workflow_config:
+                workflow_config_dict = request.workflow_config.dict()
+            
+            # Execute agent creation with streaming
+            for progress_event in agent_service.create_agent_with_streaming(
+                prompt=request.prompt,
+                name=request.name,
+                selected_tools=request.selected_tools,
+                workflow_config=workflow_config_dict,
+                description=request.description,
+                category=request.category,
+                icon=request.icon,
+                use_cases=request.use_cases
+            ):
+                # Send progress update as SSE
+                yield f"data: {json.dumps(progress_event)}\n\n"
+            
+        except Exception as e:
+            error_event = {
+                "type": "error",
+                "message": str(e)
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+    )
+
+
 @app.get("/api/agents", response_model=List[AgentResponse])
 async def list_agents():
     """List all saved agents"""
@@ -401,8 +449,8 @@ async def execute_agent_stream(agent_id: str, request: ExecuteAgentRequest):
                         month_name = month_names.get(month, month)
                         query = f"Generate report for {month_name} {year}.\n\nReturn ALL {month_name} {year} records."
             
-            # Execute agent with progress streaming
-            for progress_event in agent_service.execute_agent_with_progress(
+            # Execute agent with progress streaming AND AI thinking
+            for progress_event in agent_service.execute_agent_with_ai_streaming(
                 agent_id, query, request.tool_configs, request.input_data
             ):
                 # Send progress update as SSE
@@ -433,6 +481,78 @@ async def delete_agent(agent_id: str):
         if not deleted:
             raise HTTPException(status_code=404, detail="Agent not found")
         return {"success": True, "message": f"Agent {agent_id} deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/agents/{agent_id}/results/save")
+async def save_execution_result(agent_id: str, request: Request):
+    """Save an execution result for an agent"""
+    try:
+        data = await request.json()
+        result_data = data.get('result')
+        result_name = data.get('name', f"Result {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        if not result_data:
+            raise HTTPException(status_code=400, detail="No result data provided")
+        
+        # Save result to storage
+        result_id = agent_service.save_execution_result(agent_id, result_name, result_data)
+        
+        return {
+            "success": True,
+            "result_id": result_id,
+            "message": "Result saved successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/agents/{agent_id}/results")
+async def list_saved_results(agent_id: str):
+    """List all saved execution results for an agent"""
+    try:
+        results = agent_service.list_saved_results(agent_id)
+        return {
+            "success": True,
+            "results": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/agents/{agent_id}/results/{result_id}")
+async def get_saved_result(agent_id: str, result_id: str):
+    """Get a specific saved execution result"""
+    try:
+        result = agent_service.get_saved_result(agent_id, result_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Result not found")
+        return {
+            "success": True,
+            "result": result
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/agents/{agent_id}/results/{result_id}")
+async def delete_saved_result(agent_id: str, result_id: str):
+    """Delete a saved execution result"""
+    try:
+        deleted = agent_service.delete_saved_result(agent_id, result_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Result not found")
+        return {
+            "success": True,
+            "message": "Result deleted successfully"
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -484,6 +604,53 @@ async def update_agent(agent_id: str, request: UpdateAgentRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/agents/{agent_id}/stream")
+async def update_agent_stream(agent_id: str, request: UpdateAgentRequest):
+    """
+    Update an agent with streaming AI reasoning via Server-Sent Events (SSE)
+    """
+    async def event_generator():
+        try:
+            # Get existing agent
+            existing_agent = agent_service.get_agent(agent_id)
+            if not existing_agent:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Agent not found'})}\n\n"
+                return
+            
+            # Convert workflow_config to dict if provided
+            workflow_config_dict = None
+            if request.workflow_config:
+                workflow_config_dict = request.workflow_config.dict()
+            
+            # Execute agent update with streaming
+            for progress_event in agent_service.update_agent_with_streaming(
+                agent_id=agent_id,
+                prompt=request.prompt,
+                name=request.name,
+                workflow_config=workflow_config_dict,
+                selected_tools=request.selected_tools,
+                tool_configs=request.tool_configs
+            ):
+                # Send progress update as SSE
+                yield f"data: {json.dumps(progress_event)}\n\n"
+            
+        except Exception as e:
+            error_event = {
+                "type": "error",
+                "message": str(e)
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+    )
 
 
 @app.post("/api/tools/analyze", response_model=ToolAnalysisResponse)

@@ -1,0 +1,1588 @@
+{
+  "id": "2a7e9ebc-8c17-4c9e-8d63-fcc3141b31b6",
+  "name": "Result - 07/01/2026, 13:58:20",
+  "timestamp": "2026-01-07T13:58:22.035629",
+  "data": {
+    "success": true,
+    "output": "## Invoice Records Analysis\n\nThe analysis of the **43 invoice records** reveals significant data quality issues, with multiple critical details missing across several entries. For instance:\n\n- **Invoice number 185090** is missing a **due date** and **total amount**.\n- **Invoice number 507302** lacks an **invoice date**, **due date**, and **total amount**.\n- Additionally, **invoice number 337225** has no **vendor name** or **company** listed, indicating a severe lack of information.\n\nOverall, these deficiencies necessitate updating the status of these invoices to **'2' (Needs Review)** to facilitate vendor follow-up, as many entries are incomplete, such as:\n\n- **Invoice number 0000546**, which is missing an **invoice date** but has a **total amount** of **623.00**.\n\nThe vendor contact details, such as those for **BALAJI DEPARTMENTAL STORE** and **Gordon Food Service**, should be utilized for communication regarding the missing information.\n\n> **IMPORTANT REQUIREMENTS:**\n> 1. Start with a ## main heading\n> 2. Use ### for subheadings\n> 3. Use **bold** for important terms (amounts, names, invoice numbers, dates)\n> 4. Use bullet points (-) for lists\n> 5. Use numbered lists (1., 2., 3.) for sequential items\n> 6. Use > for important warnings or highlights\n> 7. Keep the original content and meaning EXACTLY - just add markdown formatting\n> 8. Do NOT add new information or change the facts",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": null,
+          "log": null
+        },
+        "result": {
+          "success": true,
+          "columns": [
+            "invoice_number",
+            "invoice_date",
+            "due_date",
+            "total_amount",
+            "vendor_name",
+            "vendor_company",
+            "vendor_address",
+            "data_issue",
+            "missing_fields"
+          ],
+          "rows": [
+            {
+              "invoice_number": "185090",
+              "invoice_date": "02/17/2023",
+              "due_date": "",
+              "total_amount": null,
+              "vendor_name": "BALAJI DEPARTMENTAL STORE",
+              "vendor_company": "BALAJI DEPARTMENTAL STORE",
+              "vendor_address": null,
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date",
+                "total"
+              ]
+            },
+            {
+              "invoice_number": "507302",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": null,
+              "vendor_name": "Brigiotta's",
+              "vendor_company": "Brigiotta's",
+              "vendor_address": "330 Pennsylvania Ave West\nWarren, PA 16365,Warren,PA,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date",
+                "total"
+              ]
+            },
+            {
+              "invoice_number": "",
+              "invoice_date": "07/18/2024",
+              "due_date": "",
+              "total_amount": null,
+              "vendor_name": "Gordon Food Service",
+              "vendor_company": "Gordon Food Service",
+              "vendor_address": "7770 Manuingion Court Signion M 400.00,,M,",
+              "data_issue": "Missing Invoice Number",
+              "missing_fields": [
+                "invoice_number",
+                "due_date",
+                "total"
+              ]
+            },
+            {
+              "invoice_number": "9988",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": null,
+              "vendor_name": "LTD.",
+              "vendor_company": "LTD.",
+              "vendor_address": "312 W. Trenton Ave.,,Morrisville,PA,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date",
+                "total"
+              ]
+            },
+            {
+              "invoice_number": "",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": null,
+              "vendor_name": "REPUBLIC NATIONAL DISTRIBUTING COMPANY",
+              "vendor_company": "REPUBLIC NATIONAL DISTRIBUTING COMPANY",
+              "vendor_address": "P.O. BOX 687\nANNAPOLIS JUNCT MD 20701-0687,ANNAPOLIS JUNCT,MD,",
+              "data_issue": "Missing Invoice Number",
+              "missing_fields": [
+                "invoice_number",
+                "invoice_date",
+                "due_date",
+                "total"
+              ]
+            },
+            {
+              "invoice_number": "",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 1200,
+              "vendor_name": "CASH / CREDIT BILL\nGaln\n26",
+              "vendor_company": "CASH / CREDIT BILL\nGaln\n26",
+              "vendor_address": ",,,",
+              "data_issue": "Missing Invoice Number",
+              "missing_fields": [
+                "invoice_number",
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 55.86,
+              "vendor_name": "STOP & SHOP",
+              "vendor_company": "STOP & SHOP",
+              "vendor_address": "301 CENTRE STREET\nJAMAICA PLAIN, MA 02130,JAMAICA PLAIN,MA,",
+              "data_issue": "Missing Invoice Number",
+              "missing_fields": [
+                "invoice_number",
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "337225",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 1898.07,
+              "vendor_name": "",
+              "vendor_company": "",
+              "vendor_address": ",,,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "417",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 7.15,
+              "vendor_name": "ABHIRUCHI SEAFOODS",
+              "vendor_company": "ABHIRUCHI SEAFOODS",
+              "vendor_address": ",,,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "0000546",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 623,
+              "vendor_name": "aroundsave Coffee Roasters",
+              "vendor_company": "aroundsave Coffee Roasters",
+              "vendor_address": ",,,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "IV114-0000489099",
+              "invoice_date": "07/08/2024",
+              "due_date": "",
+              "total_amount": 29049,
+              "vendor_name": "Baldor Specialty Foods Inc.",
+              "vendor_company": "Baldor Specialty Foods Inc.",
+              "vendor_address": "P.O.Box 5411\nNew York, NY 10087-5411,New York,NY,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "20240506326",
+              "invoice_date": "05/24/2024",
+              "due_date": "",
+              "total_amount": 966,
+              "vendor_name": "Ballard Spahr\nLLP",
+              "vendor_company": "Ballard Spahr\nLLP",
+              "vendor_address": "1735 Market Street, 51st Floor\nPhiladelphia, PA 19103-7599,Philadelphia,PA,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "15635",
+              "invoice_date": "",
+              "due_date": "02/07/2024",
+              "total_amount": 2700,
+              "vendor_name": "C&A",
+              "vendor_company": "C&A",
+              "vendor_address": "540 E. Gravers Lane\nWyndmoor, PA 19038,Wyndmoor,PA,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date"
+              ]
+            },
+            {
+              "invoice_number": "604300",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 434,
+              "vendor_name": "Dairyland USA Corp.",
+              "vendor_company": "Dairyland USA Corp.",
+              "vendor_address": "PO BOX 30943 NEW YORK, NY 10087-0943,NEW YORK,NY,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "341493",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 2338.81,
+              "vendor_name": "DAVID ROSEN\nCOMPANY",
+              "vendor_company": "DAVID ROSEN\nCOMPANY",
+              "vendor_address": ",,,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "42506",
+              "invoice_date": "02/08/2024",
+              "due_date": "",
+              "total_amount": 755,
+              "vendor_name": "De Long Service Company, Inc.",
+              "vendor_company": "De Long Service Company, Inc.",
+              "vendor_address": "PO Box 378\nYardley, PA 19067-8378,Yardley,PA,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "INV-3337",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 93.5,
+              "vendor_name": "DEMO - Sliced Invoices",
+              "vendor_company": "DEMO - Sliced Invoices",
+              "vendor_address": "Suite 5A-1204\n123 Somewhere Street\nYour City AZ 12345,Your City,AZ,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "1354035",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 203.7,
+              "vendor_name": "Down East Seafood, Inc.",
+              "vendor_company": "Down East Seafood, Inc.",
+              "vendor_address": "311 Manida Street, Bronx, NY 10474,Bronx,NY,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "9399/2022-23",
+              "invoice_date": "02/20/2023",
+              "due_date": "",
+              "total_amount": 1985,
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "72752",
+              "invoice_date": "01/13/2023",
+              "due_date": "",
+              "total_amount": 275,
+              "vendor_name": "GRAND BAKERS PRYVATELINTED",
+              "vendor_company": "GRAND BAKERS PRYVATELINTED",
+              "vendor_address": "No 70/2. Kachohalti,Kachohalti,,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "35412",
+              "invoice_date": "01/01/2024",
+              "due_date": "",
+              "total_amount": 100,
+              "vendor_name": "Kanawati Enterprises",
+              "vendor_company": "Kanawati Enterprises",
+              "vendor_address": "249 Lodi St Hackensack, NJ 07601,Hackensack,NJ,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "52148",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 220,
+              "vendor_name": "Lorem Ipsum",
+              "vendor_company": "Lorem Ipsum",
+              "vendor_address": null,
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "52148",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 220,
+              "vendor_name": "Lorem Ipsum",
+              "vendor_company": "Lorem Ipsum",
+              "vendor_address": "24 Dummy Street Area,\nLocation, Lorem Ipsum,\n570xx59x,Lorem Ipsum,,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "900000546",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 7765.2,
+              "vendor_name": "LOR-MAR",
+              "vendor_company": "LOR-MAR",
+              "vendor_address": "6710 Westfield Ave Unit A Pennsauken Township, NJ 08110,Pennsauken Township,NJ,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "US3-000091537",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 45.98,
+              "vendor_name": "Martignetti\nCompanies",
+              "vendor_company": "Martignetti\nCompanies",
+              "vendor_address": "PO RON 140\nSPOCEPORT CT,SPOCEPORT,,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "328",
+              "invoice_date": "02/11/2025",
+              "due_date": "03/12/2025",
+              "total_amount": 1,
+              "vendor_name": "meat Hub",
+              "vendor_company": "meat Hub",
+              "vendor_address": ",,,",
+              "data_issue": "Incomplete Data",
+              "missing_fields": []
+            },
+            {
+              "invoice_number": "01395041",
+              "invoice_date": "07/08/2024",
+              "due_date": "06/09/2024",
+              "total_amount": 167.51,
+              "vendor_name": "Pp",
+              "vendor_company": "Pp",
+              "vendor_address": "P.O. Box 411405\nBoston, MA 02241-1405,Boston,MA,",
+              "data_issue": "Incomplete Data",
+              "missing_fields": []
+            },
+            {
+              "invoice_number": "23508",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 800,
+              "vendor_name": "Preferred Sportswear Inc",
+              "vendor_company": "Preferred Sportswear Inc",
+              "vendor_address": "520 Pusey Avenue\nSuite 260\nCollingdale, PA 19023,Collingdale,PA,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "508125",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 57.7,
+              "vendor_name": "RM Bakery LLC",
+              "vendor_company": "RM Bakery LLC",
+              "vendor_address": "44-25 54th Drive\nMaspeth, NY 11378,Maspeth,NY,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "K40650",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 59.57,
+              "vendor_name": "ROBERTS OXYGEN/COMPANY INC.",
+              "vendor_company": "ROBERTS OXYGEN/COMPANY INC.",
+              "vendor_address": "PO BOX 5507\nROCKVILLE, MD 20855,ROCKVILLE,MD,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "K40652",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 40.39,
+              "vendor_name": "ROBERTS OXYGEN/COMPANY, INC.",
+              "vendor_company": "ROBERTS OXYGEN/COMPANY, INC.",
+              "vendor_address": "PO BOX 5507\nROCKVILLE, MD 20855,ROCKVILLE,MD,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "173933",
+              "invoice_date": "02/08/2024",
+              "due_date": "",
+              "total_amount": 2973.14,
+              "vendor_name": "Samaki Inc.",
+              "vendor_company": "Samaki Inc.",
+              "vendor_address": "62 Jersey Avenue\nPort Jervis NY 12771,Port Jervis,NY,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "5666",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 1050,
+              "vendor_name": "S.P. SOAP OIL",
+              "vendor_company": "S.P. SOAP OIL",
+              "vendor_address": "18, 7th Cross, Vinayaka Nagar, Adugodi Post, Bangalore-30,Bangalore-30,,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "SSA/6149/22-23",
+              "invoice_date": "02/03/2023",
+              "due_date": "",
+              "total_amount": 26377,
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": ",,,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "SSA/5972/22-23",
+              "invoice_date": "01/25/2023",
+              "due_date": "",
+              "total_amount": 21324,
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor,51/5,Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1\nState Name Karnataka, Code 29,,Karnataka,560042",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "01/03/2023",
+              "due_date": "",
+              "total_amount": 21324,
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "240583192",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 72.18,
+              "vendor_name": "SYSCO IDAHO INC.",
+              "vendor_company": "SYSCO IDAHO INC.",
+              "vendor_address": "P.O.BOX 170007\nBOISE ID,BOISE,ID,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "13869",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 2400,
+              "vendor_name": "TEJASWINI ENTERPRISES",
+              "vendor_company": "TEJASWINI ENTERPRISES",
+              "vendor_address": ",,,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "56162",
+              "invoice_date": "11/07/2024",
+              "due_date": "",
+              "total_amount": 90.1,
+              "vendor_name": "TKO Pest Control, Inc.",
+              "vendor_company": "TKO Pest Control, Inc.",
+              "vendor_address": "411 North Lewis Rd. Royersford, PA 19468,Royersford,PA,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "#INV5011441",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 420.92,
+              "vendor_name": "Toast Inc.",
+              "vendor_company": "Toast Inc.",
+              "vendor_address": "333 Summer Street\nBoston, MA 02210\nUnited States,Boston,MA,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "2770898",
+              "invoice_date": "12/08/2024",
+              "due_date": "",
+              "total_amount": 5715.69,
+              "vendor_name": "US Foods, Inc.",
+              "vendor_company": "US Foods, Inc.",
+              "vendor_address": "P.O. Box 820050, No address on file, Philadelphia, PA, Philadelphia -19182,Philadelphia,PA,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "5330377569",
+              "invoice_date": "11/07/2024",
+              "due_date": "",
+              "total_amount": 1495.8,
+              "vendor_name": "VESTIS",
+              "vendor_company": "VESTIS",
+              "vendor_address": "PO BOX 28050\nNEW YORK NY 10087-8050,NEW YORK,NY,",
+              "data_issue": "Missing Due Date",
+              "missing_fields": [
+                "due_date"
+              ]
+            },
+            {
+              "invoice_number": "EOEC55AA-0041",
+              "invoice_date": "",
+              "due_date": "",
+              "total_amount": 2640,
+              "vendor_name": "YepChat",
+              "vendor_company": "YepChat",
+              "vendor_address": ",,,",
+              "data_issue": "Missing Invoice Date",
+              "missing_fields": [
+                "invoice_date",
+                "due_date"
+              ]
+            }
+          ],
+          "row_count": 43,
+          "has_more": false,
+          "note": null,
+          "schema_info": null
+        }
+      }
+    ],
+    "output_format": "table",
+    "summary": {
+      "total_records": 43,
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "total_amount",
+        "vendor_name",
+        "vendor_company",
+        "vendor_address",
+        "data_issue",
+        "missing_fields"
+      ],
+      "description": "Query returned 43 record(s) with 9 column(s).",
+      "invoice_breakdown": {
+        "328": {
+          "invoice_number": "328",
+          "line_items": 1,
+          "date": "02/11/2025",
+          "vendor": "meat Hub"
+        },
+        "417": {
+          "invoice_number": "417",
+          "line_items": 1,
+          "date": "",
+          "vendor": "ABHIRUCHI SEAFOODS"
+        },
+        "5666": {
+          "invoice_number": "5666",
+          "line_items": 1,
+          "date": "",
+          "vendor": "S.P. SOAP OIL"
+        },
+        "9988": {
+          "invoice_number": "9988",
+          "line_items": 1,
+          "date": "",
+          "vendor": "LTD."
+        },
+        "13869": {
+          "invoice_number": "13869",
+          "line_items": 1,
+          "date": "",
+          "vendor": "TEJASWINI ENTERPRISES"
+        },
+        "15635": {
+          "invoice_number": "15635",
+          "line_items": 1,
+          "date": "",
+          "vendor": "C&A"
+        },
+        "23508": {
+          "invoice_number": "23508",
+          "line_items": 1,
+          "date": "",
+          "vendor": "Preferred Sportswear Inc"
+        },
+        "35412": {
+          "invoice_number": "35412",
+          "line_items": 1,
+          "date": "01/01/2024",
+          "vendor": "Kanawati Enterprises"
+        },
+        "42506": {
+          "invoice_number": "42506",
+          "line_items": 1,
+          "date": "02/08/2024",
+          "vendor": "De Long Service Company, Inc."
+        },
+        "52148": {
+          "invoice_number": "52148",
+          "line_items": 2,
+          "date": "",
+          "vendor": "Lorem Ipsum"
+        },
+        "56162": {
+          "invoice_number": "56162",
+          "line_items": 1,
+          "date": "11/07/2024",
+          "vendor": "TKO Pest Control, Inc."
+        },
+        "72752": {
+          "invoice_number": "72752",
+          "line_items": 1,
+          "date": "01/13/2023",
+          "vendor": "GRAND BAKERS PRYVATELINTED"
+        },
+        "173933": {
+          "invoice_number": "173933",
+          "line_items": 1,
+          "date": "02/08/2024",
+          "vendor": "Samaki Inc."
+        },
+        "185090": {
+          "invoice_number": "185090",
+          "line_items": 1,
+          "date": "02/17/2023",
+          "vendor": "BALAJI DEPARTMENTAL STORE"
+        },
+        "337225": {
+          "invoice_number": "337225",
+          "line_items": 1,
+          "date": "",
+          "vendor": ""
+        },
+        "341493": {
+          "invoice_number": "341493",
+          "line_items": 1,
+          "date": "",
+          "vendor": "DAVID ROSEN\nCOMPANY"
+        },
+        "507302": {
+          "invoice_number": "507302",
+          "line_items": 1,
+          "date": "",
+          "vendor": "Brigiotta's"
+        },
+        "508125": {
+          "invoice_number": "508125",
+          "line_items": 1,
+          "date": "",
+          "vendor": "RM Bakery LLC"
+        },
+        "604300": {
+          "invoice_number": "604300",
+          "line_items": 1,
+          "date": "",
+          "vendor": "Dairyland USA Corp."
+        },
+        "1354035": {
+          "invoice_number": "1354035",
+          "line_items": 1,
+          "date": "",
+          "vendor": "Down East Seafood, Inc."
+        },
+        "2770898": {
+          "invoice_number": "2770898",
+          "line_items": 1,
+          "date": "12/08/2024",
+          "vendor": "US Foods, Inc."
+        },
+        "240583192": {
+          "invoice_number": "240583192",
+          "line_items": 1,
+          "date": "",
+          "vendor": "SYSCO IDAHO INC."
+        },
+        "900000546": {
+          "invoice_number": "900000546",
+          "line_items": 1,
+          "date": "",
+          "vendor": "LOR-MAR"
+        },
+        "0000546": {
+          "invoice_number": "0000546",
+          "line_items": 1,
+          "date": "",
+          "vendor": "aroundsave Coffee Roasters"
+        },
+        "IV114-0000489099": {
+          "invoice_number": "IV114-0000489099",
+          "line_items": 1,
+          "date": "07/08/2024",
+          "vendor": "Baldor Specialty Foods Inc."
+        },
+        "20240506326": {
+          "invoice_number": "20240506326",
+          "line_items": 1,
+          "date": "05/24/2024",
+          "vendor": "Ballard Spahr\nLLP"
+        },
+        "INV-3337": {
+          "invoice_number": "INV-3337",
+          "line_items": 1,
+          "date": "",
+          "vendor": "DEMO - Sliced Invoices"
+        },
+        "9399/2022-23": {
+          "invoice_number": "9399/2022-23",
+          "line_items": 1,
+          "date": "02/20/2023",
+          "vendor": "Fab Dairy & Trading (I) Pvt. Ltd."
+        },
+        "US3-000091537": {
+          "invoice_number": "US3-000091537",
+          "line_items": 1,
+          "date": "",
+          "vendor": "Martignetti\nCompanies"
+        },
+        "01395041": {
+          "invoice_number": "01395041",
+          "line_items": 1,
+          "date": "07/08/2024",
+          "vendor": "Pp"
+        },
+        "K40650": {
+          "invoice_number": "K40650",
+          "line_items": 1,
+          "date": "",
+          "vendor": "ROBERTS OXYGEN/COMPANY INC."
+        },
+        "K40652": {
+          "invoice_number": "K40652",
+          "line_items": 1,
+          "date": "",
+          "vendor": "ROBERTS OXYGEN/COMPANY, INC."
+        },
+        "SSA/6149/22-23": {
+          "invoice_number": "SSA/6149/22-23",
+          "line_items": 1,
+          "date": "02/03/2023",
+          "vendor": "Sun Shine Agencies"
+        },
+        "SSA/5972/22-23": {
+          "invoice_number": "SSA/5972/22-23",
+          "line_items": 1,
+          "date": "01/25/2023",
+          "vendor": "Sun Shine Agencies"
+        },
+        "SSA/5514/22-23": {
+          "invoice_number": "SSA/5514/22-23",
+          "line_items": 1,
+          "date": "01/03/2023",
+          "vendor": "Sun Shine Agencies"
+        },
+        "#INV5011441": {
+          "invoice_number": "#INV5011441",
+          "line_items": 1,
+          "date": "",
+          "vendor": "Toast Inc."
+        },
+        "5330377569": {
+          "invoice_number": "5330377569",
+          "line_items": 1,
+          "date": "11/07/2024",
+          "vendor": "VESTIS"
+        },
+        "EOEC55AA-0041": {
+          "invoice_number": "EOEC55AA-0041",
+          "line_items": 1,
+          "date": "",
+          "vendor": "YepChat"
+        }
+      },
+      "invoice_summary_text": "**#INV5011441** | Vendor: Toast Inc. | Line Items: 1\n**0000546** | Vendor: aroundsave Coffee Roasters | Line Items: 1\n**01395041** | Vendor: Pp | Date: 07/08/2024 | Line Items: 1\n**1354035** | Vendor: Down East Seafood, Inc. | Line Items: 1\n**13869** | Vendor: TEJASWINI ENTERPRISES | Line Items: 1\n**15635** | Vendor: C&A | Line Items: 1\n**173933** | Vendor: Samaki Inc. | Date: 02/08/2024 | Line Items: 1\n**185090** | Vendor: BALAJI DEPARTMENTAL STORE | Date: 02/17/2023 | Line Items: 1\n**20240506326** | Vendor: Ballard Spahr\nLLP | Date: 05/24/2024 | Line Items: 1\n**23508** | Vendor: Preferred Sportswear Inc | Line Items: 1\n**240583192** | Vendor: SYSCO IDAHO INC. | Line Items: 1\n**2770898** | Vendor: US Foods, Inc. | Date: 12/08/2024 | Line Items: 1\n**328** | Vendor: meat Hub | Date: 02/11/2025 | Line Items: 1\n**337225** | Line Items: 1\n**341493** | Vendor: DAVID ROSEN\nCOMPANY | Line Items: 1\n**35412** | Vendor: Kanawati Enterprises | Date: 01/01/2024 | Line Items: 1\n**417** | Vendor: ABHIRUCHI SEAFOODS | Line Items: 1\n**42506** | Vendor: De Long Service Company, Inc. | Date: 02/08/2024 | Line Items: 1\n**507302** | Vendor: Brigiotta's | Line Items: 1\n**508125** | Vendor: RM Bakery LLC | Line Items: 1\n**52148** | Vendor: Lorem Ipsum | Line Items: 2\n**5330377569** | Vendor: VESTIS | Date: 11/07/2024 | Line Items: 1\n**56162** | Vendor: TKO Pest Control, Inc. | Date: 11/07/2024 | Line Items: 1\n**5666** | Vendor: S.P. SOAP OIL | Line Items: 1\n**604300** | Vendor: Dairyland USA Corp. | Line Items: 1\n**72752** | Vendor: GRAND BAKERS PRYVATELINTED | Date: 01/13/2023 | Line Items: 1\n**900000546** | Vendor: LOR-MAR | Line Items: 1\n**9399/2022-23** | Vendor: Fab Dairy & Trading (I) Pvt. Ltd. | Date: 02/20/2023 | Line Items: 1\n**9988** | Vendor: LTD. | Line Items: 1\n**EOEC55AA-0041** | Vendor: YepChat | Line Items: 1\n**INV-3337** | Vendor: DEMO - Sliced Invoices | Line Items: 1\n**IV114-0000489099** | Vendor: Baldor Specialty Foods Inc. | Date: 07/08/2024 | Line Items: 1\n**K40650** | Vendor: ROBERTS OXYGEN/COMPANY INC. | Line Items: 1\n**K40652** | Vendor: ROBERTS OXYGEN/COMPANY, INC. | Line Items: 1\n**SSA/5514/22-23** | Vendor: Sun Shine Agencies | Date: 01/03/2023 | Line Items: 1\n**SSA/5972/22-23** | Vendor: Sun Shine Agencies | Date: 01/25/2023 | Line Items: 1\n**SSA/6149/22-23** | Vendor: Sun Shine Agencies | Date: 02/03/2023 | Line Items: 1\n**US3-000091537** | Vendor: Martignetti\nCompanies | Line Items: 1",
+      "numeric_analysis": {
+        "total_amount": {
+          "sum": 137944.27,
+          "average": 3630.11,
+          "min": 1,
+          "max": 29049,
+          "count": 38,
+          "is_currency": true,
+          "description": "**total_amount**: Total = $137,944.27, Average = $3,630.11, Range = $1.00 - $29,049.00"
+        }
+      },
+      "numeric_summary_text": "**total_amount**: Total = $137,944.27, Average = $3,630.11, Range = $1.00 - $29,049.00",
+      "date_analysis": {
+        "invoice_date": {
+          "from": "01/01/2024",
+          "to": "12/08/2024",
+          "count": 17,
+          "unique_count": 14,
+          "description": "**invoice_date**: From *01/01/2024* to *12/08/2024* (17 entries, 14 unique dates)"
+        },
+        "due_date": {
+          "from": "02/07/2024",
+          "to": "06/09/2024",
+          "count": 3,
+          "unique_count": 3,
+          "description": "**due_date**: From *02/07/2024* to *06/09/2024* (3 entries, 3 unique dates)"
+        }
+      },
+      "date_summary_text": "**invoice_date**: From *01/01/2024* to *12/08/2024* (17 entries, 14 unique dates)\n**due_date**: From *02/07/2024* to *06/09/2024* (3 entries, 3 unique dates)",
+      "categorical_analysis": {
+        "invoice_number": {
+          "unique_count": 38,
+          "total_entries": 39,
+          "description": "**invoice_number**: 38 unique value(s) across 39 entries"
+        },
+        "vendor_name": {
+          "unique_count": 39,
+          "total_entries": 42,
+          "description": "**vendor_name**: 39 unique value(s) across 42 entries"
+        },
+        "vendor_company": {
+          "unique_count": 39,
+          "total_entries": 42,
+          "description": "**vendor_company**: 39 unique value(s)"
+        },
+        "vendor_address": {
+          "unique_count": 32,
+          "total_entries": 41,
+          "description": "**vendor_address**: 32 unique value(s)"
+        },
+        "data_issue": {
+          "unique_count": 4,
+          "total_entries": 43,
+          "description": "**data_issue**: 4 unique value(s)",
+          "top_values": [
+            {
+              "value": "Missing Invoice Date",
+              "count": 23
+            },
+            {
+              "value": "Missing Due Date",
+              "count": 14
+            },
+            {
+              "value": "Missing Invoice Number",
+              "count": 4
+            },
+            {
+              "value": "Incomplete Data",
+              "count": 2
+            }
+          ]
+        },
+        "missing_fields": {
+          "unique_count": 8,
+          "total_entries": 41,
+          "description": "**missing_fields**: 8 unique value(s)",
+          "top_values": [
+            {
+              "value": "['invoice_date', 'due_date']",
+              "count": 20
+            },
+            {
+              "value": "['due_date']",
+              "count": 13
+            },
+            {
+              "value": "['invoice_date', 'due_date', 'total']",
+              "count": 2
+            },
+            {
+              "value": "['invoice_number', 'invoice_date', 'due_date']",
+              "count": 2
+            },
+            {
+              "value": "['due_date', 'total']",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "categorical_summary_text": "**invoice_number**: 38 unique value(s) across 39 entries\n**vendor_name**: 39 unique value(s) across 42 entries\n**vendor_company**: 39 unique value(s)\n**vendor_address**: 32 unique value(s)\n**data_issue**: 4 unique value(s)\n**missing_fields**: 8 unique value(s)",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Invoice Data Quality Analysis\n\n### Key Findings\n- The dataset contains **43 unique records** with only **38 unique invoice numbers**, indicating potential data entry issues.\n- **Total amount** across all invoices is **$137,944.27**, with an average invoice value of **$3,630.11**. The highest invoice amount is **$29,049.00**.\n- There are **39 unique vendors**, but only **32 unique addresses**, suggesting that some vendors may share addresses, increasing the risk of miscommunication.\n\n### Data Quality Issues\n- The analysis reveals significant **data quality concerns**:\n  - **23 invoices** are missing the **invoice date**.\n  - **14 invoices** lack a **due date**.\n  - **4 invoices** do not have an **invoice number**.\n  \n> ⚠️ Missing critical fields such as invoice date and due date could lead to delayed payments and strained vendor relationships.\n\n### Concentrations and Trends\n1. **Vendor Concentration**:\n   - The vendor **Sun Shine Agencies** appears multiple times with three different invoices (SSA/5514/22-23, SSA/5972/22-23, SSA/6149/22-23), indicating a potential for volume-based negotiation or issues in invoice processing.\n   \n2. **Data Issues by Vendor**:\n   - The top vendors associated with missing data include:\n     - **BALAJI DEPARTMENTAL STORE** (Missing due date)\n     - **Brigiotta's** (Missing invoice date)\n     - **LTD.** (Missing invoice date)\n\n### Business Impact\n> ⚠️ High levels of missing data can hinder operational efficiency, delay payments, and affect vendor trust.\n\n### Recommendations\n1. Prioritize reviewing invoices with missing **invoice dates** and **due dates** for immediate follow-up with vendors.\n2. Implement a systematic **data validation process** during invoice entry to reduce occurrences of missing critical fields.\n3. Consider reaching out to vendors with recurring data issues to establish clearer communication and improve data quality in future transactions.\n4. Create automated alerts for invoices flagged with missing information to facilitate quicker resolution.\n\n### Actionable Insights\n- By addressing these data quality issues, the organization can enhance its operational efficiency, ensure timely vendor payments, and maintain strong vendor relationships.\n- Regular audits of invoice data can prevent future occurrences and instill a culture of data integrity within the organization.\n\n---\n\n# 📊 Query Results Summary\n\n**43** records found with **9** columns\n\n## 📎 Invoices\n\n**2770898** - US Foods, Inc. (12/08/2024)\n  └ 1 items, 0 units\n\n**56162** - TKO Pest Control, Inc. (11/07/2024)\n  └ 1 items, 0 units\n\n**5330377569** - VESTIS (11/07/2024)\n  └ 1 items, 0 units\n\n**IV114-0000489099** - Baldor Specialty Foods Inc. (07/08/2024)\n  └ 1 items, 0 units\n\n**01395041** - Pp (07/08/2024)\n  └ 1 items, 0 units\n\n**20240506326** - Ballard Spahr\nLLP (05/24/2024)\n  └ 1 items, 0 units\n\n**9399/2022-23** - Fab Dairy & Trading (I) Pvt. Ltd. (02/20/2023)\n  └ 1 items, 0 units\n\n**185090** - BALAJI DEPARTMENTAL STORE (02/17/2023)\n  └ 1 items, 0 units\n\n**328** - meat Hub (02/11/2025)\n  └ 1 items, 0 units\n\n**42506** - De Long Service Company, Inc. (02/08/2024)\n  └ 1 items, 0 units\n\n**173933** - Samaki Inc. (02/08/2024)\n  └ 1 items, 0 units\n\n**SSA/6149/22-23** - Sun Shine Agencies (02/03/2023)\n  └ 1 items, 0 units\n\n**SSA/5972/22-23** - Sun Shine Agencies (01/25/2023)\n  └ 1 items, 0 units\n\n**72752** - GRAND BAKERS PRYVATELINTED (01/13/2023)\n  └ 1 items, 0 units\n\n**SSA/5514/22-23** - Sun Shine Agencies (01/03/2023)\n  └ 1 items, 0 units\n\n**35412** - Kanawati Enterprises (01/01/2024)\n  └ 1 items, 0 units\n\n**507302** - Brigiotta's ()\n  └ 1 items, 0 units\n\n**9988** - LTD. ()\n  └ 1 items, 0 units\n\n**337225** -  ()\n  └ 1 items, 0 units\n\n**417** - ABHIRUCHI SEAFOODS ()\n  └ 1 items, 0 units\n\n**0000546** - aroundsave Coffee Roasters ()\n  └ 1 items, 0 units\n\n**15635** - C&A ()\n  └ 1 items, 0 units\n\n**604300** - Dairyland USA Corp. ()\n  └ 1 items, 0 units\n\n**341493** - DAVID ROSEN\nCOMPANY ()\n  └ 1 items, 0 units\n\n**INV-3337** - DEMO - Sliced Invoices ()\n  └ 1 items, 0 units\n\n**1354035** - Down East Seafood, Inc. ()\n  └ 1 items, 0 units\n\n**52148** - Lorem Ipsum ()\n  └ 2 items, 0 units\n\n**900000546** - LOR-MAR ()\n  └ 1 items, 0 units\n\n**US3-000091537** - Martignetti\nCompanies ()\n  └ 1 items, 0 units\n\n**23508** - Preferred Sportswear Inc ()\n  └ 1 items, 0 units\n\n**508125** - RM Bakery LLC ()\n  └ 1 items, 0 units\n\n**K40650** - ROBERTS OXYGEN/COMPANY INC. ()\n  └ 1 items, 0 units\n\n**K40652** - ROBERTS OXYGEN/COMPANY, INC. ()\n  └ 1 items, 0 units\n\n**5666** - S.P. SOAP OIL ()\n  └ 1 items, 0 units\n\n**240583192** - SYSCO IDAHO INC. ()\n  └ 1 items, 0 units\n\n**13869** - TEJASWINI ENTERPRISES ()\n  └ 1 items, 0 units\n\n**#INV5011441** - Toast Inc. ()\n  └ 1 items, 0 units\n\n**EOEC55AA-0041** - YepChat ()\n  └ 1 items, 0 units\n\n## 💰 Numbers\n\n**total_amount:** $137,944.27 total, $3,630.11 avg\n\n## 📅 Dates\n\n**invoice_date:** 14 unique dates from 01/01/2024 to 12/08/2024\n**due_date:** 3 unique dates from 02/07/2024 to 06/09/2024\n\n## 🏷️ Categories\n\n**data_issue:** Missing Invoice Date (23), Missing Due Date (14), Missing Invoice Number (4)\n**missing_fields:** ['invoice_date', 'due_date'] (20), ['due_date'] (13), ['invoice_date', 'due_date', 'total'] (2)\n",
+      "ai_summary": "## Invoice Data Quality Analysis\n\n### Key Findings\n- The dataset contains **43 unique records** with only **38 unique invoice numbers**, indicating potential data entry issues.\n- **Total amount** across all invoices is **$137,944.27**, with an average invoice value of **$3,630.11**. The highest invoice amount is **$29,049.00**.\n- There are **39 unique vendors**, but only **32 unique addresses**, suggesting that some vendors may share addresses, increasing the risk of miscommunication.\n\n### Data Quality Issues\n- The analysis reveals significant **data quality concerns**:\n  - **23 invoices** are missing the **invoice date**.\n  - **14 invoices** lack a **due date**.\n  - **4 invoices** do not have an **invoice number**.\n  \n> ⚠️ Missing critical fields such as invoice date and due date could lead to delayed payments and strained vendor relationships.\n\n### Concentrations and Trends\n1. **Vendor Concentration**:\n   - The vendor **Sun Shine Agencies** appears multiple times with three different invoices (SSA/5514/22-23, SSA/5972/22-23, SSA/6149/22-23), indicating a potential for volume-based negotiation or issues in invoice processing.\n   \n2. **Data Issues by Vendor**:\n   - The top vendors associated with missing data include:\n     - **BALAJI DEPARTMENTAL STORE** (Missing due date)\n     - **Brigiotta's** (Missing invoice date)\n     - **LTD.** (Missing invoice date)\n\n### Business Impact\n> ⚠️ High levels of missing data can hinder operational efficiency, delay payments, and affect vendor trust.\n\n### Recommendations\n1. Prioritize reviewing invoices with missing **invoice dates** and **due dates** for immediate follow-up with vendors.\n2. Implement a systematic **data validation process** during invoice entry to reduce occurrences of missing critical fields.\n3. Consider reaching out to vendors with recurring data issues to establish clearer communication and improve data quality in future transactions.\n4. Create automated alerts for invoices flagged with missing information to facilitate quicker resolution.\n\n### Actionable Insights\n- By addressing these data quality issues, the organization can enhance its operational efficiency, ensure timely vendor payments, and maintain strong vendor relationships.\n- Regular audits of invoice data can prevent future occurrences and instill a culture of data integrity within the organization."
+    },
+    "table_data": {
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "total_amount",
+        "vendor_name",
+        "vendor_company",
+        "vendor_address",
+        "data_issue",
+        "missing_fields"
+      ],
+      "rows": [
+        {
+          "invoice_number": "185090",
+          "invoice_date": "02/17/2023",
+          "due_date": "",
+          "total_amount": null,
+          "vendor_name": "BALAJI DEPARTMENTAL STORE",
+          "vendor_company": "BALAJI DEPARTMENTAL STORE",
+          "vendor_address": null,
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date",
+            "total"
+          ]
+        },
+        {
+          "invoice_number": "507302",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": null,
+          "vendor_name": "Brigiotta's",
+          "vendor_company": "Brigiotta's",
+          "vendor_address": "330 Pennsylvania Ave West\nWarren, PA 16365,Warren,PA,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date",
+            "total"
+          ]
+        },
+        {
+          "invoice_number": "",
+          "invoice_date": "07/18/2024",
+          "due_date": "",
+          "total_amount": null,
+          "vendor_name": "Gordon Food Service",
+          "vendor_company": "Gordon Food Service",
+          "vendor_address": "7770 Manuingion Court Signion M 400.00,,M,",
+          "data_issue": "Missing Invoice Number",
+          "missing_fields": [
+            "invoice_number",
+            "due_date",
+            "total"
+          ]
+        },
+        {
+          "invoice_number": "9988",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": null,
+          "vendor_name": "LTD.",
+          "vendor_company": "LTD.",
+          "vendor_address": "312 W. Trenton Ave.,,Morrisville,PA,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date",
+            "total"
+          ]
+        },
+        {
+          "invoice_number": "",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": null,
+          "vendor_name": "REPUBLIC NATIONAL DISTRIBUTING COMPANY",
+          "vendor_company": "REPUBLIC NATIONAL DISTRIBUTING COMPANY",
+          "vendor_address": "P.O. BOX 687\nANNAPOLIS JUNCT MD 20701-0687,ANNAPOLIS JUNCT,MD,",
+          "data_issue": "Missing Invoice Number",
+          "missing_fields": [
+            "invoice_number",
+            "invoice_date",
+            "due_date",
+            "total"
+          ]
+        },
+        {
+          "invoice_number": "",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 1200,
+          "vendor_name": "CASH / CREDIT BILL\nGaln\n26",
+          "vendor_company": "CASH / CREDIT BILL\nGaln\n26",
+          "vendor_address": ",,,",
+          "data_issue": "Missing Invoice Number",
+          "missing_fields": [
+            "invoice_number",
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 55.86,
+          "vendor_name": "STOP & SHOP",
+          "vendor_company": "STOP & SHOP",
+          "vendor_address": "301 CENTRE STREET\nJAMAICA PLAIN, MA 02130,JAMAICA PLAIN,MA,",
+          "data_issue": "Missing Invoice Number",
+          "missing_fields": [
+            "invoice_number",
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "337225",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 1898.07,
+          "vendor_name": "",
+          "vendor_company": "",
+          "vendor_address": ",,,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "417",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 7.15,
+          "vendor_name": "ABHIRUCHI SEAFOODS",
+          "vendor_company": "ABHIRUCHI SEAFOODS",
+          "vendor_address": ",,,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "0000546",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 623,
+          "vendor_name": "aroundsave Coffee Roasters",
+          "vendor_company": "aroundsave Coffee Roasters",
+          "vendor_address": ",,,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "IV114-0000489099",
+          "invoice_date": "07/08/2024",
+          "due_date": "",
+          "total_amount": 29049,
+          "vendor_name": "Baldor Specialty Foods Inc.",
+          "vendor_company": "Baldor Specialty Foods Inc.",
+          "vendor_address": "P.O.Box 5411\nNew York, NY 10087-5411,New York,NY,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "20240506326",
+          "invoice_date": "05/24/2024",
+          "due_date": "",
+          "total_amount": 966,
+          "vendor_name": "Ballard Spahr\nLLP",
+          "vendor_company": "Ballard Spahr\nLLP",
+          "vendor_address": "1735 Market Street, 51st Floor\nPhiladelphia, PA 19103-7599,Philadelphia,PA,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "15635",
+          "invoice_date": "",
+          "due_date": "02/07/2024",
+          "total_amount": 2700,
+          "vendor_name": "C&A",
+          "vendor_company": "C&A",
+          "vendor_address": "540 E. Gravers Lane\nWyndmoor, PA 19038,Wyndmoor,PA,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date"
+          ]
+        },
+        {
+          "invoice_number": "604300",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 434,
+          "vendor_name": "Dairyland USA Corp.",
+          "vendor_company": "Dairyland USA Corp.",
+          "vendor_address": "PO BOX 30943 NEW YORK, NY 10087-0943,NEW YORK,NY,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "341493",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 2338.81,
+          "vendor_name": "DAVID ROSEN\nCOMPANY",
+          "vendor_company": "DAVID ROSEN\nCOMPANY",
+          "vendor_address": ",,,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "42506",
+          "invoice_date": "02/08/2024",
+          "due_date": "",
+          "total_amount": 755,
+          "vendor_name": "De Long Service Company, Inc.",
+          "vendor_company": "De Long Service Company, Inc.",
+          "vendor_address": "PO Box 378\nYardley, PA 19067-8378,Yardley,PA,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "INV-3337",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 93.5,
+          "vendor_name": "DEMO - Sliced Invoices",
+          "vendor_company": "DEMO - Sliced Invoices",
+          "vendor_address": "Suite 5A-1204\n123 Somewhere Street\nYour City AZ 12345,Your City,AZ,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "1354035",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 203.7,
+          "vendor_name": "Down East Seafood, Inc.",
+          "vendor_company": "Down East Seafood, Inc.",
+          "vendor_address": "311 Manida Street, Bronx, NY 10474,Bronx,NY,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "9399/2022-23",
+          "invoice_date": "02/20/2023",
+          "due_date": "",
+          "total_amount": 1985,
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "72752",
+          "invoice_date": "01/13/2023",
+          "due_date": "",
+          "total_amount": 275,
+          "vendor_name": "GRAND BAKERS PRYVATELINTED",
+          "vendor_company": "GRAND BAKERS PRYVATELINTED",
+          "vendor_address": "No 70/2. Kachohalti,Kachohalti,,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "35412",
+          "invoice_date": "01/01/2024",
+          "due_date": "",
+          "total_amount": 100,
+          "vendor_name": "Kanawati Enterprises",
+          "vendor_company": "Kanawati Enterprises",
+          "vendor_address": "249 Lodi St Hackensack, NJ 07601,Hackensack,NJ,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "52148",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 220,
+          "vendor_name": "Lorem Ipsum",
+          "vendor_company": "Lorem Ipsum",
+          "vendor_address": null,
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "52148",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 220,
+          "vendor_name": "Lorem Ipsum",
+          "vendor_company": "Lorem Ipsum",
+          "vendor_address": "24 Dummy Street Area,\nLocation, Lorem Ipsum,\n570xx59x,Lorem Ipsum,,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "900000546",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 7765.2,
+          "vendor_name": "LOR-MAR",
+          "vendor_company": "LOR-MAR",
+          "vendor_address": "6710 Westfield Ave Unit A Pennsauken Township, NJ 08110,Pennsauken Township,NJ,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "US3-000091537",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 45.98,
+          "vendor_name": "Martignetti\nCompanies",
+          "vendor_company": "Martignetti\nCompanies",
+          "vendor_address": "PO RON 140\nSPOCEPORT CT,SPOCEPORT,,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "328",
+          "invoice_date": "02/11/2025",
+          "due_date": "03/12/2025",
+          "total_amount": 1,
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "vendor_address": ",,,",
+          "data_issue": "Incomplete Data",
+          "missing_fields": []
+        },
+        {
+          "invoice_number": "01395041",
+          "invoice_date": "07/08/2024",
+          "due_date": "06/09/2024",
+          "total_amount": 167.51,
+          "vendor_name": "Pp",
+          "vendor_company": "Pp",
+          "vendor_address": "P.O. Box 411405\nBoston, MA 02241-1405,Boston,MA,",
+          "data_issue": "Incomplete Data",
+          "missing_fields": []
+        },
+        {
+          "invoice_number": "23508",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 800,
+          "vendor_name": "Preferred Sportswear Inc",
+          "vendor_company": "Preferred Sportswear Inc",
+          "vendor_address": "520 Pusey Avenue\nSuite 260\nCollingdale, PA 19023,Collingdale,PA,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "508125",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 57.7,
+          "vendor_name": "RM Bakery LLC",
+          "vendor_company": "RM Bakery LLC",
+          "vendor_address": "44-25 54th Drive\nMaspeth, NY 11378,Maspeth,NY,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "K40650",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 59.57,
+          "vendor_name": "ROBERTS OXYGEN/COMPANY INC.",
+          "vendor_company": "ROBERTS OXYGEN/COMPANY INC.",
+          "vendor_address": "PO BOX 5507\nROCKVILLE, MD 20855,ROCKVILLE,MD,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "K40652",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 40.39,
+          "vendor_name": "ROBERTS OXYGEN/COMPANY, INC.",
+          "vendor_company": "ROBERTS OXYGEN/COMPANY, INC.",
+          "vendor_address": "PO BOX 5507\nROCKVILLE, MD 20855,ROCKVILLE,MD,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "173933",
+          "invoice_date": "02/08/2024",
+          "due_date": "",
+          "total_amount": 2973.14,
+          "vendor_name": "Samaki Inc.",
+          "vendor_company": "Samaki Inc.",
+          "vendor_address": "62 Jersey Avenue\nPort Jervis NY 12771,Port Jervis,NY,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "5666",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 1050,
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "vendor_address": "18, 7th Cross, Vinayaka Nagar, Adugodi Post, Bangalore-30,Bangalore-30,,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "SSA/6149/22-23",
+          "invoice_date": "02/03/2023",
+          "due_date": "",
+          "total_amount": 26377,
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": ",,,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "SSA/5972/22-23",
+          "invoice_date": "01/25/2023",
+          "due_date": "",
+          "total_amount": 21324,
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor,51/5,Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1\nState Name Karnataka, Code 29,,Karnataka,560042",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "01/03/2023",
+          "due_date": "",
+          "total_amount": 21324,
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "240583192",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 72.18,
+          "vendor_name": "SYSCO IDAHO INC.",
+          "vendor_company": "SYSCO IDAHO INC.",
+          "vendor_address": "P.O.BOX 170007\nBOISE ID,BOISE,ID,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "13869",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 2400,
+          "vendor_name": "TEJASWINI ENTERPRISES",
+          "vendor_company": "TEJASWINI ENTERPRISES",
+          "vendor_address": ",,,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "56162",
+          "invoice_date": "11/07/2024",
+          "due_date": "",
+          "total_amount": 90.1,
+          "vendor_name": "TKO Pest Control, Inc.",
+          "vendor_company": "TKO Pest Control, Inc.",
+          "vendor_address": "411 North Lewis Rd. Royersford, PA 19468,Royersford,PA,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "#INV5011441",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 420.92,
+          "vendor_name": "Toast Inc.",
+          "vendor_company": "Toast Inc.",
+          "vendor_address": "333 Summer Street\nBoston, MA 02210\nUnited States,Boston,MA,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "2770898",
+          "invoice_date": "12/08/2024",
+          "due_date": "",
+          "total_amount": 5715.69,
+          "vendor_name": "US Foods, Inc.",
+          "vendor_company": "US Foods, Inc.",
+          "vendor_address": "P.O. Box 820050, No address on file, Philadelphia, PA, Philadelphia -19182,Philadelphia,PA,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "5330377569",
+          "invoice_date": "11/07/2024",
+          "due_date": "",
+          "total_amount": 1495.8,
+          "vendor_name": "VESTIS",
+          "vendor_company": "VESTIS",
+          "vendor_address": "PO BOX 28050\nNEW YORK NY 10087-8050,NEW YORK,NY,",
+          "data_issue": "Missing Due Date",
+          "missing_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "invoice_number": "EOEC55AA-0041",
+          "invoice_date": "",
+          "due_date": "",
+          "total_amount": 2640,
+          "vendor_name": "YepChat",
+          "vendor_company": "YepChat",
+          "vendor_address": ",,,",
+          "data_issue": "Missing Invoice Date",
+          "missing_fields": [
+            "invoice_date",
+            "due_date"
+          ]
+        }
+      ],
+      "row_count": 43
+    },
+    "used_guidance": true,
+    "execution_time": "Fast (pre-built template, attempt 1)",
+    "query_attempts": 1,
+    "query_corrected": true,
+    "correction_saved": true
+  }
+}

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { agentApi, toolApi } from '../services/api';
 import type { Agent, WorkflowConfig, ToolSchema } from '../services/api';
+import ProgressPanel from '../components/ProgressPanel';
+import type { ProgressStep } from '../components/ProgressPanel';
 
 export default function EditAgent() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +32,18 @@ export default function EditAgent() {
   const [triggerType, setTriggerType] = useState<string>('text_query');
   const [outputFormat] = useState<string>('text');  // Standardized to 'text' for markdown output
   const [inputFields, setInputFields] = useState<WorkflowConfig['input_fields']>([]);
+  
+  // NEW: Progress tracking for agent editing
+  const [editProgress, setEditProgress] = useState<ProgressStep[]>([]);
+  const [updatedAgentId, setUpdatedAgentId] = useState<string | null>(null);
+
+  // Navigate to workflow viewer when agent is updated
+  useEffect(() => {
+    if (updatedAgentId) {
+      console.log('✅ Agent updated, navigating to:', `/agents/${updatedAgentId}/execute`);
+      navigate(`/agents/${updatedAgentId}/execute`);
+    }
+  }, [updatedAgentId, navigate]);
 
   // 1. Load Agent Data on Mount
   useEffect(() => {
@@ -117,19 +131,82 @@ export default function EditAgent() {
         input_fields: inputFields,
         output_format: outputFormat,
       };
-
-      await agentApi.updateAgent(id!, {
-        prompt,
-        name: name || undefined,
-        selected_tools: toolsToUse.length > 0 ? toolsToUse : [],
-        workflow_config: workflowConfig,
-        tool_configs: toolConfigs,  // Include tool configurations
+      
+      // Initialize progress steps
+      const steps: ProgressStep[] = [
+        { id: '1', label: 'Loading agent configuration...', status: 'pending' },
+        { id: '2', label: 'Analyzing tool requirements...', status: 'pending' },
+        { id: '3', label: 'AI is analyzing changes...', status: 'pending' },
+        { id: '4', label: 'Optimizing execution...', status: 'pending' },
+        { id: '5', label: 'Saving changes...', status: 'pending' },
+      ];
+      setEditProgress(steps);
+      
+      // Use streaming API
+      const response = await fetch(`http://localhost:8000/api/agents/${id}/stream`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          name: name || undefined,
+          selected_tools: toolsToUse.length > 0 ? toolsToUse : [],
+          workflow_config: workflowConfig,
+          tool_configs: toolConfigs,
+        })
       });
-
-      navigate(`/agents/${id}/execute`);
+      
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      const readStream = () => {
+        reader!.read().then(({ done, value }) => {
+          if (done) return;
+          
+          const text = decoder.decode(value);
+          const lines = text.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = JSON.parse(line.substring(6));
+              
+              if (data.type === 'progress') {
+                // Update progress step
+                const stepIndex = data.step - 1;
+                steps[stepIndex].status = data.status;
+                steps[stepIndex].label = data.message;
+                if (data.detail) {
+                  steps[stepIndex].detail = data.detail;
+                }
+                // Handle substeps for AI operations
+                if (data.substeps) {
+                  steps[stepIndex].substeps = data.substeps;
+                }
+                setEditProgress([...steps]);
+              }
+              else if (data.type === 'result') {
+                // Agent updated successfully
+                setUpdatedAgentId(data.data.id);
+                setLoading(false);
+              }
+              else if (data.type === 'error') {
+                setError(data.message);
+                setLoading(false);
+                return;
+              }
+            }
+          }
+          
+          readStream();
+        }).catch(err => {
+          setError(err.message);
+          setLoading(false);
+        });
+      };
+      
+      readStream();
     } catch (err) {
-      const error = err as { response?: { data?: { detail?: string } } };
-      setError(error.response?.data?.detail || 'Failed to update agent');
+      const error = err as { response?: { data?: { detail?: string } }; message?: string };
+      setError(error.response?.data?.detail || error.message || 'Failed to update agent');
       setLoading(false);
     }
   };
@@ -491,6 +568,16 @@ export default function EditAgent() {
               </button>
             </div>
           </form>
+          
+          {/* Progress Panel - Show during agent editing */}
+          {loading && editProgress.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <ProgressPanel
+                title="Updating Agent..."
+                steps={editProgress}
+              />
+            </div>
+          )}
         </div>
       </div>
       

@@ -16,6 +16,7 @@ import { DataVisualization } from './DataVisualization';
 import ProgressPanel, { type ProgressStep } from './ProgressPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import SavedResultsManager from './SavedResultsManager';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -185,6 +186,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   });
   const [executedQuery, setExecutedQuery] = useState<string | null>(null);
   const [cachingQuery, setCachingQuery] = useState(false);
+  const [resultSaved, setResultSaved] = useState(true); // Track if current result is saved
   const resultRef = useRef<HTMLDivElement>(null);
   const [showInputForm, setShowInputForm] = useState(true);
   const [executionProgress, setExecutionProgress] = useState<ProgressStep[]>([]);
@@ -436,6 +438,53 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       setCachingQuery(false);
     }
   };
+            
+  const handleSaveResult = async (resultName: string) => {
+    if (!result) {
+      alert('No result to save');
+      return;
+    }
+              
+    try {
+      const response = await fetch(`http://localhost:8000/api/agents/${agentId}/results/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          result,
+          name: resultName
+        })
+      });
+                
+      const data = await response.json();
+      if (data.success) {
+        setResultSaved(true);
+        alert('✅ Result saved successfully!');
+      } else {
+        throw new Error(data.message || 'Failed to save result');
+      }
+    } catch (error) {
+      console.error('Failed to save result:', error);
+      alert('❌ Failed to save result');
+    }
+  };
+            
+  const handleLoadResult = async (resultId: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/agents/${agentId}/results/${resultId}`);
+      const data = await response.json();
+                
+      if (data.success && data.result) {
+        setResult(data.result.data);
+        setResultSaved(true);
+        alert('✅ Result loaded successfully!');
+      } else {
+        throw new Error(data.message || 'Failed to load result');
+      }
+    } catch (error) {
+      console.error('Failed to load result:', error);
+      alert('❌ Failed to load result');
+    }
+  };
   
   const convertToTemplate = (query: string, triggerType: string): string => {
     if (triggerType === 'month_year') {
@@ -572,10 +621,15 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                         if (data.detail) {
                           steps[stepIndex].detail = data.detail;
                         }
+                        // Handle substeps for AI progress
+                        if (data.substeps) {
+                          steps[stepIndex].substeps = data.substeps;
+                        }
                         setExecutionProgress([...steps]);
                       }
                     } else if (data.type === 'result') {
                       // Execution complete - got final result
+                      console.log('✅ Execution result received');
                       setExecutionStatus('Execution completed successfully');
                       resolve(data.data);
                       return;
@@ -667,6 +721,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       await new Promise((resolve) => setTimeout(resolve, 400));
 
       setResult(response);
+      setResultSaved(false); // New result is not saved
       
       // Extract SQL query from intermediate steps
       setExecutionStatus('Extracting executed query...');
@@ -789,11 +844,14 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               {/* Input Form */}
               <div className="flex-shrink-0 p-6">
               <div className="flex justify-between items-center mb-6">
-                {workflowConfig.trigger_type === 'text_query' ? (
-                  <h3 className="text-lg font-semibold text-gray-800">Agent Playground</h3>
-                ) : (
-                  <h3 className="text-lg font-semibold text-gray-800">Execute Agent</h3>
-                )}
+                <SavedResultsManager
+                          agentId={agentId}
+                          currentResult={result}
+                          resultSaved={resultSaved}
+                          onSaveResult={handleSaveResult}
+                          onLoadResult={handleLoadResult}
+                          handleDownloadPDF={handleDownloadPDF}
+                        />               
                 <button
                   onClick={() => setShowInputForm(!showInputForm)}
                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-2 font-medium"
@@ -809,7 +867,9 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               {workflowConfig.trigger_type === 'text_query' ? (
                 
                 <form onSubmit={handleExecute} className="space-y-6">
+                   
                   <div>
+                   
                     <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
                       Your Query
                     </label>
@@ -842,6 +902,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               )}
               </div>
               )}
+               
               </div>              
 
               {/* Error Display */}
@@ -866,17 +927,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                   <div className="px-6">
                   <div className="flex justify-between items-center mb-6">
                     <h4 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Execution Results</h4>
-                    {result.success && (
-                      <button
-                        onClick={handleDownloadPDF}
-                        className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Download PDF
-                      </button>
-                    )}
+                   
                   </div>
                   </div>
                   <div ref={resultRef}>

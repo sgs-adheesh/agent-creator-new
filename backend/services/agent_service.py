@@ -8,6 +8,7 @@ import csv
 import io
 import json
 import base64
+import logging
 from pathlib import Path
 from config import settings
 from langchain.agents import create_openai_functions_agent, AgentExecutor
@@ -16,6 +17,8 @@ from langchain_community.chat_models import ChatOllama
 from langchain_openai import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 from storage import AgentStorage
+
+logger = logging.getLogger(__name__)
 
 # Import ToolAnalyzer (with error handling to avoid circular imports)
 try:
@@ -175,7 +178,7 @@ class AgentService:
                     print(f"    ✓ Serialized dict - tool: {tool_name}, result type: {type(result_value)}")
                 
                 else:
-                    print(f"    ✗ Skipped - unknown format")
+                    logger.debug(f"Skipped - unknown format")
         
         print(f"  → Serialized {len(serialized_steps)} steps")
         
@@ -265,8 +268,7 @@ class AgentService:
             CSV string
         """
         try:
-            print(f"\n📊 CSV Generation Debug:")
-            print(f"  - Total intermediate steps: {len(intermediate_steps)}")
+            logger.debug(f"CSV Generation: Total intermediate steps: {len(intermediate_steps)}")
             
             # Try to find postgres_query results in intermediate steps
             for i, step in enumerate(intermediate_steps):
@@ -276,24 +278,24 @@ class AgentService:
                     action = step.get('action', {})
                     result = step.get('result', '')
                     tool_name = action.get('tool') if isinstance(action, dict) else None
-                    print(f"  - Step {i}: tool = {tool_name} (dict format)")
+                    logger.debug(f"Step {i}: tool = {tool_name} (dict format)")
                 elif len(step) >= 2:
                     # Tuple format (from regular execution)
                     action, result = step[0], step[1]
                     tool_name = getattr(action, 'tool', None)
-                    print(f"  - Step {i}: tool = {tool_name} (tuple format)")
+                    logger.debug(f"Step {i}: tool = {tool_name} (tuple format)")
                 else:
                     continue
                 
                 if tool_name == 'postgres_query':
-                    print(f"  - Found postgres_query result!")
+                    logger.debug(f"Found postgres_query result!")
                     # Try to parse result as dict
                     if isinstance(result, str):
                         try:
                             result_dict = eval(result)  # or json.loads if result is JSON
-                            print(f"  - Parsed result as dict")
+                            logger.debug(f"Parsed result as dict")
                         except Exception as e:
-                            print(f"  - Failed to parse result: {e}")
+                            logger.debug(f"Failed to parse result: {e}")
                             result_dict = result
                     else:
                         result_dict = result
@@ -361,38 +363,38 @@ class AgentService:
                     action = step.get('action', {})
                     result = step.get('result', '')
                     tool_name = action.get('tool') if isinstance(action, dict) else None
-                    print(f"  Step {i}: dict format, tool={tool_name}")
+                    logger.debug(f"Step {i}: dict format, tool={tool_name}")
                 elif len(step) >= 2:
                     # Tuple format (from regular execution)
                     action, result = step[0], step[1]
                     tool_name = getattr(action, 'tool', None)
-                    print(f"  Step {i}: tuple format, tool={tool_name}")
+                    logger.debug(f"Step {i}: tuple format, tool={tool_name}")
                 else:
-                    print(f"  Step {i}: unknown format, skipping")
+                    logger.debug(f"Step {i}: unknown format, skipping")
                     continue
                 
                 if tool_name == 'postgres_query':
-                    print(f"  ✅ Found postgres_query at step {i}")
-                    print(f"  Result type: {type(result).__name__}")
+                    logger.debug(f"Found postgres_query at step {i}")
+                    logger.debug(f"Result type: {type(result).__name__}")
                     
                     # Parse result - handle string, dict, and direct dict results
                     result_dict = None
                     if isinstance(result, dict):
                         result_dict = result
-                        print(f"  Result is already dict with keys: {list(result.keys())}")
+                        logger.debug(f"Result is already dict with keys: {list(result.keys())}")
                     elif isinstance(result, str):
                         # Try JSON first (safest)
                         try:
                             result_dict = json.loads(result)
-                            print(f"  Parsed result from JSON string")
+                            logger.debug(f"Parsed result from JSON string")
                         except:
                             # Try eval with Decimal in scope
                             try:
                                 # Safe eval with Decimal available
                                 result_dict = eval(result, {"__builtins__": {}, "Decimal": Decimal}, {})
-                                print(f"  Parsed result from eval()")
+                                logger.debug(f"Parsed result from eval()")
                             except Exception as parse_err:
-                                print(f"  ⚠️ Failed to parse string result: {parse_err}")
+                                logger.debug(f"Failed to parse string result: {parse_err}")
                                 result_dict = None
                     
                     if result_dict and isinstance(result_dict, dict) and 'rows' in result_dict:
@@ -440,7 +442,7 @@ class AgentService:
             Dictionary with detailed summary statistics and human-readable insights
         """
         try:
-            print(f"\n🔍 DEBUG: Generating summary from {len(intermediate_steps)} steps")
+            logger.debug(f"Generating summary from {len(intermediate_steps)} steps")
             
             # 🔧 FIX: Check ALL steps and use the LAST successful postgres_query with rows
             last_successful_summary = None
@@ -466,10 +468,10 @@ class AgentService:
                     continue
                 
                 if tool_name == 'postgres_query':
-                    print(f"    ✅ Found postgres_query step!")
+                    logger.debug(f"Found postgres_query step!")
                     # Parse result
                     if isinstance(result, str):
-                        print(f"      Result is string, attempting to parse...")
+                        logger.debug(f"Result is string, attempting to parse...")
                         try:
                             # Try JSON loads first (safer than eval)
                             import json
@@ -4018,11 +4020,11 @@ Start by explaining your understanding and reasoning:"""
             
             result = result_container['result']
             
-            print(f"\n🔍 DEBUG: Checking for AI streaming opportunity...")
-            print(f"  - Result success: {result and result.get('success')}")
-            print(f"  - Has intermediate_steps: {result and 'intermediate_steps' in result}")
+            logger.debug(f"Checking for AI streaming opportunity")
+            logger.debug(f"Result success: {result and result.get('success')}")
+            logger.debug(f"Has intermediate_steps: {result and 'intermediate_steps' in result}")
             if result:
-                print(f"  - Intermediate steps count: {len(result.get('intermediate_steps', []))}")
+                logger.debug(f"Intermediate steps count: {len(result.get('intermediate_steps', []))}")
             
             # 🎯 NEW: If result has summary data, generate streaming AI analysis
             # Check if we have intermediate_steps with query results to analyze
@@ -4052,12 +4054,12 @@ Start by explaining your understanding and reasoning:"""
                         tool_name = getattr(action, 'tool', None) if hasattr(action, 'tool') else None
                         print(f"    Tool: {tool_name}, Result type: {type(result_str)}")
                     else:
-                        print(f"    Skipping unknown format")
+                        logger.debug(f"Skipping unknown format")
                         continue
                     
                     # Check if this is a postgres_query result
                     if tool_name == 'postgres_query':
-                        print(f"    ✓ Found postgres_query step!")
+                        logger.debug(f"Found postgres_query step!")
                         # Try to parse the result
                         try:
                             # Result might be a dict, string, or other format

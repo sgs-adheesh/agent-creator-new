@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 import os
 import uuid
+import logging
 from pathlib import Path
 
 from services import AgentService
@@ -15,21 +16,26 @@ from services.tool_analyzer import ToolAnalyzer
 from services.tool_generator import ToolGenerator
 from services.semantic_service import SemanticService
 from tools.postgres_connector import PostgresConnector
+from utils.logger import setup_logging, get_logger
+
+# Setup logging
+setup_logging(log_level=os.getenv("LOG_LEVEL", "INFO"))
+logger = get_logger(__name__)
 
 app = FastAPI(title="Agent Generator API", version="1.0.0")
 
 # Initialize PostgreSQL schema cache on startup
 # NOTE: Cache is ALWAYS refreshed from database on every application restart
 # to ensure the latest schema changes are captured (force_refresh=True by default)
-print("\n🚀 Starting application...")
-print("📊 Initializing PostgreSQL schema cache...")
+logger.info("🚀 Starting application...")
+logger.info("📊 Initializing PostgreSQL schema cache...")
 try:
     # force_refresh=True: Always rebuild cache from database on app restart
     # force_refresh=False: Try to load from cache file if available (faster but may be stale)
     PostgresConnector.initialize_cache(force_refresh=True)
-    print("✅ PostgreSQL schema cache initialized successfully\n")
+    logger.info("✅ PostgreSQL schema cache initialized successfully")
 except Exception as e:
-    print(f"⚠️ Warning: Failed to initialize PostgreSQL cache: {e}\n")
+    logger.warning(f"⚠️ Warning: Failed to initialize PostgreSQL cache: {e}")
 
 # Enable CORS
 app.add_middleware(
@@ -48,7 +54,7 @@ workflow_generator = WorkflowGenerator()
 try:
     tool_analyzer = ToolAnalyzer()
 except Exception as e:
-    print(f"⚠️ Warning: ToolAnalyzer initialization failed: {e}")
+    logger.warning(f"⚠️ Warning: ToolAnalyzer initialization failed: {e}")
     tool_analyzer = None
 
 tool_generator = ToolGenerator()
@@ -238,19 +244,35 @@ async def root():
 async def create_agent(request: CreateAgentRequest):
     """Create a new agent from a prompt"""
     try:
-        # Convert workflow_config to dict if provided
-        workflow_config_dict = None
+        # Validate agent name if provided
+        if request.name:
+            is_valid, error_msg = validate_agent_name(request.name)
+            if not is_valid:
+                raise HTTPException(status_code=400, detail=f"Invalid agent name: {error_msg}")
+        
+        # Validate workflow config if provided
         if request.workflow_config:
             workflow_config_dict = request.workflow_config.dict()
+            is_valid, error_msg = validate_workflow_config(workflow_config_dict)
+            if not is_valid:
+                raise HTTPException(status_code=400, detail=f"Invalid workflow config: {error_msg}")
+        else:
+            workflow_config_dict = None
+        
+        # Sanitize prompt
+        sanitized_prompt = sanitize_string(request.prompt, max_length=5000)
         
         agent_data = agent_service.create_agent(
-            prompt=request.prompt,
+            prompt=sanitized_prompt,
             name=request.name,
             selected_tools=request.selected_tools,
             workflow_config=workflow_config_dict  # Pass workflow config
         )
         return AgentResponse(**agent_data)
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Error creating agent: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -304,6 +326,7 @@ async def list_agents():
         agents = agent_service.list_agents()
         return [AgentResponse(**agent) for agent in agents]
     except Exception as e:
+        logger.error(f"Error listing agents: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -311,6 +334,11 @@ async def list_agents():
 async def get_agent(agent_id: str):
     """Get agent details by ID"""
     try:
+        # Validate UUID format
+        is_valid, error_msg = validate_uuid(agent_id)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=f"Invalid agent ID: {error_msg}")
+        
         agent = agent_service.get_agent(agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
@@ -318,6 +346,7 @@ async def get_agent(agent_id: str):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error getting agent {agent_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -325,6 +354,11 @@ async def get_agent(agent_id: str):
 async def execute_agent(agent_id: str, request: ExecuteAgentRequest):
     """Execute an agent with dynamic input"""
     try:
+        # Validate UUID format
+        is_valid, error_msg = validate_uuid(agent_id)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=f"Invalid agent ID: {error_msg}")
+        
         # Get agent to check trigger type
         agent = agent_service.get_agent(agent_id)
         if not agent:
@@ -412,6 +446,7 @@ Return ONLY year {year} records."""
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error executing agent {agent_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

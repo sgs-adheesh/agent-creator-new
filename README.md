@@ -153,11 +153,24 @@ agent-generator/
 - The backend uses FastAPI with automatic API documentation
 - Visit `http://localhost:8000/docs` for Swagger UI
 - Visit `http://localhost:8000/redoc` for ReDoc
+- Logging is configured and logs are written to `backend/logs/app.log`
+- Environment variables are validated on startup
 
 ### Frontend Development
 - Hot module replacement enabled
 - TypeScript for type safety
 - TailwindCSS for styling
+
+### Testing
+- Unit tests are located in `backend/tests/`
+- Run tests with: `pytest` from the backend directory
+- Test coverage can be generated with: `pytest --cov=. tests/`
+
+### Code Quality
+- Input validation and sanitization implemented
+- Proper logging instead of debug print statements
+- Error handling with detailed error messages
+- Environment variable validation on startup
 
 ## Notes
 
@@ -165,6 +178,18 @@ agent-generator/
 - The 'gpt-oss' model must be available in your Ollama instance
 - PostgreSQL connection is optional - agents will work without it
 - Agents are stored as JSON files in the `agents/` directory
+- Logs are stored in `backend/logs/app.log` (created automatically)
+
+## Recent Improvements
+
+### ✅ Completed Enhancements
+1. **Logging System**: Replaced debug print statements with proper logging
+2. **Input Validation**: Added validation for SQL queries, agent names, UUIDs, and workflow configs
+3. **Error Handling**: Improved error handling with detailed logging and user-friendly messages
+4. **Environment Validation**: Automatic validation of environment variables on startup
+5. **Unit Tests**: Added test suite for validation utilities and PostgreSQL connector
+6. **Code Cleanup**: Removed backup files and cleaned up codebase
+7. **Security**: Added SQL injection detection and input sanitization
 
 ## License
 

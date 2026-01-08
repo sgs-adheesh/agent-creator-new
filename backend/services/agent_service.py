@@ -1561,17 +1561,38 @@ Return ONLY the markdown-formatted version:"""
             
             # 🔍 Extract table names from the failing query to get relevant schema
             import re
+            # First, identify CTEs (Common Table Expressions) to exclude them
+            # CTEs are defined in WITH clauses: WITH cte_name AS (...) or WITH cte1 AS (...), cte2 AS (...)
+            # Match: WITH cte_name AS or WITH cte_name AS( (with or without space before parenthesis)
+            cte_pattern = r'WITH\s+(\w+)\s+AS\s*\('
+            cte_names = set(re.findall(cte_pattern, query, re.IGNORECASE))
+            
+            # Also handle multiple CTEs separated by commas: WITH cte1 AS (...), cte2 AS (...)
+            # Match pattern: , cte_name AS ( or ,cte_name AS (
+            additional_ctes = re.findall(r',\s*(\w+)\s+AS\s*\(', query, re.IGNORECASE)
+            cte_names.update(additional_ctes)
+            
+            # Extract table names from FROM and JOIN clauses
             table_pattern = r'(?:FROM|JOIN)\s+([\w_]+)'
             tables_in_query = re.findall(table_pattern, query, re.IGNORECASE)
             
-            print(f"  🔍 Detected tables in query: {tables_in_query}")
+            # Filter out CTEs - they're not real tables, just temporary result sets
+            cte_names_lower = [c.lower() for c in cte_names]
+            real_tables = [t for t in tables_in_query if t.lower() not in cte_names_lower]
+            
+            if cte_names:
+                logger.debug(f"  🔍 Detected CTEs (excluding from schema fetch): {list(cte_names)}")
+            
+            print(f"  🔍 Detected tables in query: {real_tables}")
+            if len(tables_in_query) != len(real_tables):
+                print(f"  ⚠️ Filtered out {len(tables_in_query) - len(real_tables)} CTE(s) from table list")
             
             # 📦 Fetch schema details for each table from schema cache
             pg_connector = PostgresConnector()
             schema_details = []
             all_columns_info = {}  # Store column info for all tables: {table.column: {type, is_jsonb}}
             
-            for table_name in tables_in_query:
+            for table_name in real_tables:
                 print(f"  📊 Fetching schema for table: {table_name}")
                 table_schema = pg_connector.get_table_schema(table_name)
                 
@@ -1928,13 +1949,26 @@ CORRECTED QUERY:"""
             print("  🤖 Asking AI to fix issues proactively...")
             
             # Get schema details
+            # First, identify CTEs (Common Table Expressions) to exclude them
+            # CTEs are defined in WITH clauses: WITH cte_name AS (...) or WITH cte1 AS (...), cte2 AS (...)
+            cte_pattern = r'WITH\s+(\w+)\s+AS\s*\('
+            cte_names = set(re.findall(cte_pattern, query, re.IGNORECASE))
+            
+            # Also handle multiple CTEs separated by commas
+            additional_ctes = re.findall(r',\s*(\w+)\s+AS\s*\(', query, re.IGNORECASE)
+            cte_names.update(additional_ctes)
+            
             table_pattern = r'(?:FROM|JOIN)\s+([\w_]+)'
             tables_in_query = re.findall(table_pattern, query, re.IGNORECASE)
+            
+            # Filter out CTEs - they're not real tables
+            cte_names_lower = [c.lower() for c in cte_names]
+            real_tables = [t for t in tables_in_query if t.lower() not in cte_names_lower]
             
             pg_connector = PostgresConnector()
             schema_details = []
             
-            for table_name in tables_in_query[:5]:  # Limit to 5 tables
+            for table_name in real_tables[:5]:  # Limit to 5 tables
                 table_schema = pg_connector.get_table_schema(table_name)
                 if table_schema.get('success'):
                     columns = table_schema.get('columns', [])
@@ -2727,6 +2761,21 @@ Your response MUST directly address the above mission. Every action, every query
         
         # 📖 Add reference template context if provided (from failed execution guidance)
         if reference_template:
+            # Replace template placeholders with a format that won't be parsed by ChatPromptTemplate
+            # Replace {param} with [PARAM_param] to avoid ChatPromptTemplate variable parsing
+            # This way the AI can still understand the template structure without triggering template variable errors
+            import re
+            # Replace {variable_name} with [PARAM_variable_name]
+            # This prevents ChatPromptTemplate from treating them as template variables
+            escaped_template = re.sub(r'\{(\w+)\}', r'[PARAM_\1]', reference_template)
+            
+            # Verify replacement worked - check that no {variable} patterns remain
+            remaining_vars = re.findall(r'\{(\w+)\}', escaped_template)
+            if remaining_vars:
+                logger.warning(f"Warning: Some template variables were not replaced in reference template: {remaining_vars}")
+            else:
+                logger.debug(f"Successfully escaped all template variables in reference template")
+            
             system_prompt += f"""\n📚 REFERENCE QUERY TEMPLATE (Use as Structure Guide):
 A pre-built query template was attempted but failed. Use this as a REFERENCE for:
 - Understanding the expected data structure
@@ -2736,7 +2785,7 @@ A pre-built query template was attempted but failed. Use this as a REFERENCE for
 
 REFERENCE TEMPLATE:
 ```sql
-{reference_template}
+{escaped_template}
 ```
 
 ⚠️ IMPORTANT:
@@ -2745,6 +2794,8 @@ REFERENCE TEMPLATE:
 - Use it to guide your query structure, table joins, and column selection
 - Ensure your new query maintains the same PURPOSE and OUTPUT GOALS
 - Fix any syntax issues while preserving the data structure intent
+- Note: Template placeholders like [PARAM_start_date] and [PARAM_end_date] represent parameters that should be replaced with actual values from input_data
+- When building your query, replace [PARAM_*] placeholders with actual values (e.g., [PARAM_start_date] becomes '02/01/2025')
 """
         
         # 🎯 Add specialized instructions based on detected agent type
@@ -4354,6 +4405,25 @@ Start by explaining your understanding and reasoning:"""
                 if progress_callback:
                     progress_callback(1, 'completed', 'Preparing execution', 'Tools loaded')
                     progress_callback(2, 'in_progress', 'Running tools', 'Executing agent with tools')
+                
+                # Validate system_prompt doesn't contain unexpected template variables
+                # ChatPromptTemplate will parse the entire string, so we need to ensure no {variable} patterns exist
+                # except for the ones we explicitly define ({input} and agent_scratchpad)
+                import re as re_validate
+                unexpected_vars = re_validate.findall(r'\{(\w+)\}', system_prompt)
+                # Filter out expected variables
+                expected_vars = {'input'}  # agent_scratchpad is handled by MessagesPlaceholder
+                unexpected_vars = [v for v in unexpected_vars if v not in expected_vars]
+                
+                if unexpected_vars:
+                    logger.warning(f"Found unexpected template variables in system_prompt: {unexpected_vars}")
+                    logger.warning("Escaping them to prevent ChatPromptTemplate errors...")
+                    # Escape any remaining {variable} patterns by doubling the braces
+                    # This makes ChatPromptTemplate treat them as literal text
+                    for var in set(unexpected_vars):  # Use set to avoid duplicates
+                        # Replace {var} with {{var}} so it becomes literal {var} in the final string
+                        system_prompt = system_prompt.replace(f'{{{var}}}', f'{{{{var}}}}')
+                    logger.info(f"Escaped {len(set(unexpected_vars))} unexpected template variables")
                 
                 prompt_template = ChatPromptTemplate.from_messages([
                     ("system", system_prompt),

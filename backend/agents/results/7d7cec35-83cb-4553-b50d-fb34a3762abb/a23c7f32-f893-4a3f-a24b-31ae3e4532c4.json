@@ -1,0 +1,328 @@
+{
+  "id": "a23c7f32-f893-4a3f-a24b-31ae3e4532c4",
+  "name": "Result - 08/01/2026, 14:59:28",
+  "timestamp": "2026-01-08T14:59:29.580651",
+  "data": {
+    "success": true,
+    "output": "## Vendor Spending Analysis Report\n\n### Summary\n- Total vendors analyzed: **12**\n- Date range: **February 2025**\n\n### Top 5 Vendors by Total Spend\n1. **Sun Shine Agencies**\n   - Total Spend: **$26,377.00**\n   - Invoice Count: **1**\n   - Average Invoice Amount: **$26,377.00**\n   - Payment Status: **Unpaid (1 invoice)**\n\n2. **Sun Shine Agencies**\n   - Total Spend: **$21,324.00**\n   - Invoice Count: **1**\n   - Average Invoice Amount: **$21,324.00**\n   - Payment Status: **Unpaid (1 invoice)**\n\n3. **Fab Dairy & Trading (I) Pvt. Ltd.**\n   - Total Spend: **$7,940.00**\n   - Invoice Count: **4**\n   - Average Invoice Amount: **$1,985.00**\n   - Payment Status: **Unpaid (4 invoices)**\n\n4. **Samaki Inc.**\n   - Total Spend: **$3,221.01**\n   - Invoice Count: **2**\n   - Average Invoice Amount: **$1,610.51**\n   - Payment Status: **Unpaid (2 invoices)**\n\n5. **Preferred Sportswear Inc**\n   - Total Spend: **$1,074.00**\n   - Invoice Count: **1**\n   - Average Invoice Amount: **$1,074.00**\n   - Payment Status: **Unpaid (1 invoice)**\n\n### Payment Status Distribution\n- Total Unpaid Invoices: **12**\n- Total Paid Invoices: **0**\n\n### Observations\n- The majority of invoices are unpaid, indicating potential cash flow issues or payment processing delays.\n- **Sun Shine Agencies** has the highest total spend but also has unpaid invoices, suggesting a need for follow-up.\n\n> ⚠️ Immediate attention required for unpaid invoices to ensure vendor relationships remain stable and to avoid supply chain disruptions.",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_inspect_schema",
+          "tool_input": {
+            "table_name": ""
+          },
+          "log": "\nInvoking: `postgres_inspect_schema` with `{'table_name': ''}`\n\n\n"
+        },
+        "result": "{'success': True, 'tables': ['icap_access_url', 'icap_accounting_system', 'icap_ai_accuracy_audit', 'icap_ai_model', 'icap_ai_prompt', 'icap_bill_staging', 'icap_category_master', 'icap_chat_categories', 'icap_chat_histories', 'icap_chat_session', 'icap_chat_sub_questions', 'icap_coa_export_staging', 'icap_coa_export_staging_detail', 'icap_config', 'icap_currency', 'icap_discounts', 'icap_document', 'icap_document_audit', 'icap_document_embeddings', 'icap_document_embeddings_staging', 'icap_document_pages', 'icap_document_status_report', 'icap_document_types', 'icap_error_groups', 'icap_error_logs', 'icap_extraction_config', 'icap_freshbooks_connector', 'icap_freshbooks_settings', 'icap_gl', 'icap_invoice', 'icap_invoice_detail', 'icap_locations', 'icap_menu_access_url', 'icap_menu_groups', 'icap_menus', 'icap_n8n_workflow_config', 'icap_pos_connector', 'icap_pos_settings', 'icap_product_category_mapping', 'icap_product_master', 'icap_qbo_connector', 'icap_qbo_settings', 'icap_reject_reasons', 'icap_restaurant_type_master', 'icap_role_menu_mapping', 'icap_roles', 'icap_smtp', 'icap_sso_config', 'icap_standard_gl_master', 'icap_subscription_events', 'icap_subscriptions', 'icap_tally_settings', 'icap_tenant_ai_audit', 'icap_tenant_cards', 'icap_tenant_category_master', 'icap_tenant_discount', 'icap_tenant_gl_category_mapping', 'icap_tenants', 'icap_time_zone', 'icap_us_states', 'icap_user_role_mapping', 'icap_user_session_mapping', 'icap_user_tenant_mapping', 'icap_vendor', 'icap_workflow_status', 'icap_xero_connector', 'icap_xero_settings', 'icap_zoho_connector', 'icap_zoho_settings'], 'total_tables': 69, 'message': \"Found 69 tables starting with 'icap_'. Call this tool again with a specific table_name to see detailed column information\"}"
+      },
+      {
+        "action": {
+          "tool": "postgres_inspect_schema",
+          "tool_input": {
+            "table_name": "icap_invoice"
+          },
+          "log": "\nInvoking: `postgres_inspect_schema` with `{'table_name': 'icap_invoice'}`\n\n\n"
+        },
+        "result": "{'success': True, 'table_name': 'icap_invoice', 'columns': [{'name': 'id', 'type': 'uuid', 'nullable': False}, {'name': 'document_id', 'type': 'uuid', 'nullable': False}, {'name': 'vendor_id', 'type': 'uuid', 'nullable': True}, {'name': 'other_charges', 'type': 'jsonb', 'nullable': True}, {'name': 'credit_and_returns', 'type': 'jsonb', 'nullable': True}, {'name': 'invoice_number', 'type': 'jsonb', 'nullable': True}, {'name': 'invoice_date', 'type': 'jsonb', 'nullable': True}, {'name': 'due_date', 'type': 'jsonb', 'nullable': True}, {'name': 'tax', 'type': 'jsonb', 'nullable': True}, {'name': 'freight_charges', 'type': 'jsonb', 'nullable': True}, {'name': 'discount', 'type': 'jsonb', 'nullable': True}, {'name': 'total', 'type': 'jsonb', 'nullable': True}, {'name': 'sub_total', 'type': 'jsonb', 'nullable': True}, {'name': 'street', 'type': 'jsonb', 'nullable': True}, {'name': 'zip', 'type': 'jsonb', 'nullable': True}, {'name': 'city', 'type': 'jsonb', 'nullable': True}, {'name': 'country', 'type': 'jsonb', 'nullable': True}, {'name': 'state', 'type': 'jsonb', 'nullable': True}, {'name': 'payment_date', 'type': 'jsonb', 'nullable': True}, {'name': 'balance_amount', 'type': 'jsonb', 'nullable': True}, {'name': 'external_bill_id', 'type': 'varchar', 'nullable': True}, {'name': 'status', 'type': 'payment_status_enum', 'nullable': True}], 'total_columns': 22, 'sample_data': [{'id': '9966eac1-e6b7-4685-88bb-d43062b6ed2c', 'document_id': '7064a372-ae7d-4cee-9071-dc4cd340fba0', 'vendor_id': '05c6a0e6-39f5-4bf4-9af6-10bf08ee0ae0', 'other_charges': {'value': '', 'pageNo': 0, 'confidence': 95.4, 'sequenceNo': 13, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'credit_and_returns': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 16, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'invoice_number': {'value': '328', 'pageNo': 1, 'confidence': 98.33653, 'sequenceNo': 1, 'coordinates': {'x0': 1177.6951, 'x1': 1311.2307, 'y0': 671.6302, 'y1': 736.94214}, 'reviewRequired': False}, 'invoice_date': {'value': '', 'pageNo': 1, 'confidence': 99.91939, 'sequenceNo': 2, 'coordinates': {'x0': 660.0041, 'x1': 962.87787, 'y0': 704.372, 'y1': 817.6503}, 'reviewRequired': False}, 'due_date': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 4, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'tax': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 12, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'freight_charges': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 14, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'discount': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 15, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'total': {'value': '01', 'pageNo': 1, 'confidence': 85.26212, 'sequenceNo': 5, 'coordinates': {'x0': 459.57834, 'x1': 2375.072, 'y0': 1124.8926, 'y1': 1490.2756}, 'reviewRequired': False}, 'sub_total': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 6, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'street': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 7, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'zip': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 11, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'city': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 8, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'country': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 9, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'state': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 10, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'payment_date': None, 'balance_amount': None, 'external_bill_id': None, 'status': '0'}], 'ready_to_use_query': \"SELECT\\n  id,\\n  document_id,\\n  vendor_id,\\n  (other_charges->>'value')::text AS other_charges,\\n  (credit_and_returns->>'value')::text AS credit_and_returns,\\n  (invoice_number->>'value')::text AS invoice_number,\\n  (invoice_date->>'value')::text AS invoice_date,\\n  (due_date->>'value')::text AS due_date,\\n  (tax->>'value')::text AS tax,\\n  (freight_charges->>'value')::text AS freight_charges,\\n  (discount->>'value')::text AS discount,\\n  (total->>'value')::text AS total,\\n  (sub_total->>'value')::text AS sub_total,\\n  (street->>'value')::text AS street,\\n  (zip->>'value')::text AS zip,\\n  (city->>'value')::text AS city,\\n  (country->>'value')::text AS country,\\n  (state->>'value')::text AS state,\\n  (payment_date->>'value')::text AS payment_date,\\n  (balance_amount->>'value')::text AS balance_amount,\\n  external_bill_id,\\n  status\\nFROM icap_invoice\\nLIMIT 10;\", 'query_template_note': '⚠️ This query template is AUTO-GENERATED from postgres_schema_cache - all column names and types are discovered dynamically. Copy this template and modify the WHERE/JOIN clauses as needed.', 'foreign_keys': [{'column': 'document_id', 'references_table': 'icap_document', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'column': 'vendor_id', 'references_table': 'icap_vendor', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'column': 'document_id', 'references_table': 'icap_document', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}, {'column': 'vendor_id', 'references_table': 'icap_vendor', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}], 'relationships': 'This table links to: icap_document, icap_vendor', 'referenced_by': [{'table': 'icap_bill_staging', 'column': 'invoice_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'table': 'icap_bill_staging', 'column': 'invoice_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}], 'related_tables': 'Related detail tables: icap_bill_staging', 'jsonb_columns': ['other_charges', 'credit_and_returns', 'invoice_number', 'invoice_date', 'due_date', 'tax', 'freight_charges', 'discount', 'total', 'sub_total', 'street', 'zip', 'city', 'country', 'state', 'payment_date', 'balance_amount'], 'WARNING': \"⚠️⚠️⚠️ CRITICAL: 17 columns are JSONB type - MUST use ->>'value' extraction!\", 'jsonb_guidance': '❌ WRONG - DO NOT DO THIS (returns entire JSON object):\\n  SELECT other_charges, credit_and_returns, invoice_number FROM icap_invoice;\\n\\n✅ CORRECT - ALWAYS extract \\'value\\' and cast to ::text:\\n  SELECT (other_charges->>\\'value\\')::text, (credit_and_returns->>\\'value\\')::text, (invoice_number->>\\'value\\')::text FROM icap_invoice;\\n\\nMANDATORY Rules for ALL 17 JSONB columns:\\n  1. Structure: {\"value\": \"actual_data\", \"confidence\": 0.95, \"pageNo\": 1}\\n  2. ALWAYS extract: column_name->>\\'value\\'\\n  3. ALWAYS cast to ::text for display/filtering\\n  4. Use ::numeric ONLY for SUM/math (NEVER ::int)\\n  5. Dates are TEXT (MM/DD/YYYY), use LIKE for filtering\\n\\nQuery Patterns:\\n  • Text/ID: (column_name->>\\'value\\')::text\\n  • Date: (column_name->>\\'value\\')::text  (stored as MM/DD/YYYY)\\n  • Number display: (column_name->>\\'value\\')::text\\n  • Number math: (column_name->>\\'value\\')::numeric\\n  • Date filter: WHERE column_name->>\\'value\\' LIKE \\'02/%/2025\\'\\n\\nJSONB columns in this table: other_charges, credit_and_returns, invoice_number, invoice_date, due_date, tax, freight_charges, discount, total, sub_total, street, zip, city, country, state, payment_date, balance_amount\\n\\nUSE THE \\'ready_to_use_query\\' FIELD - it shows correct syntax for EVERY column!', 'jsonb_query_examples': {'other_charges': {'type': 'text', 'select': \"(other_charges->>'value')::text\", 'where': \"WHERE other_charges->>'value' IS NOT NULL\", 'example': \"SELECT (other_charges->>'value')::text AS other_charges_value FROM icap_invoice\"}, 'credit_and_returns': {'type': 'text', 'select': \"(credit_and_returns->>'value')::text\", 'where': \"WHERE credit_and_returns->>'value' IS NOT NULL\", 'example': \"SELECT (credit_and_returns->>'value')::text AS credit_and_returns_value FROM icap_invoice\"}, 'invoice_number': {'type': 'text or numeric (use ::numeric only for calculations)', 'select': \"(invoice_number->>'value')::text\", 'where': \"WHERE (invoice_number->>'value')::numeric > 0\", 'example': \"SELECT (invoice_number->>'value')::text AS invoice_number_value FROM icap_invoice\"}, 'invoice_date': {'type': 'text (date stored as MM/DD/YYYY)', 'select': \"(invoice_date->>'value')::text\", 'where': \"WHERE invoice_date->>'value' LIKE '02/%/2025'\", 'example': \"SELECT (invoice_date->>'value')::text AS invoice_date_value FROM icap_invoice WHERE invoice_date->>'value' LIKE '01/%/2024'\"}, 'due_date': {'type': 'text (date stored as MM/DD/YYYY)', 'select': \"(due_date->>'value')::text\", 'where': \"WHERE due_date->>'value' LIKE '02/%/2025'\", 'example': \"SELECT (due_date->>'value')::text AS due_date_value FROM icap_invoice WHERE due_date->>'value' LIKE '01/%/2024'\"}, 'tax': {'type': 'numeric', 'select': \"(tax->>'value')::numeric\", 'where': \"WHERE (tax->>'value')::numeric > 0\", 'example': \"SELECT (tax->>'value')::numeric AS tax_value FROM icap_invoice\"}, 'freight_charges': {'type': 'text', 'select': \"(freight_charges->>'value')::text\", 'where': \"WHERE freight_charges->>'value' IS NOT NULL\", 'example': \"SELECT (freight_charges->>'value')::text AS freight_charges_value FROM icap_invoice\"}, 'discount': {'type': 'text or numeric (use ::numeric only for calculations)', 'select': \"(discount->>'value')::text\", 'where': \"WHERE (discount->>'value')::numeric > 0\", 'example': \"SELECT (discount->>'value')::text AS discount_value FROM icap_invoice\"}, 'total': {'type': 'numeric', 'select': \"(total->>'value')::numeric\", 'where': \"WHERE (total->>'value')::numeric > 0\", 'example': \"SELECT (total->>'value')::numeric AS total_value FROM icap_invoice\"}, 'sub_total': {'type': 'numeric', 'select': \"(sub_total->>'value')::numeric\", 'where': \"WHERE (sub_total->>'value')::numeric > 0\", 'example': \"SELECT (sub_total->>'value')::numeric AS sub_total_value FROM icap_invoice\"}, 'street': {'type': 'text', 'select': \"(street->>'value')::text\", 'where': \"WHERE street->>'value' IS NOT NULL\", 'example': \"SELECT (street->>'value')::text AS street_value FROM icap_invoice\"}, 'zip': {'type': 'text', 'select': \"(zip->>'value')::text\", 'where': \"WHERE zip->>'value' IS NOT NULL\", 'example': \"SELECT (zip->>'value')::text AS zip_value FROM icap_invoice\"}, 'city': {'type': 'text', 'select': \"(city->>'value')::text\", 'where': \"WHERE city->>'value' IS NOT NULL\", 'example': \"SELECT (city->>'value')::text AS city_value FROM icap_invoice\"}, 'country': {'type': 'text or numeric (use ::numeric only for calculations)', 'select': \"(country->>'value')::text\", 'where': \"WHERE (country->>'value')::numeric > 0\", 'example': \"SELECT (country->>'value')::text AS country_value FROM icap_invoice\"}, 'state': {'type': 'text', 'select': \"(state->>'value')::text\", 'where': \"WHERE state->>'value' IS NOT NULL\", 'example': \"SELECT (state->>'value')::text AS state_value FROM icap_invoice\"}, 'payment_date': {'type': 'text (date stored as MM/DD/YYYY)', 'select': \"(payment_date->>'value')::text\", 'where': \"WHERE payment_date->>'value' LIKE '02/%/2025'\", 'example': \"SELECT (payment_date->>'value')::text AS payment_date_value FROM icap_invoice WHERE payment_date->>'value' LIKE '01/%/2024'\"}, 'balance_amount': {'type': 'numeric', 'select': \"(balance_amount->>'value')::numeric\", 'where': \"WHERE (balance_amount->>'value')::numeric > 0\", 'example': \"SELECT (balance_amount->>'value')::numeric AS balance_amount_value FROM icap_invoice\"}}}"
+      },
+      {
+        "action": {
+          "tool": "postgres_inspect_schema",
+          "tool_input": {
+            "table_name": "icap_vendor"
+          },
+          "log": "\nInvoking: `postgres_inspect_schema` with `{'table_name': 'icap_vendor'}`\n\n\n"
+        },
+        "result": "{'success': True, 'table_name': 'icap_vendor', 'columns': [{'name': 'id', 'type': 'uuid', 'nullable': False}, {'name': 'tenant_id', 'type': 'uuid', 'nullable': False}, {'name': 'name', 'type': 'varchar', 'nullable': False}, {'name': 'company', 'type': 'varchar', 'nullable': True}, {'name': 'address', 'type': 'varchar', 'nullable': True}, {'name': 'active', 'type': 'bool', 'nullable': False}, {'name': 'created_by', 'type': 'uuid', 'nullable': False}, {'name': 'modified_by', 'type': 'uuid', 'nullable': False}, {'name': 'created_on', 'type': 'timestamp', 'nullable': False}, {'name': 'modified_on', 'type': 'timestamp', 'nullable': False}, {'name': 'external_vendor_id', 'type': 'varchar', 'nullable': True}], 'total_columns': 11, 'sample_data': [{'id': '1e9c8fa0-93b0-43b7-9a4c-277bf20ef5f7', 'tenant_id': 'a611f7eb-f316-45c4-b51d-3da927bfb4b1', 'name': 'ABC Company', 'company': 'ABC Company', 'address': 'null, null, null, null', 'active': True, 'created_by': '449576e5-f168-43ae-be2f-6975f60dd589', 'modified_by': '449576e5-f168-43ae-be2f-6975f60dd589', 'created_on': datetime.datetime(2025, 12, 19, 9, 53, 2, 761937), 'modified_on': datetime.datetime(2025, 12, 19, 9, 53, 2, 761937), 'external_vendor_id': None}], 'ready_to_use_query': 'SELECT\\n  id,\\n  tenant_id,\\n  name,\\n  company,\\n  address,\\n  active,\\n  created_by,\\n  modified_by,\\n  created_on,\\n  modified_on,\\n  external_vendor_id\\nFROM icap_vendor\\nLIMIT 10;', 'query_template_note': '⚠️ This query template is AUTO-GENERATED from postgres_schema_cache - all column names and types are discovered dynamically. Copy this template and modify the WHERE/JOIN clauses as needed.', 'referenced_by': [{'table': 'icap_invoice', 'column': 'vendor_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'table': 'icap_product_master', 'column': 'vendor_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'table': 'icap_invoice', 'column': 'vendor_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}, {'table': 'icap_product_master', 'column': 'vendor_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}], 'related_tables': 'Related detail tables: icap_invoice, icap_product_master'}"
+      },
+      {
+        "action": {
+          "tool": "postgres_inspect_schema",
+          "tool_input": {
+            "table_name": "icap_invoice_detail"
+          },
+          "log": "\nInvoking: `postgres_inspect_schema` with `{'table_name': 'icap_invoice_detail'}`\n\n\n"
+        },
+        "result": "{'success': True, 'table_name': 'icap_invoice_detail', 'columns': [{'name': 'id', 'type': 'uuid', 'nullable': False}, {'name': 'document_id', 'type': 'uuid', 'nullable': False}, {'name': 'uom', 'type': 'jsonb', 'nullable': True}, {'name': 'pack', 'type': 'jsonb', 'nullable': True}, {'name': 'size_numeric', 'type': 'jsonb', 'nullable': True}, {'name': 'size_unit', 'type': 'jsonb', 'nullable': True}, {'name': 'item_code', 'type': 'jsonb', 'nullable': True}, {'name': 'description', 'type': 'jsonb', 'nullable': True}, {'name': 'quantity', 'type': 'jsonb', 'nullable': True}, {'name': 'unit_price', 'type': 'jsonb', 'nullable': True}, {'name': 'total_price', 'type': 'jsonb', 'nullable': True}, {'name': 'category_id', 'type': 'jsonb', 'nullable': True}, {'name': 'product_id', 'type': 'jsonb', 'nullable': True}], 'total_columns': 13, 'sample_data': [{'id': '35581ccc-f0a1-46f0-8077-cf1b4e8efee9', 'document_id': '440694d4-524f-41c6-9fab-36e582b70427', 'uom': {'value': '', 'pageNo': 0, 'confidence': 0, 'sequenceNo': 0, 'coordinates': {'x0': 0.0, 'x1': 0.0, 'y0': 0.0, 'y1': 0.0}, 'reviewRequired': False}, 'pack': {'value': '', 'pageNo': 0, 'confidence': 0, 'sequenceNo': 0, 'coordinates': {'x0': 0.0, 'x1': 0.0, 'y0': 0.0, 'y1': 0.0}, 'reviewRequired': False}, 'size_numeric': {'value': '', 'pageNo': 0, 'confidence': 0, 'sequenceNo': 0, 'coordinates': {'x0': 0.0, 'x1': 0.0, 'y0': 0.0, 'y1': 0.0}, 'reviewRequired': False}, 'size_unit': {'value': '', 'pageNo': 0, 'confidence': 0, 'sequenceNo': 0, 'coordinates': {'x0': 0.0, 'x1': 0.0, 'y0': 0.0, 'y1': 0.0}, 'reviewRequired': False}, 'item_code': {'value': '21050000', 'pageNo': 1, 'confidence': 92.78041, 'sequenceNo': 0, 'coordinates': {'x0': 940.5718, 'x1': 1111.7089, 'y0': 1939.24, 'y1': 1972.6285}, 'reviewRequired': False}, 'description': {'value': 'Premium Creamy Vanilla', 'pageNo': 1, 'confidence': 99.94669, 'sequenceNo': 0, 'coordinates': {'x0': 194.72113, 'x1': 678.0717, 'y0': 1935.4757, 'y1': 1981.0924}, 'reviewRequired': False}, 'quantity': {'value': '12.000', 'pageNo': 1, 'confidence': 99.8163, 'sequenceNo': 0, 'coordinates': {'x0': 1145.3197, 'x1': 1345.2031, 'y0': 1943.4225, 'y1': 1979.8441}, 'reviewRequired': False}, 'unit_price': {'value': '370.00', 'pageNo': 1, 'confidence': 99.97895, 'sequenceNo': 0, 'coordinates': {'x0': 1646.0087, 'x1': 1762.4891, 'y0': 1945.3962, 'y1': 1979.3779}, 'reviewRequired': False}, 'total_price': {'value': '1110.00', 'pageNo': 1, 'confidence': 99.95119, 'sequenceNo': 0, 'coordinates': {'x0': 1997.4968, 'x1': 2156.2485, 'y0': 1950.2218, 'y1': 1992.3915}, 'reviewRequired': False}, 'category_id': {'value': '', 'pageNo': 0, 'confidence': 0, 'sequenceNo': 0, 'coordinates': {'x0': 0.0, 'x1': 0.0, 'y0': 0.0, 'y1': 0.0}, 'reviewRequired': False}, 'product_id': {'value': '9d29093c-cd67-41e1-b39d-98e0133f461e', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 0, 'coordinates': {'x0': 0.0, 'x1': 0.0, 'y0': 0.0, 'y1': 0.0}, 'reviewRequired': False}}], 'ready_to_use_query': \"SELECT\\n  id,\\n  document_id,\\n  (uom->>'value')::text AS uom,\\n  (pack->>'value')::text AS pack,\\n  (size_numeric->>'value')::text AS size_numeric,\\n  (size_unit->>'value')::text AS size_unit,\\n  (item_code->>'value')::text AS item_code,\\n  (description->>'value')::text AS description,\\n  (quantity->>'value')::text AS quantity,\\n  (unit_price->>'value')::text AS unit_price,\\n  (total_price->>'value')::text AS total_price,\\n  (category_id->>'value')::text AS category_id,\\n  (product_id->>'value')::text AS product_id\\nFROM icap_invoice_detail\\nLIMIT 10;\", 'query_template_note': '⚠️ This query template is AUTO-GENERATED from postgres_schema_cache - all column names and types are discovered dynamically. Copy this template and modify the WHERE/JOIN clauses as needed.', 'foreign_keys': [{'column': 'document_id', 'references_table': 'icap_document', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'column': 'document_id', 'references_table': 'icap_document', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}], 'relationships': 'This table links to: icap_document', 'jsonb_columns': ['uom', 'pack', 'size_numeric', 'size_unit', 'item_code', 'description', 'quantity', 'unit_price', 'total_price', 'category_id', 'product_id'], 'WARNING': \"⚠️⚠️⚠️ CRITICAL: 11 columns are JSONB type - MUST use ->>'value' extraction!\", 'jsonb_guidance': '❌ WRONG - DO NOT DO THIS (returns entire JSON object):\\n  SELECT uom, pack, size_numeric FROM icap_invoice_detail;\\n\\n✅ CORRECT - ALWAYS extract \\'value\\' and cast to ::text:\\n  SELECT (uom->>\\'value\\')::text, (pack->>\\'value\\')::text, (size_numeric->>\\'value\\')::text FROM icap_invoice_detail;\\n\\nMANDATORY Rules for ALL 11 JSONB columns:\\n  1. Structure: {\"value\": \"actual_data\", \"confidence\": 0.95, \"pageNo\": 1}\\n  2. ALWAYS extract: column_name->>\\'value\\'\\n  3. ALWAYS cast to ::text for display/filtering\\n  4. Use ::numeric ONLY for SUM/math (NEVER ::int)\\n  5. Dates are TEXT (MM/DD/YYYY), use LIKE for filtering\\n\\nQuery Patterns:\\n  • Text/ID: (column_name->>\\'value\\')::text\\n  • Date: (column_name->>\\'value\\')::text  (stored as MM/DD/YYYY)\\n  • Number display: (column_name->>\\'value\\')::text\\n  • Number math: (column_name->>\\'value\\')::numeric\\n  • Date filter: WHERE column_name->>\\'value\\' LIKE \\'02/%/2025\\'\\n\\nJSONB columns in this table: uom, pack, size_numeric, size_unit, item_code, description, quantity, unit_price, total_price, category_id, product_id\\n\\nUSE THE \\'ready_to_use_query\\' FIELD - it shows correct syntax for EVERY column!', 'jsonb_query_examples': {'uom': {'type': 'text', 'select': \"(uom->>'value')::text\", 'where': \"WHERE uom->>'value' IS NOT NULL\", 'example': \"SELECT (uom->>'value')::text AS uom_value FROM icap_invoice_detail\"}, 'pack': {'type': 'text', 'select': \"(pack->>'value')::text\", 'where': \"WHERE pack->>'value' IS NOT NULL\", 'example': \"SELECT (pack->>'value')::text AS pack_value FROM icap_invoice_detail\"}, 'size_numeric': {'type': 'text', 'select': \"(size_numeric->>'value')::text\", 'where': \"WHERE size_numeric->>'value' IS NOT NULL\", 'example': \"SELECT (size_numeric->>'value')::text AS size_numeric_value FROM icap_invoice_detail\"}, 'size_unit': {'type': 'text', 'select': \"(size_unit->>'value')::text\", 'where': \"WHERE size_unit->>'value' IS NOT NULL\", 'example': \"SELECT (size_unit->>'value')::text AS size_unit_value FROM icap_invoice_detail\"}, 'item_code': {'type': 'text', 'select': \"(item_code->>'value')::text\", 'where': \"WHERE item_code->>'value' IS NOT NULL\", 'example': \"SELECT (item_code->>'value')::text AS item_code_value FROM icap_invoice_detail\"}, 'description': {'type': 'text', 'select': \"(description->>'value')::text\", 'where': \"WHERE description->>'value' IS NOT NULL\", 'example': \"SELECT (description->>'value')::text AS description_value FROM icap_invoice_detail\"}, 'quantity': {'type': 'text or numeric (use ::numeric only for calculations)', 'select': \"(quantity->>'value')::text\", 'where': \"WHERE (quantity->>'value')::numeric > 0\", 'example': \"SELECT (quantity->>'value')::text AS quantity_value FROM icap_invoice_detail\"}, 'unit_price': {'type': 'numeric', 'select': \"(unit_price->>'value')::numeric\", 'where': \"WHERE (unit_price->>'value')::numeric > 0\", 'example': \"SELECT (unit_price->>'value')::numeric AS unit_price_value FROM icap_invoice_detail\"}, 'total_price': {'type': 'numeric', 'select': \"(total_price->>'value')::numeric\", 'where': \"WHERE (total_price->>'value')::numeric > 0\", 'example': \"SELECT (total_price->>'value')::numeric AS total_price_value FROM icap_invoice_detail\"}, 'category_id': {'type': 'text', 'select': \"(category_id->>'value')::text\", 'where': \"WHERE category_id->>'value' IS NOT NULL\", 'example': \"SELECT (category_id->>'value')::text AS category_id_value FROM icap_invoice_detail\"}, 'product_id': {'type': 'text', 'select': \"(product_id->>'value')::text\", 'where': \"WHERE product_id->>'value' IS NOT NULL\", 'example': \"SELECT (product_id->>'value')::text AS product_id_value FROM icap_invoice_detail\"}}}"
+      },
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": {
+            "query": "WITH vendor_summary AS (\n    SELECT\n        v.name AS vendor_name,\n        v.company AS vendor_company,\n        v.address AS vendor_address,\n        COUNT(DISTINCT i.id) AS invoice_count,\n        SUM(CASE WHEN (i.total->>'value') != '' THEN (i.total->>'value')::numeric ELSE 0 END) AS total_spend,\n        AVG(CASE WHEN (i.total->>'value') != '' THEN (i.total->>'value')::numeric ELSE 0 END) AS avg_invoice_amount,\n        SUM(CASE WHEN i.payment_date->>'value' IS NOT NULL AND i.payment_date->>'value' != '' THEN 1 ELSE 0 END) AS paid_count,\n        SUM(CASE WHEN i.payment_date->>'value' IS NULL OR i.payment_date->>'value' = '' THEN 1 ELSE 0 END) AS unpaid_count\n    FROM icap_invoice i\n    LEFT JOIN icap_vendor v ON i.vendor_id = v.id\n    WHERE (i.invoice_date->>'value' >= '02/01/2025' AND i.invoice_date->>'value' <= '02/28/2025')\n    AND (i.total->>'value') IS NOT NULL\n    GROUP BY v.name, v.company, v.address\n)\nSELECT \n    vendor_name,\n    vendor_company,\n    invoice_count,\n    total_spend,\n    ROUND(avg_invoice_amount, 2) AS avg_invoice_amount,\n    paid_count,\n    unpaid_count,\n    ROUND((total_spend / NULLIF((SELECT SUM(total_spend) FROM vendor_summary), 0)) * 100, 2) AS spend_percentage\nFROM vendor_summary\nORDER BY total_spend DESC;"
+          },
+          "log": "\nInvoking: `postgres_query` with `{'query': \"WITH vendor_summary AS (\\n    SELECT\\n        v.name AS vendor_name,\\n        v.company AS vendor_company,\\n        v.address AS vendor_address,\\n        COUNT(DISTINCT i.id) AS invoice_count,\\n        SUM(CASE WHEN (i.total->>'value') != '' THEN (i.total->>'value')::numeric ELSE 0 END) AS total_spend,\\n        AVG(CASE WHEN (i.total->>'value') != '' THEN (i.total->>'value')::numeric ELSE 0 END) AS avg_invoice_amount,\\n        SUM(CASE WHEN i.payment_date->>'value' IS NOT NULL AND i.payment_date->>'value' != '' THEN 1 ELSE 0 END) AS paid_count,\\n        SUM(CASE WHEN i.payment_date->>'value' IS NULL OR i.payment_date->>'value' = '' THEN 1 ELSE 0 END) AS unpaid_count\\n    FROM icap_invoice i\\n    LEFT JOIN icap_vendor v ON i.vendor_id = v.id\\n    WHERE (i.invoice_date->>'value' >= '02/01/2025' AND i.invoice_date->>'value' <= '02/28/2025')\\n    AND (i.total->>'value') IS NOT NULL\\n    GROUP BY v.name, v.company, v.address\\n)\\nSELECT \\n    vendor_name,\\n    vendor_company,\\n    invoice_count,\\n    total_spend,\\n    ROUND(avg_invoice_amount, 2) AS avg_invoice_amount,\\n    paid_count,\\n    unpaid_count,\\n    ROUND((total_spend / NULLIF((SELECT SUM(total_spend) FROM vendor_summary), 0)) * 100, 2) AS spend_percentage\\nFROM vendor_summary\\nORDER BY total_spend DESC;\"}`\n\n\n"
+        },
+        "result": "{'success': True, 'columns': ['vendor_name', 'vendor_company', 'invoice_count', 'total_spend', 'avg_invoice_amount', 'paid_count', 'unpaid_count', 'spend_percentage'], 'rows': [{'vendor_name': 'Sun Shine Agencies', 'vendor_company': 'Sun Shine Agencies', 'invoice_count': 1, 'total_spend': Decimal('26377.00'), 'avg_invoice_amount': Decimal('26377.00'), 'paid_count': 0, 'unpaid_count': 1, 'spend_percentage': Decimal('42.78')}, {'vendor_name': 'Sun Shine Agencies', 'vendor_company': 'Sun Shine Agencies', 'invoice_count': 1, 'total_spend': Decimal('21324.00'), 'avg_invoice_amount': Decimal('21324.00'), 'paid_count': 0, 'unpaid_count': 1, 'spend_percentage': Decimal('34.58')}, {'vendor_name': 'Fab Dairy & Trading (I) Pvt. Ltd.', 'vendor_company': 'Fab Dairy & Trading (I) Pvt. Ltd.', 'invoice_count': 4, 'total_spend': Decimal('7940.00'), 'avg_invoice_amount': Decimal('1985.00'), 'paid_count': 0, 'unpaid_count': 4, 'spend_percentage': Decimal('12.88')}, {'vendor_name': 'Samaki Inc.', 'vendor_company': 'Samaki Inc.', 'invoice_count': 2, 'total_spend': Decimal('3221.01'), 'avg_invoice_amount': Decimal('1610.51'), 'paid_count': 0, 'unpaid_count': 2, 'spend_percentage': Decimal('5.22')}, {'vendor_name': 'Preferred Sportswear Inc', 'vendor_company': 'Preferred Sportswear Inc', 'invoice_count': 1, 'total_spend': Decimal('1074.00'), 'avg_invoice_amount': Decimal('1074.00'), 'paid_count': 0, 'unpaid_count': 1, 'spend_percentage': Decimal('1.74')}, {'vendor_name': 'De Long Service Company, Inc.', 'vendor_company': 'De Long Service Company, Inc.', 'invoice_count': 1, 'total_spend': Decimal('755.00'), 'avg_invoice_amount': Decimal('755.00'), 'paid_count': 0, 'unpaid_count': 1, 'spend_percentage': Decimal('1.22')}, {'vendor_name': 'ARAMARK', 'vendor_company': 'ARAMARK', 'invoice_count': 1, 'total_spend': Decimal('509.90'), 'avg_invoice_amount': Decimal('509.90'), 'paid_count': 0, 'unpaid_count': 1, 'spend_percentage': Decimal('0.83')}, {'vendor_name': 'S.P. SOAP OIL', 'vendor_company': 'S.P. SOAP OIL', 'invoice_count': 2, 'total_spend': Decimal('300'), 'avg_invoice_amount': Decimal('150.00'), 'paid_count': 0, 'unpaid_count': 2, 'spend_percentage': Decimal('0.49')}, {'vendor_name': 'East Repair Inc.', 'vendor_company': 'East Repair Inc.', 'invoice_count': 1, 'total_spend': Decimal('154.06'), 'avg_invoice_amount': Decimal('154.06'), 'paid_count': 0, 'unpaid_count': 1, 'spend_percentage': Decimal('0.25')}, {'vendor_name': 'ABHIRUCHI SEAFOODS', 'vendor_company': 'ABHIRUCHI SEAFOODS', 'invoice_count': 1, 'total_spend': Decimal('7.15'), 'avg_invoice_amount': Decimal('7.15'), 'paid_count': 0, 'unpaid_count': 1, 'spend_percentage': Decimal('0.01')}, {'vendor_name': 'meat Hub', 'vendor_company': 'meat Hub', 'invoice_count': 3, 'total_spend': Decimal('2'), 'avg_invoice_amount': Decimal('0.67'), 'paid_count': 0, 'unpaid_count': 3, 'spend_percentage': Decimal('0.00')}, {'vendor_name': 'BALAJI DEPARTMENTAL STORE', 'vendor_company': 'BALAJI DEPARTMENTAL STORE', 'invoice_count': 1, 'total_spend': Decimal('0'), 'avg_invoice_amount': Decimal('0.00'), 'paid_count': 0, 'unpaid_count': 1, 'spend_percentage': Decimal('0.00')}], 'row_count': 12, 'has_more': False, 'note': None, 'schema_info': None}"
+      }
+    ],
+    "output_format": "text",
+    "summary": {
+      "total_records": 12,
+      "columns": [
+        "vendor_name",
+        "vendor_company",
+        "invoice_count",
+        "total_spend",
+        "avg_invoice_amount",
+        "paid_count",
+        "unpaid_count",
+        "spend_percentage"
+      ],
+      "description": "Query returned 12 record(s) with 8 column(s).",
+      "numeric_analysis": {
+        "invoice_count": {
+          "sum": 19,
+          "average": 1.58,
+          "min": 1,
+          "max": 4,
+          "count": 12,
+          "is_quantity": true,
+          "description": "**invoice_count**: Total = 19, Average = 1.6, Range = 1 - 4"
+        },
+        "total_spend": {
+          "sum": 61664.12,
+          "average": 5605.83,
+          "min": 2,
+          "max": 26377,
+          "count": 11,
+          "is_currency": true,
+          "description": "**total_spend**: Total = $61,664.12, Average = $5,605.83, Range = $2.00 - $26,377.00"
+        },
+        "avg_invoice_amount": {
+          "sum": 53947.29,
+          "average": 4904.3,
+          "min": 0.67,
+          "max": 26377,
+          "count": 11,
+          "is_currency": true,
+          "description": "**avg_invoice_amount**: Total = $53,947.29, Average = $4,904.30, Range = $0.67 - $26,377.00"
+        }
+      },
+      "numeric_summary_text": "**invoice_count**: Total = 19, Average = 1.6, Range = 1 - 4\n**total_spend**: Total = $61,664.12, Average = $5,605.83, Range = $2.00 - $26,377.00\n**avg_invoice_amount**: Total = $53,947.29, Average = $4,904.30, Range = $0.67 - $26,377.00",
+      "categorical_analysis": {
+        "vendor_name": {
+          "unique_count": 11,
+          "total_entries": 12,
+          "description": "**vendor_name**: 11 unique value(s) across 12 entries",
+          "top_values": [
+            {
+              "value": "Sun Shine Agencies",
+              "count": 2
+            },
+            {
+              "value": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "count": 1
+            },
+            {
+              "value": "Samaki Inc.",
+              "count": 1
+            },
+            {
+              "value": "Preferred Sportswear Inc",
+              "count": 1
+            },
+            {
+              "value": "De Long Service Company, Inc.",
+              "count": 1
+            }
+          ]
+        },
+        "vendor_company": {
+          "unique_count": 11,
+          "total_entries": 12,
+          "description": "**vendor_company**: 11 unique value(s)"
+        },
+        "unpaid_count": {
+          "unique_count": 4,
+          "total_entries": 12,
+          "description": "**unpaid_count**: 4 unique value(s)",
+          "top_values": [
+            {
+              "value": "1",
+              "count": 8
+            },
+            {
+              "value": "2",
+              "count": 2
+            },
+            {
+              "value": "4",
+              "count": 1
+            },
+            {
+              "value": "3",
+              "count": 1
+            }
+          ]
+        },
+        "spend_percentage": {
+          "unique_count": 10,
+          "total_entries": 10,
+          "description": "**spend_percentage**: 10 unique value(s)",
+          "top_values": [
+            {
+              "value": "42.78",
+              "count": 1
+            },
+            {
+              "value": "34.58",
+              "count": 1
+            },
+            {
+              "value": "12.88",
+              "count": 1
+            },
+            {
+              "value": "5.22",
+              "count": 1
+            },
+            {
+              "value": "1.74",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "categorical_summary_text": "**vendor_name**: 11 unique value(s) across 12 entries\n**vendor_company**: 11 unique value(s)\n**unpaid_count**: 4 unique value(s)\n**spend_percentage**: 10 unique value(s)",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Vendor Spend Analysis\n\n### Key Findings\n- **Total Records**: Analyzed **12 vendors** with **19 invoices**.\n- **Total Spend**: Sum of **$61,664.12**, with an **average spend** of **$5,605.83** per vendor.\n- **Invoice Count**: Average of **1.6 invoices** per vendor, indicating potential areas for consolidation.\n\n### Notable Vendor Insights\n- **Top Vendors by Spend**:\n  1. **Sun Shine Agencies**: Highest spend of **$26,377.00** across **2 invoices**.\n  2. **Fab Dairy & Trading (I) Pvt. Ltd.**: Total of **$7,940.00** from **4 invoices**.\n  3. **Samaki Inc.**: Total of **$3,221.01** over **2 invoices**.\n- **Unpaid Invoices**: \n  - **8 invoices** are unpaid, indicating potential cash flow issues and vendors that require immediate attention.\n  - The highest unpaid count is with **Fab Dairy & Trading (I) Pvt. Ltd.** (4 unpaid invoices).\n\n### Spend Distribution\n- **Average Invoice Amount**: \n  - Overall average is **$4,904.30**.\n  - **Sun Shine Agencies** has the highest average invoice amount at **$26,377.00**, indicating significant transactions with this vendor.\n- **Spend Percentage**:\n  - **Sun Shine Agencies** accounts for **42.78%** of the total spend, suggesting a heavy reliance on this vendor.\n  - Other vendors show much lower percentages, with **Fab Dairy & Trading (I)** at **12.88%** and **Samaki Inc.** at **5.22%**.\n\n### Business Impact\n> ⚠️ The concentration of spending with a single vendor (Sun Shine Agencies) poses a risk. Dependency could impact procurement flexibility and negotiating power.\n\n### Recommendations\n1. **Vendor Review**: Conduct a performance review of **Sun Shine Agencies** to understand service levels and explore opportunities for better rates or terms.\n2. **Address Unpaid Invoices**: Prioritize resolution of unpaid invoices, particularly with **Fab Dairy & Trading (I)**, to maintain good vendor relationships.\n3. **Consolidation Opportunities**: Analyze the potential to consolidate suppliers, especially where average invoice amounts are low, to drive efficiencies in procurement.\n4. **Negotiate Terms**: Approach vendors with a significant spend percentage for negotiation on rates, focusing on those with higher unpaid counts to ensure smoother cash flow.\n\n### Conclusion\nThis analysis highlights critical areas for strategic procurement management, emphasizing the need to balance vendor dependencies, address unpaid invoices, and seek better terms with high-spend vendors to optimize future spending.\n\n---\n\n# 📊 Query Results Summary\n\n**12** records found with **8** columns\n\n## 💰 Numbers\n\n**invoice_count:** 19 total, 1.6 avg (1 - 4)\n**total_spend:** $61,664.12 total, $5,605.83 avg\n**avg_invoice_amount:** $53,947.29 total, $4,904.30 avg\n\n## 🏷️ Categories\n\n**vendor_name:** Sun Shine Agencies (2), Fab Dairy & Trading (I) Pvt. Ltd. (1), Samaki Inc. (1)\n**unpaid_count:** 1 (8), 2 (2), 4 (1)\n**spend_percentage:** 42.78 (1), 34.58 (1), 12.88 (1)\n",
+      "ai_summary": "## Vendor Spend Analysis\n\n### Key Findings\n- **Total Records**: Analyzed **12 vendors** with **19 invoices**.\n- **Total Spend**: Sum of **$61,664.12**, with an **average spend** of **$5,605.83** per vendor.\n- **Invoice Count**: Average of **1.6 invoices** per vendor, indicating potential areas for consolidation.\n\n### Notable Vendor Insights\n- **Top Vendors by Spend**:\n  1. **Sun Shine Agencies**: Highest spend of **$26,377.00** across **2 invoices**.\n  2. **Fab Dairy & Trading (I) Pvt. Ltd.**: Total of **$7,940.00** from **4 invoices**.\n  3. **Samaki Inc.**: Total of **$3,221.01** over **2 invoices**.\n- **Unpaid Invoices**: \n  - **8 invoices** are unpaid, indicating potential cash flow issues and vendors that require immediate attention.\n  - The highest unpaid count is with **Fab Dairy & Trading (I) Pvt. Ltd.** (4 unpaid invoices).\n\n### Spend Distribution\n- **Average Invoice Amount**: \n  - Overall average is **$4,904.30**.\n  - **Sun Shine Agencies** has the highest average invoice amount at **$26,377.00**, indicating significant transactions with this vendor.\n- **Spend Percentage**:\n  - **Sun Shine Agencies** accounts for **42.78%** of the total spend, suggesting a heavy reliance on this vendor.\n  - Other vendors show much lower percentages, with **Fab Dairy & Trading (I)** at **12.88%** and **Samaki Inc.** at **5.22%**.\n\n### Business Impact\n> ⚠️ The concentration of spending with a single vendor (Sun Shine Agencies) poses a risk. Dependency could impact procurement flexibility and negotiating power.\n\n### Recommendations\n1. **Vendor Review**: Conduct a performance review of **Sun Shine Agencies** to understand service levels and explore opportunities for better rates or terms.\n2. **Address Unpaid Invoices**: Prioritize resolution of unpaid invoices, particularly with **Fab Dairy & Trading (I)**, to maintain good vendor relationships.\n3. **Consolidation Opportunities**: Analyze the potential to consolidate suppliers, especially where average invoice amounts are low, to drive efficiencies in procurement.\n4. **Negotiate Terms**: Approach vendors with a significant spend percentage for negotiation on rates, focusing on those with higher unpaid counts to ensure smoother cash flow.\n\n### Conclusion\nThis analysis highlights critical areas for strategic procurement management, emphasizing the need to balance vendor dependencies, address unpaid invoices, and seek better terms with high-spend vendors to optimize future spending."
+    },
+    "table_data": {
+      "columns": [
+        "vendor_name",
+        "vendor_company",
+        "invoice_count",
+        "total_spend",
+        "avg_invoice_amount",
+        "paid_count",
+        "unpaid_count",
+        "spend_percentage"
+      ],
+      "rows": [
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "invoice_count": 1,
+          "total_spend": 26377,
+          "avg_invoice_amount": 26377,
+          "paid_count": 0,
+          "unpaid_count": 1,
+          "spend_percentage": 42.78
+        },
+        {
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "invoice_count": 1,
+          "total_spend": 21324,
+          "avg_invoice_amount": 21324,
+          "paid_count": 0,
+          "unpaid_count": 1,
+          "spend_percentage": 34.58
+        },
+        {
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "invoice_count": 4,
+          "total_spend": 7940,
+          "avg_invoice_amount": 1985,
+          "paid_count": 0,
+          "unpaid_count": 4,
+          "spend_percentage": 12.88
+        },
+        {
+          "vendor_name": "Samaki Inc.",
+          "vendor_company": "Samaki Inc.",
+          "invoice_count": 2,
+          "total_spend": 3221.01,
+          "avg_invoice_amount": 1610.51,
+          "paid_count": 0,
+          "unpaid_count": 2,
+          "spend_percentage": 5.22
+        },
+        {
+          "vendor_name": "Preferred Sportswear Inc",
+          "vendor_company": "Preferred Sportswear Inc",
+          "invoice_count": 1,
+          "total_spend": 1074,
+          "avg_invoice_amount": 1074,
+          "paid_count": 0,
+          "unpaid_count": 1,
+          "spend_percentage": 1.74
+        },
+        {
+          "vendor_name": "De Long Service Company, Inc.",
+          "vendor_company": "De Long Service Company, Inc.",
+          "invoice_count": 1,
+          "total_spend": 755,
+          "avg_invoice_amount": 755,
+          "paid_count": 0,
+          "unpaid_count": 1,
+          "spend_percentage": 1.22
+        },
+        {
+          "vendor_name": "ARAMARK",
+          "vendor_company": "ARAMARK",
+          "invoice_count": 1,
+          "total_spend": 509.9,
+          "avg_invoice_amount": 509.9,
+          "paid_count": 0,
+          "unpaid_count": 1,
+          "spend_percentage": 0.83
+        },
+        {
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "invoice_count": 2,
+          "total_spend": 300,
+          "avg_invoice_amount": 150,
+          "paid_count": 0,
+          "unpaid_count": 2,
+          "spend_percentage": 0.49
+        },
+        {
+          "vendor_name": "East Repair Inc.",
+          "vendor_company": "East Repair Inc.",
+          "invoice_count": 1,
+          "total_spend": 154.06,
+          "avg_invoice_amount": 154.06,
+          "paid_count": 0,
+          "unpaid_count": 1,
+          "spend_percentage": 0.25
+        },
+        {
+          "vendor_name": "ABHIRUCHI SEAFOODS",
+          "vendor_company": "ABHIRUCHI SEAFOODS",
+          "invoice_count": 1,
+          "total_spend": 7.15,
+          "avg_invoice_amount": 7.15,
+          "paid_count": 0,
+          "unpaid_count": 1,
+          "spend_percentage": 0.01
+        },
+        {
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "invoice_count": 3,
+          "total_spend": 2,
+          "avg_invoice_amount": 0.67,
+          "paid_count": 0,
+          "unpaid_count": 3,
+          "spend_percentage": 0
+        },
+        {
+          "vendor_name": "BALAJI DEPARTMENTAL STORE",
+          "vendor_company": "BALAJI DEPARTMENTAL STORE",
+          "invoice_count": 1,
+          "total_spend": 0,
+          "avg_invoice_amount": 0,
+          "paid_count": 0,
+          "unpaid_count": 1,
+          "spend_percentage": 0
+        }
+      ],
+      "row_count": 12
+    }
+  }
+}

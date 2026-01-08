@@ -19,7 +19,7 @@ class PostgresWriter(BaseTool):
     PROTECTED_TABLES = ['pg_', 'information_schema', 'sys']
     
     # Maximum rows affected per operation (safety limit)
-    MAX_ROWS_LIMIT = 100
+    MAX_ROWS_LIMIT = 1000
     
     def __init__(self):
         description = """⚠️ SECURE PostgreSQL Write Operations Tool ⚠️

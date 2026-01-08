@@ -1,0 +1,654 @@
+{
+  "id": "1b93fce4-aa5f-4140-b3e0-c1e01917b815",
+  "name": "Result - 08/01/2026, 11:44:22",
+  "timestamp": "2026-01-08T11:44:23.770644",
+  "data": {
+    "success": true,
+    "output": "## Invoice Audit Findings\n\n### Overview\nThe invoice audit reveals a concerning trend of **overdue payments**, with multiple invoices showing significant delays. \n\n### Detailed Findings\n- For instance, **invoice SSA/6149/22-23** from **Sun Shine Agencies**, dated **02/03/2023**, remains unpaid with a total amount of **26,377.00**, highlighting a critical **overdue status**.\n- Additionally, both invoices **173931** and **173933** from **Samaki Inc.**, issued on **02/08/2024** for amounts of **2,973.14** and **247.87** respectively, are also overdue, indicating a potential issue with timely processing.\n- The data indicates a total of **six invoices** from **Fab Dairy & Trading (I) Pvt. Ltd.**, all dated **02/20/2023**, collectively amounting to **5,955.00**, which are similarly overdue. \n\n> This pattern underscores the need for immediate action to address payment delays and ensure compliance with payment schedules.",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": null,
+          "log": null
+        },
+        "result": {
+          "success": true,
+          "columns": [
+            "invoice_number",
+            "invoice_date",
+            "due_date",
+            "payment_date",
+            "total_amount",
+            "balance_due",
+            "vendor_name",
+            "vendor_company",
+            "payment_status"
+          ],
+          "rows": [
+            {
+              "invoice_number": "SSA/6149/22-23",
+              "invoice_date": "02/03/2023",
+              "due_date": "",
+              "payment_date": null,
+              "total_amount": 26377,
+              "balance_due": null,
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "173931",
+              "invoice_date": "02/08/2024",
+              "due_date": "",
+              "payment_date": null,
+              "total_amount": 2973.14,
+              "balance_due": null,
+              "vendor_name": "Samaki Inc.",
+              "vendor_company": "Samaki Inc.",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2023",
+              "due_date": "",
+              "payment_date": null,
+              "total_amount": 1985,
+              "balance_due": null,
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2023",
+              "due_date": "",
+              "payment_date": null,
+              "total_amount": 1985,
+              "balance_due": null,
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2023",
+              "due_date": "",
+              "payment_date": null,
+              "total_amount": 1985,
+              "balance_due": null,
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "42506",
+              "invoice_date": "02/08/2024",
+              "due_date": "",
+              "payment_date": null,
+              "total_amount": 755,
+              "balance_due": null,
+              "vendor_name": "De Long Service Company, Inc.",
+              "vendor_company": "De Long Service Company, Inc.",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "173933",
+              "invoice_date": "02/08/2024",
+              "due_date": "",
+              "payment_date": null,
+              "total_amount": 247.87,
+              "balance_due": null,
+              "vendor_name": "Samaki Inc.",
+              "vendor_company": "Samaki Inc.",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "185090",
+              "invoice_date": "02/17/2023",
+              "due_date": "",
+              "payment_date": null,
+              "total_amount": null,
+              "balance_due": null,
+              "vendor_name": "BALAJI DEPARTMENTAL STORE",
+              "vendor_company": "BALAJI DEPARTMENTAL STORE",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "23436",
+              "invoice_date": "02/07/2024",
+              "due_date": "02/07/2024",
+              "payment_date": null,
+              "total_amount": 1074,
+              "balance_due": null,
+              "vendor_name": "Preferred Sportswear Inc",
+              "vendor_company": "Preferred Sportswear Inc",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "417",
+              "invoice_date": "02/26/2023",
+              "due_date": "02/09/2026",
+              "payment_date": null,
+              "total_amount": 7.15,
+              "balance_due": null,
+              "vendor_name": "ABHIRUCHI SEAFOODS",
+              "vendor_company": "ABHIRUCHI SEAFOODS",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "5666",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/02/2025",
+              "payment_date": null,
+              "total_amount": 150,
+              "balance_due": null,
+              "vendor_name": "S.P. SOAP OIL",
+              "vendor_company": "S.P. SOAP OIL",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "5666",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/02/2025",
+              "payment_date": null,
+              "total_amount": 150,
+              "balance_due": null,
+              "vendor_name": "S.P. SOAP OIL",
+              "vendor_company": "S.P. SOAP OIL",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "payment_date": null,
+              "total_amount": 21324,
+              "balance_due": null,
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "328",
+              "invoice_date": "02/03/2025",
+              "due_date": "03/03/2025",
+              "payment_date": null,
+              "total_amount": 1,
+              "balance_due": null,
+              "vendor_name": "meat Hub",
+              "vendor_company": "meat Hub",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "1234567",
+              "invoice_date": "02/11/2025",
+              "due_date": "03/12/2025",
+              "payment_date": "",
+              "total_amount": null,
+              "balance_due": "",
+              "vendor_name": "meat Hub",
+              "vendor_company": "meat Hub",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "payment_date": null,
+              "total_amount": 1985,
+              "balance_due": null,
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "payment_status": "Overdue"
+            },
+            {
+              "invoice_number": "5330328809",
+              "invoice_date": "02/04/2024",
+              "due_date": "05/31/2024",
+              "payment_date": null,
+              "total_amount": 509.9,
+              "balance_due": null,
+              "vendor_name": "ARAMARK",
+              "vendor_company": "ARAMARK",
+              "payment_status": "Overdue"
+            }
+          ],
+          "row_count": 17,
+          "has_more": false,
+          "note": null,
+          "schema_info": null
+        }
+      }
+    ],
+    "output_format": "table",
+    "summary": {
+      "total_records": 17,
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "payment_date",
+        "total_amount",
+        "balance_due",
+        "vendor_name",
+        "vendor_company",
+        "payment_status"
+      ],
+      "description": "Query returned 17 record(s) with 9 column(s).",
+      "invoice_breakdown": {
+        "328": {
+          "invoice_number": "328",
+          "line_items": 1,
+          "date": "02/03/2025",
+          "vendor": "meat Hub"
+        },
+        "417": {
+          "invoice_number": "417",
+          "line_items": 1,
+          "date": "02/26/2023",
+          "vendor": "ABHIRUCHI SEAFOODS"
+        },
+        "5666": {
+          "invoice_number": "5666",
+          "line_items": 2,
+          "date": "02/02/2025",
+          "vendor": "S.P. SOAP OIL"
+        },
+        "23436": {
+          "invoice_number": "23436",
+          "line_items": 1,
+          "date": "02/07/2024",
+          "vendor": "Preferred Sportswear Inc"
+        },
+        "42506": {
+          "invoice_number": "42506",
+          "line_items": 1,
+          "date": "02/08/2024",
+          "vendor": "De Long Service Company, Inc."
+        },
+        "173931": {
+          "invoice_number": "173931",
+          "line_items": 1,
+          "date": "02/08/2024",
+          "vendor": "Samaki Inc."
+        },
+        "173933": {
+          "invoice_number": "173933",
+          "line_items": 1,
+          "date": "02/08/2024",
+          "vendor": "Samaki Inc."
+        },
+        "185090": {
+          "invoice_number": "185090",
+          "line_items": 1,
+          "date": "02/17/2023",
+          "vendor": "BALAJI DEPARTMENTAL STORE"
+        },
+        "1234567": {
+          "invoice_number": "1234567",
+          "line_items": 1,
+          "date": "02/11/2025",
+          "vendor": "meat Hub"
+        },
+        "SSA/6149/22-23": {
+          "invoice_number": "SSA/6149/22-23",
+          "line_items": 1,
+          "date": "02/03/2023",
+          "vendor": "Sun Shine Agencies"
+        },
+        "10409/2022-23": {
+          "invoice_number": "10409/2022-23",
+          "line_items": 4,
+          "date": "02/20/2023",
+          "vendor": "Fab Dairy & Trading (I) Pvt. Ltd."
+        },
+        "SSA/5514/22-23": {
+          "invoice_number": "SSA/5514/22-23",
+          "line_items": 1,
+          "date": "02/02/2025",
+          "vendor": "Sun Shine Agencies"
+        },
+        "5330328809": {
+          "invoice_number": "5330328809",
+          "line_items": 1,
+          "date": "02/04/2024",
+          "vendor": "ARAMARK"
+        }
+      },
+      "invoice_summary_text": "**10409/2022-23** | Vendor: Fab Dairy & Trading (I) Pvt. Ltd. | Date: 02/20/2023 | Line Items: 4\n**1234567** | Vendor: meat Hub | Date: 02/11/2025 | Line Items: 1\n**173931** | Vendor: Samaki Inc. | Date: 02/08/2024 | Line Items: 1\n**173933** | Vendor: Samaki Inc. | Date: 02/08/2024 | Line Items: 1\n**185090** | Vendor: BALAJI DEPARTMENTAL STORE | Date: 02/17/2023 | Line Items: 1\n**23436** | Vendor: Preferred Sportswear Inc | Date: 02/07/2024 | Line Items: 1\n**328** | Vendor: meat Hub | Date: 02/03/2025 | Line Items: 1\n**417** | Vendor: ABHIRUCHI SEAFOODS | Date: 02/26/2023 | Line Items: 1\n**42506** | Vendor: De Long Service Company, Inc. | Date: 02/08/2024 | Line Items: 1\n**5330328809** | Vendor: ARAMARK | Date: 02/04/2024 | Line Items: 1\n**5666** | Vendor: S.P. SOAP OIL | Date: 02/02/2025 | Line Items: 2\n**SSA/5514/22-23** | Vendor: Sun Shine Agencies | Date: 02/02/2025 | Line Items: 1\n**SSA/6149/22-23** | Vendor: Sun Shine Agencies | Date: 02/03/2023 | Line Items: 1",
+      "numeric_analysis": {
+        "total_amount": {
+          "sum": 61509.06,
+          "average": 4100.6,
+          "min": 1,
+          "max": 26377,
+          "count": 15,
+          "is_currency": true,
+          "description": "**total_amount**: Total = $61,509.06, Average = $4,100.60, Range = $1.00 - $26,377.00"
+        }
+      },
+      "numeric_summary_text": "**total_amount**: Total = $61,509.06, Average = $4,100.60, Range = $1.00 - $26,377.00",
+      "date_analysis": {
+        "invoice_date": {
+          "from": "02/02/2025",
+          "to": "02/26/2023",
+          "count": 17,
+          "unique_count": 11,
+          "description": "**invoice_date**: From *02/02/2025* to *02/26/2023* (17 entries, 11 unique dates)"
+        },
+        "due_date": {
+          "from": "02/07/2024",
+          "to": "05/31/2024",
+          "count": 9,
+          "unique_count": 7,
+          "description": "**due_date**: From *02/07/2024* to *05/31/2024* (9 entries, 7 unique dates)"
+        }
+      },
+      "date_summary_text": "**invoice_date**: From *02/02/2025* to *02/26/2023* (17 entries, 11 unique dates)\n**due_date**: From *02/07/2024* to *05/31/2024* (9 entries, 7 unique dates)",
+      "categorical_analysis": {
+        "invoice_number": {
+          "unique_count": 13,
+          "total_entries": 17,
+          "description": "**invoice_number**: 13 unique value(s) across 17 entries",
+          "top_values": [
+            {
+              "value": "10409/2022-23",
+              "count": 4
+            },
+            {
+              "value": "5666",
+              "count": 2
+            },
+            {
+              "value": "SSA/6149/22-23",
+              "count": 1
+            },
+            {
+              "value": "173931",
+              "count": 1
+            },
+            {
+              "value": "42506",
+              "count": 1
+            }
+          ]
+        },
+        "vendor_name": {
+          "unique_count": 10,
+          "total_entries": 17,
+          "description": "**vendor_name**: 10 unique value(s) across 17 entries",
+          "top_values": [
+            {
+              "value": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "count": 4
+            },
+            {
+              "value": "Sun Shine Agencies",
+              "count": 2
+            },
+            {
+              "value": "Samaki Inc.",
+              "count": 2
+            },
+            {
+              "value": "S.P. SOAP OIL",
+              "count": 2
+            },
+            {
+              "value": "meat Hub",
+              "count": 2
+            }
+          ]
+        },
+        "vendor_company": {
+          "unique_count": 10,
+          "total_entries": 17,
+          "description": "**vendor_company**: 10 unique value(s)",
+          "top_values": [
+            {
+              "value": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "count": 4
+            },
+            {
+              "value": "Sun Shine Agencies",
+              "count": 2
+            },
+            {
+              "value": "Samaki Inc.",
+              "count": 2
+            },
+            {
+              "value": "S.P. SOAP OIL",
+              "count": 2
+            },
+            {
+              "value": "meat Hub",
+              "count": 2
+            }
+          ]
+        },
+        "payment_status": {
+          "unique_count": 1,
+          "total_entries": 17,
+          "description": "**payment_status**: 1 unique value(s) across 17 entries",
+          "top_values": [
+            {
+              "value": "Overdue",
+              "count": 17
+            }
+          ]
+        }
+      },
+      "categorical_summary_text": "**invoice_number**: 13 unique value(s) across 17 entries\n**vendor_name**: 10 unique value(s) across 17 entries\n**vendor_company**: 10 unique value(s)\n**payment_status**: 1 unique value(s) across 17 entries",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Invoice Payment Status Audit Summary\n\n### Key Findings\n- All **17 records** in the dataset are marked as **Overdue**, indicating a potential cash flow issue.\n- The **total amount** due across all invoices is **$61,509.06**, with an average invoice amount of **$4,100.60**.\n- The highest individual invoice is from **Sun Shine Agencies** with invoice number **SSA/6149/22-23**, totaling **$26,377.00**.\n\n### Invoice Breakdown\n- The invoices are associated with **10 unique vendors**, with the following notable distributions:\n  - **Fab Dairy & Trading (I) Pvt. Ltd.** has the most invoices (4 records).\n  - **Sun Shine Agencies** follows with 2 records, each overdue.\n  - Two invoices are from **Samaki Inc.**, indicating a concentration of overdue invoices with specific vendors.\n\n### Date Insights\n- **Invoice Dates** range from **February 26, 2023**, to **February 2, 2025**, suggesting possible future due dates that are still overdue.\n- The **due dates** vary between **February 7, 2024**, and **May 31, 2024**, indicating a range of payment expectations that have not been met.\n\n### Payment Status\n> ⚠️ All invoices are currently marked as **Overdue**, which raises a significant concern regarding payment compliance and vendor relations.\n\n### Business Impact\n- The concentration of overdue invoices primarily from a few vendors could lead to strained relationships, potential service disruptions, and loss of vendor trust.\n- Given the high total amount overdue, this could severely impact the company’s cash flow and budgeting for upcoming expenses.\n\n### Recommendations\n1. **Prioritize Communication** with vendors, especially **Sun Shine Agencies** and **Fab Dairy & Trading (I) Pvt. Ltd.**, to negotiate payment schedules or arrangements.\n2. **Conduct a thorough analysis** of the reasons behind the delays, focusing on high-value invoices first (e.g., **SSA/6149/22-23**).\n3. **Implement a monitoring system** to track payment statuses more closely and identify future overdue invoices before they escalate.\n4. **Consider early payment discounts** or incentives to encourage timely payments from vendors.\n\nBy addressing these issues promptly, the business can improve payment compliance, enhance vendor relationships, and maintain a healthier cash flow.\n\n---\n\n# 📊 Query Results Summary\n\n**17** records found with **9** columns\n\n## 📎 Invoices\n\n**417** - ABHIRUCHI SEAFOODS (02/26/2023)\n  └ 1 items, 0 units\n\n**10409/2022-23** - Fab Dairy & Trading (I) Pvt. Ltd. (02/20/2023)\n  └ 4 items, 0 units\n\n**185090** - BALAJI DEPARTMENTAL STORE (02/17/2023)\n  └ 1 items, 0 units\n\n**1234567** - meat Hub (02/11/2025)\n  └ 1 items, 0 units\n\n**173931** - Samaki Inc. (02/08/2024)\n  └ 1 items, 0 units\n\n**42506** - De Long Service Company, Inc. (02/08/2024)\n  └ 1 items, 0 units\n\n**173933** - Samaki Inc. (02/08/2024)\n  └ 1 items, 0 units\n\n**23436** - Preferred Sportswear Inc (02/07/2024)\n  └ 1 items, 0 units\n\n**5330328809** - ARAMARK (02/04/2024)\n  └ 1 items, 0 units\n\n**328** - meat Hub (02/03/2025)\n  └ 1 items, 0 units\n\n**SSA/6149/22-23** - Sun Shine Agencies (02/03/2023)\n  └ 1 items, 0 units\n\n**5666** - S.P. SOAP OIL (02/02/2025)\n  └ 2 items, 0 units\n\n**SSA/5514/22-23** - Sun Shine Agencies (02/02/2025)\n  └ 1 items, 0 units\n\n## 💰 Numbers\n\n**total_amount:** $61,509.06 total, $4,100.60 avg\n\n## 📅 Dates\n\n**invoice_date:** 11 unique dates from 02/02/2025 to 02/26/2023\n**due_date:** 7 unique dates from 02/07/2024 to 05/31/2024\n\n## 🏷️ Categories\n\n**invoice_number:** 10409/2022-23 (4), 5666 (2), SSA/6149/22-23 (1)\n**vendor_name:** Fab Dairy & Trading (I) Pvt. Ltd. (4), Sun Shine Agencies (2), Samaki Inc. (2)\n**vendor_company:** Fab Dairy & Trading (I) Pvt. Ltd. (4), Sun Shine Agencies (2), Samaki Inc. (2)\n**payment_status:** Overdue (17)\n",
+      "ai_summary": "## Invoice Payment Status Audit Summary\n\n### Key Findings\n- All **17 records** in the dataset are marked as **Overdue**, indicating a potential cash flow issue.\n- The **total amount** due across all invoices is **$61,509.06**, with an average invoice amount of **$4,100.60**.\n- The highest individual invoice is from **Sun Shine Agencies** with invoice number **SSA/6149/22-23**, totaling **$26,377.00**.\n\n### Invoice Breakdown\n- The invoices are associated with **10 unique vendors**, with the following notable distributions:\n  - **Fab Dairy & Trading (I) Pvt. Ltd.** has the most invoices (4 records).\n  - **Sun Shine Agencies** follows with 2 records, each overdue.\n  - Two invoices are from **Samaki Inc.**, indicating a concentration of overdue invoices with specific vendors.\n\n### Date Insights\n- **Invoice Dates** range from **February 26, 2023**, to **February 2, 2025**, suggesting possible future due dates that are still overdue.\n- The **due dates** vary between **February 7, 2024**, and **May 31, 2024**, indicating a range of payment expectations that have not been met.\n\n### Payment Status\n> ⚠️ All invoices are currently marked as **Overdue**, which raises a significant concern regarding payment compliance and vendor relations.\n\n### Business Impact\n- The concentration of overdue invoices primarily from a few vendors could lead to strained relationships, potential service disruptions, and loss of vendor trust.\n- Given the high total amount overdue, this could severely impact the company’s cash flow and budgeting for upcoming expenses.\n\n### Recommendations\n1. **Prioritize Communication** with vendors, especially **Sun Shine Agencies** and **Fab Dairy & Trading (I) Pvt. Ltd.**, to negotiate payment schedules or arrangements.\n2. **Conduct a thorough analysis** of the reasons behind the delays, focusing on high-value invoices first (e.g., **SSA/6149/22-23**).\n3. **Implement a monitoring system** to track payment statuses more closely and identify future overdue invoices before they escalate.\n4. **Consider early payment discounts** or incentives to encourage timely payments from vendors.\n\nBy addressing these issues promptly, the business can improve payment compliance, enhance vendor relationships, and maintain a healthier cash flow."
+    },
+    "table_data": {
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "payment_date",
+        "total_amount",
+        "balance_due",
+        "vendor_name",
+        "vendor_company",
+        "payment_status"
+      ],
+      "rows": [
+        {
+          "invoice_number": "SSA/6149/22-23",
+          "invoice_date": "02/03/2023",
+          "due_date": "",
+          "payment_date": null,
+          "total_amount": 26377,
+          "balance_due": null,
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "173931",
+          "invoice_date": "02/08/2024",
+          "due_date": "",
+          "payment_date": null,
+          "total_amount": 2973.14,
+          "balance_due": null,
+          "vendor_name": "Samaki Inc.",
+          "vendor_company": "Samaki Inc.",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2023",
+          "due_date": "",
+          "payment_date": null,
+          "total_amount": 1985,
+          "balance_due": null,
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2023",
+          "due_date": "",
+          "payment_date": null,
+          "total_amount": 1985,
+          "balance_due": null,
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2023",
+          "due_date": "",
+          "payment_date": null,
+          "total_amount": 1985,
+          "balance_due": null,
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "42506",
+          "invoice_date": "02/08/2024",
+          "due_date": "",
+          "payment_date": null,
+          "total_amount": 755,
+          "balance_due": null,
+          "vendor_name": "De Long Service Company, Inc.",
+          "vendor_company": "De Long Service Company, Inc.",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "173933",
+          "invoice_date": "02/08/2024",
+          "due_date": "",
+          "payment_date": null,
+          "total_amount": 247.87,
+          "balance_due": null,
+          "vendor_name": "Samaki Inc.",
+          "vendor_company": "Samaki Inc.",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "185090",
+          "invoice_date": "02/17/2023",
+          "due_date": "",
+          "payment_date": null,
+          "total_amount": null,
+          "balance_due": null,
+          "vendor_name": "BALAJI DEPARTMENTAL STORE",
+          "vendor_company": "BALAJI DEPARTMENTAL STORE",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "23436",
+          "invoice_date": "02/07/2024",
+          "due_date": "02/07/2024",
+          "payment_date": null,
+          "total_amount": 1074,
+          "balance_due": null,
+          "vendor_name": "Preferred Sportswear Inc",
+          "vendor_company": "Preferred Sportswear Inc",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "417",
+          "invoice_date": "02/26/2023",
+          "due_date": "02/09/2026",
+          "payment_date": null,
+          "total_amount": 7.15,
+          "balance_due": null,
+          "vendor_name": "ABHIRUCHI SEAFOODS",
+          "vendor_company": "ABHIRUCHI SEAFOODS",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "5666",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/02/2025",
+          "payment_date": null,
+          "total_amount": 150,
+          "balance_due": null,
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "5666",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/02/2025",
+          "payment_date": null,
+          "total_amount": 150,
+          "balance_due": null,
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "payment_date": null,
+          "total_amount": 21324,
+          "balance_due": null,
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "328",
+          "invoice_date": "02/03/2025",
+          "due_date": "03/03/2025",
+          "payment_date": null,
+          "total_amount": 1,
+          "balance_due": null,
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "1234567",
+          "invoice_date": "02/11/2025",
+          "due_date": "03/12/2025",
+          "payment_date": "",
+          "total_amount": null,
+          "balance_due": "",
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "payment_date": null,
+          "total_amount": 1985,
+          "balance_due": null,
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "payment_status": "Overdue"
+        },
+        {
+          "invoice_number": "5330328809",
+          "invoice_date": "02/04/2024",
+          "due_date": "05/31/2024",
+          "payment_date": null,
+          "total_amount": 509.9,
+          "balance_due": null,
+          "vendor_name": "ARAMARK",
+          "vendor_company": "ARAMARK",
+          "payment_status": "Overdue"
+        }
+      ],
+      "row_count": 17
+    },
+    "used_guidance": true,
+    "execution_time": "Fast (pre-built template, attempt 1)",
+    "query_attempts": 1
+  }
+}

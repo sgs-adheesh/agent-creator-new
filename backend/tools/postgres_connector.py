@@ -4,9 +4,12 @@ from langchain.tools import StructuredTool
 import json
 import os
 from datetime import datetime
+import logging
 
 from config import settings
-from .base_tool import BaseTool 
+from .base_tool import BaseTool
+
+logger = logging.getLogger(__name__) 
 
 
 class PostgresConnector(BaseTool):
@@ -1069,12 +1072,12 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
         Returns:
             Dictionary with query results or error message
         """
-        print(f"🔍 DEBUG: execute() called with kwargs: {kwargs}")
+        logger.debug(f"execute() called with kwargs: {kwargs}")
         
         # Extract query from kwargs
         query = kwargs.get('query', '')
         
-        print(f"🔍 DEBUG: extracted query: '{query}'")
+        logger.debug(f"extracted query: '{query}'")
         
         if not query:
             return {
@@ -1084,7 +1087,7 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
         
         # Resolve semantic table names to actual table names
         resolved_query = self._resolve_semantic_table_names(query)
-        print(f"🔍 DEBUG: resolved query: '{resolved_query}'")
+        logger.debug(f"resolved query: '{resolved_query}'")
         
         # AUTO-INSPECT: DISABLED - AI should inspect schema during query building, not execution
         # This was causing redundant schema checks after the AI already inspected tables
@@ -1092,7 +1095,7 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
         
         # Enhance query for JSONB date handling
         enhanced_query = self._enhance_query_for_jsonb_dates(resolved_query)
-        print(f"🔍 DEBUG: enhanced query: '{enhanced_query}'")
+        logger.debug(f"enhanced query: '{enhanced_query}'")
         
         # Validate JSONB column usage
         is_valid, validation_error = self._validate_jsonb_query(enhanced_query)
@@ -1214,9 +1217,9 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
         """Convert to LangChain tool format"""
         
         def tool_func(query: str) -> str:
-            print(f"🔍 DEBUG: tool_func called with query: {query}")
+            logger.debug(f"tool_func called with query: {query}")
             result = self.execute(query=query)
-            print(f"🔍 DEBUG: execute returned: {result}")
+            logger.debug(f"execute returned: {result}")
             return str(result)
         
         # Use simple from_function without args_schema for Python 3.14 compatibility
@@ -1230,9 +1233,9 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
         """Create a separate LangChain tool for schema inspection"""
         
         def schema_tool_func(table_name: str = "") -> str:
-            print(f"📊 DEBUG: schema_tool_func called with table_name: {table_name}")
+            logger.debug(f"schema_tool_func called with table_name: {table_name}")
             result = self.get_table_schema(table_name=table_name)
-            print(f"📊 DEBUG: get_table_schema returned: {result}")
+            logger.debug(f"get_table_schema returned: {result}")
             return str(result)
         
         description = """🔍 MUST USE THIS FIRST before writing SQL queries! Inspect PostgreSQL database schema.

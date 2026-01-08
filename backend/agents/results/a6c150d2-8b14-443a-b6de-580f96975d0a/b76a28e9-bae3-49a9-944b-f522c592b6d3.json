@@ -1,0 +1,874 @@
+{
+  "id": "b76a28e9-bae3-49a9-944b-f522c592b6d3",
+  "name": "Result - 08/01/2026, 15:19:58",
+  "timestamp": "2026-01-08T15:19:59.641633",
+  "data": {
+    "success": true,
+    "output": "## Unpaid Invoices Aging Report\n\n### Summary\nThis report provides an overview of unpaid invoices categorized by age buckets. The data includes invoice details, vendor information, total amounts, and the number of days overdue. \n\n- **Total invoices analyzed**: **41**\n- **Total amount outstanding**: Data includes various amounts, some invoices may have a balance due of **0**.\n\n### Aging Breakdown\n#### 0-30 Days\n- **Vendor**: **ABHIRUCHI SEAFOODS**\n  - **Invoice Number**: **417**\n  - **Invoice Date**: **02/26/2023**\n  - **Due Date**: **02/09/2026**\n  - **Total Amount**: **$7.15**\n  - **Days Overdue**: **-32** (This invoice is ahead of due date)\n\n#### 31-60 Days\n*(No invoices in this category)*\n\n#### 61-90 Days\n*(No invoices in this category)*\n\n#### 90+ Days\n1. **Vendor**: **East Repair Inc.**\n   - **Invoice Number**: **US-001**\n   - **Invoice Date**: **11/02/2019**\n   - **Due Date**: **02/26/2019**\n   - **Total Amount**: **$154.06**\n   - **Days Overdue**: **2508**\n\n2. **Vendor**: **Your company name**\n   - **Invoice Number**: **INV-001**\n   - **Invoice Date**: **07/31/2021**\n   - **Due Date**: **07/31/2021**\n   - **Total Amount**: **$0.00**\n   - **Days Overdue**: **1622**\n\n3. **Vendor**: **Your Business Name**\n   - **Invoice Number**: **2022435**\n   - **Invoice Date**: **07/19/2022**\n   - **Due Date**: **03/08/2022**\n   - **Total Amount**: **$2510.00**\n   - **Days Overdue**: **1402**\n\n4. **Vendor**: **Fidelity Burglar & Fire Alarm Co. HIC:**\n   - **Invoice Number**: **330247**\n   - **Invoice Date**: **12/14/2023**\n   - **Due Date**: **12/28/2023**\n   - **Total Amount**: **$540.00**\n   - **Days Overdue**: **742**\n\n5. **Vendor**: **C&A**\n   - **Invoice Number**: **15635**\n   - **Invoice Date**: *(Not provided)*\n   - **Due Date**: **02/07/2024**\n   - **Total Amount**: **$2700.00**\n   - **Days Overdue**: **701**\n\n6. **Vendor**: **Preferred Sportswear Inc**\n   - **Invoice Number**: **23436**\n   - **Invoice Date**: **02/07/2024**\n   - **Due Date**: **02/07/2024**\n   - **Total Amount**: **$1074.00**\n   - **Days Overdue**: **701**\n\n7. **Vendor**: **Cooper Pest Solutions**\n   - **Invoice Number**: **2076677**\n   - **Invoice Date**: **03/07/2024**\n   - **Due Date**: **02/08/2024**\n   - **Total Amount**: **$58.64**\n   - **Days Overdue**: **700**\n\n8. **Vendor**: **Arway Linen & Uniform Rental Service**\n   - **Invoice Number**: **0635361**\n   - **Invoice Date**: **06/08/2024**\n   - **Due Date**: **05/09/2024**\n   - **Total Amount**: **$90.30**\n   - **Days Overdue**: **609**\n\n9. **Vendor**: **Spread Commissary**\n   - **Invoice Number**: **XC-EAEA205C**\n   - **Invoice Date**: **05/20/2024**\n   - **Due Date**: **05/21/2024**\n   - **Total Amount**: **$234.60**\n   - **Days Overdue**: **597**\n\n10. **Vendor**: **ARAMARK**\n    - **Invoice Number**: **5330336267**\n    - **Invoice Date**: **04/17/2024**\n    - **Due Date**: **05/31/2024**\n    - **Total Amount**: **$797.76**\n    - **Days Overdue**: **587**\n\n> ⚠️ **Note**: Some invoices have a total amount of **0**. Further review may be necessary for these entries.\n\n### Next Steps\n1. Investigate invoices overdue by **90+ days** for potential follow-up.\n2. Address any discrepancies in invoice amounts or missing data.\n3. Monitor upcoming due dates closely to avoid future delinquencies.",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_inspect_schema",
+          "tool_input": {},
+          "log": "\nInvoking: `postgres_inspect_schema` with `{}`\n\n\n"
+        },
+        "result": "{'success': True, 'tables': ['icap_access_url', 'icap_accounting_system', 'icap_ai_accuracy_audit', 'icap_ai_model', 'icap_ai_prompt', 'icap_bill_staging', 'icap_category_master', 'icap_chat_categories', 'icap_chat_histories', 'icap_chat_session', 'icap_chat_sub_questions', 'icap_coa_export_staging', 'icap_coa_export_staging_detail', 'icap_config', 'icap_currency', 'icap_discounts', 'icap_document', 'icap_document_audit', 'icap_document_embeddings', 'icap_document_embeddings_staging', 'icap_document_pages', 'icap_document_status_report', 'icap_document_types', 'icap_error_groups', 'icap_error_logs', 'icap_extraction_config', 'icap_freshbooks_connector', 'icap_freshbooks_settings', 'icap_gl', 'icap_invoice', 'icap_invoice_detail', 'icap_locations', 'icap_menu_access_url', 'icap_menu_groups', 'icap_menus', 'icap_n8n_workflow_config', 'icap_pos_connector', 'icap_pos_settings', 'icap_product_category_mapping', 'icap_product_master', 'icap_qbo_connector', 'icap_qbo_settings', 'icap_reject_reasons', 'icap_restaurant_type_master', 'icap_role_menu_mapping', 'icap_roles', 'icap_smtp', 'icap_sso_config', 'icap_standard_gl_master', 'icap_subscription_events', 'icap_subscriptions', 'icap_tally_settings', 'icap_tenant_ai_audit', 'icap_tenant_cards', 'icap_tenant_category_master', 'icap_tenant_discount', 'icap_tenant_gl_category_mapping', 'icap_tenants', 'icap_time_zone', 'icap_us_states', 'icap_user_role_mapping', 'icap_user_session_mapping', 'icap_user_tenant_mapping', 'icap_vendor', 'icap_workflow_status', 'icap_xero_connector', 'icap_xero_settings', 'icap_zoho_connector', 'icap_zoho_settings'], 'total_tables': 69, 'message': \"Found 69 tables starting with 'icap_'. Call this tool again with a specific table_name to see detailed column information\"}"
+      },
+      {
+        "action": {
+          "tool": "postgres_inspect_schema",
+          "tool_input": {
+            "table_name": "icap_invoice"
+          },
+          "log": "\nInvoking: `postgres_inspect_schema` with `{'table_name': 'icap_invoice'}`\n\n\n"
+        },
+        "result": "{'success': True, 'table_name': 'icap_invoice', 'columns': [{'name': 'id', 'type': 'uuid', 'nullable': False}, {'name': 'document_id', 'type': 'uuid', 'nullable': False}, {'name': 'vendor_id', 'type': 'uuid', 'nullable': True}, {'name': 'other_charges', 'type': 'jsonb', 'nullable': True}, {'name': 'credit_and_returns', 'type': 'jsonb', 'nullable': True}, {'name': 'invoice_number', 'type': 'jsonb', 'nullable': True}, {'name': 'invoice_date', 'type': 'jsonb', 'nullable': True}, {'name': 'due_date', 'type': 'jsonb', 'nullable': True}, {'name': 'tax', 'type': 'jsonb', 'nullable': True}, {'name': 'freight_charges', 'type': 'jsonb', 'nullable': True}, {'name': 'discount', 'type': 'jsonb', 'nullable': True}, {'name': 'total', 'type': 'jsonb', 'nullable': True}, {'name': 'sub_total', 'type': 'jsonb', 'nullable': True}, {'name': 'street', 'type': 'jsonb', 'nullable': True}, {'name': 'zip', 'type': 'jsonb', 'nullable': True}, {'name': 'city', 'type': 'jsonb', 'nullable': True}, {'name': 'country', 'type': 'jsonb', 'nullable': True}, {'name': 'state', 'type': 'jsonb', 'nullable': True}, {'name': 'payment_date', 'type': 'jsonb', 'nullable': True}, {'name': 'balance_amount', 'type': 'jsonb', 'nullable': True}, {'name': 'external_bill_id', 'type': 'varchar', 'nullable': True}, {'name': 'status', 'type': 'payment_status_enum', 'nullable': True}], 'total_columns': 22, 'sample_data': [{'id': '9966eac1-e6b7-4685-88bb-d43062b6ed2c', 'document_id': '7064a372-ae7d-4cee-9071-dc4cd340fba0', 'vendor_id': '05c6a0e6-39f5-4bf4-9af6-10bf08ee0ae0', 'other_charges': {'value': '', 'pageNo': 0, 'confidence': 95.4, 'sequenceNo': 13, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'credit_and_returns': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 16, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'invoice_number': {'value': '328', 'pageNo': 1, 'confidence': 98.33653, 'sequenceNo': 1, 'coordinates': {'x0': 1177.6951, 'x1': 1311.2307, 'y0': 671.6302, 'y1': 736.94214}, 'reviewRequired': False}, 'invoice_date': {'value': '', 'pageNo': 1, 'confidence': 99.91939, 'sequenceNo': 2, 'coordinates': {'x0': 660.0041, 'x1': 962.87787, 'y0': 704.372, 'y1': 817.6503}, 'reviewRequired': False}, 'due_date': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 4, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'tax': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 12, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'freight_charges': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 14, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'discount': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 15, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'total': {'value': '01', 'pageNo': 1, 'confidence': 85.26212, 'sequenceNo': 5, 'coordinates': {'x0': 459.57834, 'x1': 2375.072, 'y0': 1124.8926, 'y1': 1490.2756}, 'reviewRequired': False}, 'sub_total': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 6, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'street': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 7, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'zip': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 11, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'city': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 8, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'country': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 9, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'state': {'value': '', 'pageNo': 0, 'confidence': 100, 'sequenceNo': 10, 'coordinates': {'x0': 0, 'x1': 0, 'y0': 0, 'y1': 0}, 'reviewRequired': False}, 'payment_date': None, 'balance_amount': None, 'external_bill_id': None, 'status': '0'}], 'ready_to_use_query': \"SELECT\\n  id,\\n  document_id,\\n  vendor_id,\\n  (other_charges->>'value')::text AS other_charges,\\n  (credit_and_returns->>'value')::text AS credit_and_returns,\\n  (invoice_number->>'value')::text AS invoice_number,\\n  (invoice_date->>'value')::text AS invoice_date,\\n  (due_date->>'value')::text AS due_date,\\n  (tax->>'value')::text AS tax,\\n  (freight_charges->>'value')::text AS freight_charges,\\n  (discount->>'value')::text AS discount,\\n  (total->>'value')::text AS total,\\n  (sub_total->>'value')::text AS sub_total,\\n  (street->>'value')::text AS street,\\n  (zip->>'value')::text AS zip,\\n  (city->>'value')::text AS city,\\n  (country->>'value')::text AS country,\\n  (state->>'value')::text AS state,\\n  (payment_date->>'value')::text AS payment_date,\\n  (balance_amount->>'value')::text AS balance_amount,\\n  external_bill_id,\\n  status\\nFROM icap_invoice\\nLIMIT 10;\", 'query_template_note': '⚠️ This query template is AUTO-GENERATED from postgres_schema_cache - all column names and types are discovered dynamically. Copy this template and modify the WHERE/JOIN clauses as needed.', 'foreign_keys': [{'column': 'document_id', 'references_table': 'icap_document', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'column': 'vendor_id', 'references_table': 'icap_vendor', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'column': 'document_id', 'references_table': 'icap_document', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}, {'column': 'vendor_id', 'references_table': 'icap_vendor', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}], 'relationships': 'This table links to: icap_document, icap_vendor', 'referenced_by': [{'table': 'icap_bill_staging', 'column': 'invoice_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'table': 'icap_bill_staging', 'column': 'invoice_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}], 'related_tables': 'Related detail tables: icap_bill_staging', 'jsonb_columns': ['other_charges', 'credit_and_returns', 'invoice_number', 'invoice_date', 'due_date', 'tax', 'freight_charges', 'discount', 'total', 'sub_total', 'street', 'zip', 'city', 'country', 'state', 'payment_date', 'balance_amount'], 'WARNING': \"⚠️⚠️⚠️ CRITICAL: 17 columns are JSONB type - MUST use ->>'value' extraction!\", 'jsonb_guidance': '❌ WRONG - DO NOT DO THIS (returns entire JSON object):\\n  SELECT other_charges, credit_and_returns, invoice_number FROM icap_invoice;\\n\\n✅ CORRECT - ALWAYS extract \\'value\\' and cast to ::text:\\n  SELECT (other_charges->>\\'value\\')::text, (credit_and_returns->>\\'value\\')::text, (invoice_number->>\\'value\\')::text FROM icap_invoice;\\n\\nMANDATORY Rules for ALL 17 JSONB columns:\\n  1. Structure: {\"value\": \"actual_data\", \"confidence\": 0.95, \"pageNo\": 1}\\n  2. ALWAYS extract: column_name->>\\'value\\'\\n  3. ALWAYS cast to ::text for display/filtering\\n  4. Use ::numeric ONLY for SUM/math (NEVER ::int)\\n  5. Dates are TEXT (MM/DD/YYYY), use LIKE for filtering\\n\\nQuery Patterns:\\n  • Text/ID: (column_name->>\\'value\\')::text\\n  • Date: (column_name->>\\'value\\')::text  (stored as MM/DD/YYYY)\\n  • Number display: (column_name->>\\'value\\')::text\\n  • Number math: (column_name->>\\'value\\')::numeric\\n  • Date filter: WHERE column_name->>\\'value\\' LIKE \\'02/%/2025\\'\\n\\nJSONB columns in this table: other_charges, credit_and_returns, invoice_number, invoice_date, due_date, tax, freight_charges, discount, total, sub_total, street, zip, city, country, state, payment_date, balance_amount\\n\\nUSE THE \\'ready_to_use_query\\' FIELD - it shows correct syntax for EVERY column!', 'jsonb_query_examples': {'other_charges': {'type': 'text', 'select': \"(other_charges->>'value')::text\", 'where': \"WHERE other_charges->>'value' IS NOT NULL\", 'example': \"SELECT (other_charges->>'value')::text AS other_charges_value FROM icap_invoice\"}, 'credit_and_returns': {'type': 'text', 'select': \"(credit_and_returns->>'value')::text\", 'where': \"WHERE credit_and_returns->>'value' IS NOT NULL\", 'example': \"SELECT (credit_and_returns->>'value')::text AS credit_and_returns_value FROM icap_invoice\"}, 'invoice_number': {'type': 'text or numeric (use ::numeric only for calculations)', 'select': \"(invoice_number->>'value')::text\", 'where': \"WHERE (invoice_number->>'value')::numeric > 0\", 'example': \"SELECT (invoice_number->>'value')::text AS invoice_number_value FROM icap_invoice\"}, 'invoice_date': {'type': 'text (date stored as MM/DD/YYYY)', 'select': \"(invoice_date->>'value')::text\", 'where': \"WHERE invoice_date->>'value' LIKE '02/%/2025'\", 'example': \"SELECT (invoice_date->>'value')::text AS invoice_date_value FROM icap_invoice WHERE invoice_date->>'value' LIKE '01/%/2024'\"}, 'due_date': {'type': 'text (date stored as MM/DD/YYYY)', 'select': \"(due_date->>'value')::text\", 'where': \"WHERE due_date->>'value' LIKE '02/%/2025'\", 'example': \"SELECT (due_date->>'value')::text AS due_date_value FROM icap_invoice WHERE due_date->>'value' LIKE '01/%/2024'\"}, 'tax': {'type': 'numeric', 'select': \"(tax->>'value')::numeric\", 'where': \"WHERE (tax->>'value')::numeric > 0\", 'example': \"SELECT (tax->>'value')::numeric AS tax_value FROM icap_invoice\"}, 'freight_charges': {'type': 'text', 'select': \"(freight_charges->>'value')::text\", 'where': \"WHERE freight_charges->>'value' IS NOT NULL\", 'example': \"SELECT (freight_charges->>'value')::text AS freight_charges_value FROM icap_invoice\"}, 'discount': {'type': 'text or numeric (use ::numeric only for calculations)', 'select': \"(discount->>'value')::text\", 'where': \"WHERE (discount->>'value')::numeric > 0\", 'example': \"SELECT (discount->>'value')::text AS discount_value FROM icap_invoice\"}, 'total': {'type': 'numeric', 'select': \"(total->>'value')::numeric\", 'where': \"WHERE (total->>'value')::numeric > 0\", 'example': \"SELECT (total->>'value')::numeric AS total_value FROM icap_invoice\"}, 'sub_total': {'type': 'numeric', 'select': \"(sub_total->>'value')::numeric\", 'where': \"WHERE (sub_total->>'value')::numeric > 0\", 'example': \"SELECT (sub_total->>'value')::numeric AS sub_total_value FROM icap_invoice\"}, 'street': {'type': 'text', 'select': \"(street->>'value')::text\", 'where': \"WHERE street->>'value' IS NOT NULL\", 'example': \"SELECT (street->>'value')::text AS street_value FROM icap_invoice\"}, 'zip': {'type': 'text', 'select': \"(zip->>'value')::text\", 'where': \"WHERE zip->>'value' IS NOT NULL\", 'example': \"SELECT (zip->>'value')::text AS zip_value FROM icap_invoice\"}, 'city': {'type': 'text', 'select': \"(city->>'value')::text\", 'where': \"WHERE city->>'value' IS NOT NULL\", 'example': \"SELECT (city->>'value')::text AS city_value FROM icap_invoice\"}, 'country': {'type': 'text or numeric (use ::numeric only for calculations)', 'select': \"(country->>'value')::text\", 'where': \"WHERE (country->>'value')::numeric > 0\", 'example': \"SELECT (country->>'value')::text AS country_value FROM icap_invoice\"}, 'state': {'type': 'text', 'select': \"(state->>'value')::text\", 'where': \"WHERE state->>'value' IS NOT NULL\", 'example': \"SELECT (state->>'value')::text AS state_value FROM icap_invoice\"}, 'payment_date': {'type': 'text (date stored as MM/DD/YYYY)', 'select': \"(payment_date->>'value')::text\", 'where': \"WHERE payment_date->>'value' LIKE '02/%/2025'\", 'example': \"SELECT (payment_date->>'value')::text AS payment_date_value FROM icap_invoice WHERE payment_date->>'value' LIKE '01/%/2024'\"}, 'balance_amount': {'type': 'numeric', 'select': \"(balance_amount->>'value')::numeric\", 'where': \"WHERE (balance_amount->>'value')::numeric > 0\", 'example': \"SELECT (balance_amount->>'value')::numeric AS balance_amount_value FROM icap_invoice\"}}}"
+      },
+      {
+        "action": {
+          "tool": "postgres_inspect_schema",
+          "tool_input": {
+            "table_name": "icap_vendor"
+          },
+          "log": "\nInvoking: `postgres_inspect_schema` with `{'table_name': 'icap_vendor'}`\n\n\n"
+        },
+        "result": "{'success': True, 'table_name': 'icap_vendor', 'columns': [{'name': 'id', 'type': 'uuid', 'nullable': False}, {'name': 'tenant_id', 'type': 'uuid', 'nullable': False}, {'name': 'name', 'type': 'varchar', 'nullable': False}, {'name': 'company', 'type': 'varchar', 'nullable': True}, {'name': 'address', 'type': 'varchar', 'nullable': True}, {'name': 'active', 'type': 'bool', 'nullable': False}, {'name': 'created_by', 'type': 'uuid', 'nullable': False}, {'name': 'modified_by', 'type': 'uuid', 'nullable': False}, {'name': 'created_on', 'type': 'timestamp', 'nullable': False}, {'name': 'modified_on', 'type': 'timestamp', 'nullable': False}, {'name': 'external_vendor_id', 'type': 'varchar', 'nullable': True}], 'total_columns': 11, 'sample_data': [{'id': '1e9c8fa0-93b0-43b7-9a4c-277bf20ef5f7', 'tenant_id': 'a611f7eb-f316-45c4-b51d-3da927bfb4b1', 'name': 'ABC Company', 'company': 'ABC Company', 'address': 'null, null, null, null', 'active': True, 'created_by': '449576e5-f168-43ae-be2f-6975f60dd589', 'modified_by': '449576e5-f168-43ae-be2f-6975f60dd589', 'created_on': datetime.datetime(2025, 12, 19, 9, 53, 2, 761937), 'modified_on': datetime.datetime(2025, 12, 19, 9, 53, 2, 761937), 'external_vendor_id': None}], 'ready_to_use_query': 'SELECT\\n  id,\\n  tenant_id,\\n  name,\\n  company,\\n  address,\\n  active,\\n  created_by,\\n  modified_by,\\n  created_on,\\n  modified_on,\\n  external_vendor_id\\nFROM icap_vendor\\nLIMIT 10;', 'query_template_note': '⚠️ This query template is AUTO-GENERATED from postgres_schema_cache - all column names and types are discovered dynamically. Copy this template and modify the WHERE/JOIN clauses as needed.', 'referenced_by': [{'table': 'icap_invoice', 'column': 'vendor_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'table': 'icap_product_master', 'column': 'vendor_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high', 'detection_method': 'naming_convention'}, {'table': 'icap_invoice', 'column': 'vendor_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}, {'table': 'icap_product_master', 'column': 'vendor_id', 'references_column': 'id', 'type': 'implicit', 'confidence': 'high'}], 'related_tables': 'Related detail tables: icap_invoice, icap_product_master'}"
+      },
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": {
+            "query": "SELECT\n    (i.invoice_number->>'value')::text AS invoice_number,\n    (i.invoice_date->>'value')::text AS invoice_date,\n    (i.due_date->>'value')::text AS due_date,\n    (i.total->>'value')::numeric AS total_amount,\n    (i.balance_amount->>'value')::numeric AS balance_due,\n    v.name AS vendor_name,\n    v.company AS vendor_company,\n    CASE \n        WHEN (CURRENT_DATE - (i.due_date->>'value')::date) <= 30 THEN '0-30 days'\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::date) BETWEEN 31 AND 60 THEN '31-60 days'\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::date) BETWEEN 61 AND 90 THEN '61-90 days'\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::date) > 90 THEN '90+ days'\n        ELSE 'Current'\n    END AS aging_bucket,\n    (CURRENT_DATE - (i.due_date->>'value')::date) AS days_overdue\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nWHERE (i.payment_date->>'value' IS NULL OR i.payment_date->>'value' = '')\n    AND (i.balance_amount->>'value' IS NULL OR i.balance_amount->>'value' = '' OR (i.balance_amount->>'value')::numeric > 0)\nORDER BY days_overdue DESC, total_amount DESC;"
+          },
+          "log": "\nInvoking: `postgres_query` with `{'query': \"SELECT\\n    (i.invoice_number->>'value')::text AS invoice_number,\\n    (i.invoice_date->>'value')::text AS invoice_date,\\n    (i.due_date->>'value')::text AS due_date,\\n    (i.total->>'value')::numeric AS total_amount,\\n    (i.balance_amount->>'value')::numeric AS balance_due,\\n    v.name AS vendor_name,\\n    v.company AS vendor_company,\\n    CASE \\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::date) <= 30 THEN '0-30 days'\\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::date) BETWEEN 31 AND 60 THEN '31-60 days'\\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::date) BETWEEN 61 AND 90 THEN '61-90 days'\\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::date) > 90 THEN '90+ days'\\n        ELSE 'Current'\\n    END AS aging_bucket,\\n    (CURRENT_DATE - (i.due_date->>'value')::date) AS days_overdue\\nFROM icap_invoice i\\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\\nWHERE (i.payment_date->>'value' IS NULL OR i.payment_date->>'value' = '')\\n    AND (i.balance_amount->>'value' IS NULL OR i.balance_amount->>'value' = '' OR (i.balance_amount->>'value')::numeric > 0)\\nORDER BY days_overdue DESC, total_amount DESC;\"}`\n\n\n"
+        },
+        "result": "{'success': False, 'error': 'invalid input syntax for type date: \"\"\\n', 'error_type': 'database_error'}"
+      },
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": {
+            "query": "SELECT\n    (i.invoice_number->>'value')::text AS invoice_number,\n    (i.invoice_date->>'value')::text AS invoice_date,\n    (i.due_date->>'value')::text AS due_date,\n    (i.total->>'value')::numeric AS total_amount,\n    (i.balance_amount->>'value')::numeric AS balance_due,\n    v.name AS vendor_name,\n    v.company AS vendor_company,\n    CASE \n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) <= 30 THEN '0-30 days'\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) BETWEEN 31 AND 60 THEN '31-60 days'\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) BETWEEN 61 AND 90 THEN '61-90 days'\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) > 90 THEN '90+ days'\n        ELSE 'Current'\n    END AS aging_bucket,\n    (CURRENT_DATE - (i.due_date->>'value')::text::date) AS days_overdue\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nWHERE (i.payment_date->>'value' IS NULL OR i.payment_date->>'value' = '')\n    AND (i.balance_amount->>'value' IS NULL OR i.balance_amount->>'value' = '' OR (i.balance_amount->>'value')::numeric > 0)\n    AND (i.due_date->>'value' IS NOT NULL AND i.due_date->>'value' != '')\nORDER BY days_overdue DESC, total_amount DESC;"
+          },
+          "log": "\nInvoking: `postgres_query` with `{'query': \"SELECT\\n    (i.invoice_number->>'value')::text AS invoice_number,\\n    (i.invoice_date->>'value')::text AS invoice_date,\\n    (i.due_date->>'value')::text AS due_date,\\n    (i.total->>'value')::numeric AS total_amount,\\n    (i.balance_amount->>'value')::numeric AS balance_due,\\n    v.name AS vendor_name,\\n    v.company AS vendor_company,\\n    CASE \\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) <= 30 THEN '0-30 days'\\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) BETWEEN 31 AND 60 THEN '31-60 days'\\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) BETWEEN 61 AND 90 THEN '61-90 days'\\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) > 90 THEN '90+ days'\\n        ELSE 'Current'\\n    END AS aging_bucket,\\n    (CURRENT_DATE - (i.due_date->>'value')::text::date) AS days_overdue\\nFROM icap_invoice i\\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\\nWHERE (i.payment_date->>'value' IS NULL OR i.payment_date->>'value' = '')\\n    AND (i.balance_amount->>'value' IS NULL OR i.balance_amount->>'value' = '' OR (i.balance_amount->>'value')::numeric > 0)\\n    AND (i.due_date->>'value' IS NOT NULL AND i.due_date->>'value' != '')\\nORDER BY days_overdue DESC, total_amount DESC;\"}`\n\n\n"
+        },
+        "result": "{'success': False, 'error': 'invalid input syntax for type numeric: \"\"\\n', 'error_type': 'database_error'}"
+      },
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": {
+            "query": "SELECT\n    (i.invoice_number->>'value')::text AS invoice_number,\n    (i.invoice_date->>'value')::text AS invoice_date,\n    (i.due_date->>'value')::text AS due_date,\n    CASE WHEN (i.total->>'value') != '' THEN (i.total->>'value')::numeric ELSE NULL END AS total_amount,\n    CASE WHEN (i.balance_amount->>'value') != '' THEN (i.balance_amount->>'value')::numeric ELSE NULL END AS balance_due,\n    v.name AS vendor_name,\n    v.company AS vendor_company,\n    CASE \n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) <= 30 THEN '0-30 days'\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) BETWEEN 31 AND 60 THEN '31-60 days'\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) BETWEEN 61 AND 90 THEN '61-90 days'\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) > 90 THEN '90+ days'\n        ELSE 'Current'\n    END AS aging_bucket,\n    (CURRENT_DATE - (i.due_date->>'value')::text::date) AS days_overdue\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nWHERE (i.payment_date->>'value' IS NULL OR i.payment_date->>'value' = '')\n    AND (i.balance_amount->>'value' IS NULL OR i.balance_amount->>'value' = '' OR (i.balance_amount->>'value')::numeric > 0)\n    AND (i.due_date->>'value' IS NOT NULL AND i.due_date->>'value' != '')\nORDER BY days_overdue DESC, total_amount DESC;"
+          },
+          "log": "\nInvoking: `postgres_query` with `{'query': \"SELECT\\n    (i.invoice_number->>'value')::text AS invoice_number,\\n    (i.invoice_date->>'value')::text AS invoice_date,\\n    (i.due_date->>'value')::text AS due_date,\\n    CASE WHEN (i.total->>'value') != '' THEN (i.total->>'value')::numeric ELSE NULL END AS total_amount,\\n    CASE WHEN (i.balance_amount->>'value') != '' THEN (i.balance_amount->>'value')::numeric ELSE NULL END AS balance_due,\\n    v.name AS vendor_name,\\n    v.company AS vendor_company,\\n    CASE \\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) <= 30 THEN '0-30 days'\\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) BETWEEN 31 AND 60 THEN '31-60 days'\\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) BETWEEN 61 AND 90 THEN '61-90 days'\\n        WHEN (CURRENT_DATE - (i.due_date->>'value')::text::date) > 90 THEN '90+ days'\\n        ELSE 'Current'\\n    END AS aging_bucket,\\n    (CURRENT_DATE - (i.due_date->>'value')::text::date) AS days_overdue\\nFROM icap_invoice i\\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\\nWHERE (i.payment_date->>'value' IS NULL OR i.payment_date->>'value' = '')\\n    AND (i.balance_amount->>'value' IS NULL OR i.balance_amount->>'value' = '' OR (i.balance_amount->>'value')::numeric > 0)\\n    AND (i.due_date->>'value' IS NOT NULL AND i.due_date->>'value' != '')\\nORDER BY days_overdue DESC, total_amount DESC;\"}`\n\n\n"
+        },
+        "result": "{'success': True, 'columns': ['invoice_number', 'invoice_date', 'due_date', 'total_amount', 'balance_due', 'vendor_name', 'vendor_company', 'aging_bucket', 'days_overdue'], 'rows': [{'invoice_number': 'US-001', 'invoice_date': '11/02/2019', 'due_date': '02/26/2019', 'total_amount': Decimal('154.06'), 'balance_due': None, 'vendor_name': 'East Repair Inc.', 'vendor_company': 'East Repair Inc.', 'aging_bucket': '90+ days', 'days_overdue': 2508}, {'invoice_number': 'INV-001', 'invoice_date': '07/31/2021', 'due_date': '07/31/2021', 'total_amount': Decimal('0'), 'balance_due': None, 'vendor_name': 'Your company name', 'vendor_company': 'Your company name', 'aging_bucket': '90+ days', 'days_overdue': 1622}, {'invoice_number': 'INV-001', 'invoice_date': '07/31/2021', 'due_date': '07/31/2021', 'total_amount': Decimal('0'), 'balance_due': None, 'vendor_name': 'Your company name', 'vendor_company': 'Your company name', 'aging_bucket': '90+ days', 'days_overdue': 1622}, {'invoice_number': '2022435', 'invoice_date': '07/19/2022', 'due_date': '03/08/2022', 'total_amount': Decimal('2510.00'), 'balance_due': None, 'vendor_name': 'Your Business Name', 'vendor_company': 'Your Business Name', 'aging_bucket': '90+ days', 'days_overdue': 1402}, {'invoice_number': '330247', 'invoice_date': '12/14/2023', 'due_date': '12/28/2023', 'total_amount': Decimal('540.00'), 'balance_due': None, 'vendor_name': 'Fidelity Burglar & Fire Alarm Co. HIC:', 'vendor_company': 'Fidelity Burglar & Fire Alarm Co. HIC:', 'aging_bucket': '90+ days', 'days_overdue': 742}, {'invoice_number': '15635', 'invoice_date': '', 'due_date': '02/07/2024', 'total_amount': Decimal('2700.00'), 'balance_due': None, 'vendor_name': 'C&A', 'vendor_company': 'C&A', 'aging_bucket': '90+ days', 'days_overdue': 701}, {'invoice_number': '23436', 'invoice_date': '02/07/2024', 'due_date': '02/07/2024', 'total_amount': Decimal('1074.00'), 'balance_due': None, 'vendor_name': 'Preferred Sportswear Inc', 'vendor_company': 'Preferred Sportswear Inc', 'aging_bucket': '90+ days', 'days_overdue': 701}, {'invoice_number': '2076677', 'invoice_date': '03/07/2024', 'due_date': '02/08/2024', 'total_amount': Decimal('58.64'), 'balance_due': None, 'vendor_name': 'Cooper Pest Solutions', 'vendor_company': 'Cooper Pest Solutions', 'aging_bucket': '90+ days', 'days_overdue': 700}, {'invoice_number': '0635361', 'invoice_date': '06/08/2024', 'due_date': '05/09/2024', 'total_amount': Decimal('90.30'), 'balance_due': None, 'vendor_name': 'Arway Linen & Uniform Rental Service', 'vendor_company': 'Arway Linen & Uniform Rental Service', 'aging_bucket': '90+ days', 'days_overdue': 609}, {'invoice_number': 'XC-EAEA205C', 'invoice_date': '05/20/2024', 'due_date': '05/21/2024', 'total_amount': Decimal('234.60'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 597}, {'invoice_number': '5330336267', 'invoice_date': '04/17/2024', 'due_date': '05/31/2024', 'total_amount': Decimal('797.76'), 'balance_due': None, 'vendor_name': 'ARAMARK', 'vendor_company': 'ARAMARK', 'aging_bucket': '90+ days', 'days_overdue': 587}, {'invoice_number': '5330332929', 'invoice_date': '10/04/2024', 'due_date': '05/31/2024', 'total_amount': Decimal('698.04'), 'balance_due': None, 'vendor_name': 'ARAMARK', 'vendor_company': 'ARAMARK', 'aging_bucket': '90+ days', 'days_overdue': 587}, {'invoice_number': '5330329530', 'invoice_date': '03/04/2024', 'due_date': '05/31/2024', 'total_amount': Decimal('598.32'), 'balance_due': None, 'vendor_name': 'ARAMARK', 'vendor_company': 'ARAMARK', 'aging_bucket': '90+ days', 'days_overdue': 587}, {'invoice_number': '5330331450', 'invoice_date': '08/04/2024', 'due_date': '05/31/2024', 'total_amount': Decimal('581.70'), 'balance_due': None, 'vendor_name': 'ARAMARK', 'vendor_company': 'ARAMARK', 'aging_bucket': '90+ days', 'days_overdue': 587}, {'invoice_number': '5330328809', 'invoice_date': '02/04/2024', 'due_date': '05/31/2024', 'total_amount': Decimal('509.90'), 'balance_due': None, 'vendor_name': 'ARAMARK', 'vendor_company': 'ARAMARK', 'aging_bucket': '90+ days', 'days_overdue': 587}, {'invoice_number': '01394951', 'invoice_date': '07/08/2024', 'due_date': '06/09/2024', 'total_amount': None, 'balance_due': None, 'vendor_name': 'Pp', 'vendor_company': 'Pp', 'aging_bucket': '90+ days', 'days_overdue': 578}, {'invoice_number': '0635629', 'invoice_date': '07/08/2024', 'due_date': '06/09/2024', 'total_amount': Decimal('99.87'), 'balance_due': None, 'vendor_name': 'Arway Linen & Uniform Rental Service', 'vendor_company': 'Arway Linen & Uniform Rental Service', 'aging_bucket': '90+ days', 'days_overdue': 578}, {'invoice_number': '2090931', 'invoice_date': '07/08/2024', 'due_date': '06/09/2024', 'total_amount': Decimal('58.64'), 'balance_due': None, 'vendor_name': 'Cooper Pest Solutions', 'vendor_company': 'Cooper Pest Solutions', 'aging_bucket': '90+ days', 'days_overdue': 578}, {'invoice_number': 'XC-DADCCEF6', 'invoice_date': '06/25/2024', 'due_date': '06/26/2024', 'total_amount': Decimal('1233.70'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 561}, {'invoice_number': 'XC-932DB102', 'invoice_date': '06/25/2024', 'due_date': '06/26/2024', 'total_amount': Decimal('1052.32'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 561}, {'invoice_number': 'XC-FED55C40', 'invoice_date': '06/24/2024', 'due_date': '06/26/2024', 'total_amount': Decimal('1046.13'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 561}, {'invoice_number': 'XC-E38E1883', 'invoice_date': '06/25/2024', 'due_date': '06/26/2024', 'total_amount': Decimal('913.85'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 561}, {'invoice_number': 'XC-6EC8680A', 'invoice_date': '06/25/2024', 'due_date': '06/26/2024', 'total_amount': Decimal('602.82'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 561}, {'invoice_number': 'XC-F329B787', 'invoice_date': '06/08/2024', 'due_date': '07/08/2024', 'total_amount': Decimal('491.90'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 549}, {'invoice_number': 'INV02500310', 'invoice_date': '05/22/2024', 'due_date': '07/21/2024', 'total_amount': Decimal('311.99'), 'balance_due': None, 'vendor_name': 'Yext, Inc.', 'vendor_company': 'Yext, Inc.', 'aging_bucket': '90+ days', 'days_overdue': 536}, {'invoice_number': 'XC-1C7DE4D7', 'invoice_date': '08/08/2024', 'due_date': '08/08/2024', 'total_amount': Decimal('1270.30'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 518}, {'invoice_number': '2081940', 'invoice_date': '07/17/2024', 'due_date': '08/16/2024', 'total_amount': Decimal('58.64'), 'balance_due': None, 'vendor_name': 'Cooper Pest Solutions', 'vendor_company': 'Cooper Pest Solutions', 'aging_bucket': '90+ days', 'days_overdue': 510}, {'invoice_number': '1502744-IN', 'invoice_date': '06/08/2024', 'due_date': '08/26/2024', 'total_amount': Decimal('461.50'), 'balance_due': None, 'vendor_name': 'La Colombe Coffee', 'vendor_company': 'La Colombe Coffee', 'aging_bucket': '90+ days', 'days_overdue': 500}, {'invoice_number': '1502751-IN', 'invoice_date': '06/08/2024', 'due_date': '08/26/2024', 'total_amount': Decimal('184.13'), 'balance_due': None, 'vendor_name': 'La Colombe Coffee', 'vendor_company': 'La Colombe Coffee', 'aging_bucket': '90+ days', 'days_overdue': 500}, {'invoice_number': '1502577-IN', 'invoice_date': '06/08/2024', 'due_date': '08/26/2024', 'total_amount': Decimal('172.00'), 'balance_due': None, 'vendor_name': 'La Colombe Coffee', 'vendor_company': 'La Colombe Coffee', 'aging_bucket': '90+ days', 'days_overdue': 500}, {'invoice_number': 'XC-D4D5F253', 'invoice_date': '08/08/2024', 'due_date': '09/08/2024', 'total_amount': Decimal('771.52'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 487}, {'invoice_number': 'XC-ECBF2F90', 'invoice_date': '09/08/2024', 'due_date': '09/08/2024', 'total_amount': Decimal('127.84'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 487}, {'invoice_number': 'XC-179B1357', 'invoice_date': '09/08/2024', 'due_date': '10/08/2024', 'total_amount': Decimal('43.20'), 'balance_due': None, 'vendor_name': 'Spread Commissary', 'vendor_company': 'Spread Commissary', 'aging_bucket': '90+ days', 'days_overdue': 457}, {'invoice_number': '5666', 'invoice_date': '02/02/2025', 'due_date': '03/02/2025', 'total_amount': Decimal('150'), 'balance_due': None, 'vendor_name': 'S.P. SOAP OIL', 'vendor_company': 'S.P. SOAP OIL', 'aging_bucket': '90+ days', 'days_overdue': 312}, {'invoice_number': '5666', 'invoice_date': '02/02/2025', 'due_date': '03/02/2025', 'total_amount': Decimal('150'), 'balance_due': None, 'vendor_name': 'S.P. SOAP OIL', 'vendor_company': 'S.P. SOAP OIL', 'aging_bucket': '90+ days', 'days_overdue': 312}, {'invoice_number': 'SSA/5514/22-23', 'invoice_date': '02/02/2025', 'due_date': '03/03/2025', 'total_amount': Decimal('21324.00'), 'balance_due': None, 'vendor_name': 'Sun Shine Agencies', 'vendor_company': 'Sun Shine Agencies', 'aging_bucket': '90+ days', 'days_overdue': 311}, {'invoice_number': '328', 'invoice_date': '02/03/2025', 'due_date': '03/03/2025', 'total_amount': Decimal('1'), 'balance_due': None, 'vendor_name': 'meat Hub', 'vendor_company': 'meat Hub', 'aging_bucket': '90+ days', 'days_overdue': 311}, {'invoice_number': '328', 'invoice_date': '02/03/2025', 'due_date': '03/03/2025', 'total_amount': Decimal('1'), 'balance_due': None, 'vendor_name': 'meat Hub', 'vendor_company': 'meat Hub', 'aging_bucket': '90+ days', 'days_overdue': 311}, {'invoice_number': '1234567', 'invoice_date': '02/11/2025', 'due_date': '03/12/2025', 'total_amount': None, 'balance_due': None, 'vendor_name': 'meat Hub', 'vendor_company': 'meat Hub', 'aging_bucket': '90+ days', 'days_overdue': 302}, {'invoice_number': '10409/2022-23', 'invoice_date': '02/20/2025', 'due_date': '03/20/2025', 'total_amount': Decimal('1985.00'), 'balance_due': None, 'vendor_name': 'Fab Dairy & Trading (I) Pvt. Ltd.', 'vendor_company': 'Fab Dairy & Trading (I) Pvt. Ltd.', 'aging_bucket': '90+ days', 'days_overdue': 294}, {'invoice_number': '417', 'invoice_date': '02/26/2023', 'due_date': '02/09/2026', 'total_amount': Decimal('7.15'), 'balance_due': None, 'vendor_name': 'ABHIRUCHI SEAFOODS', 'vendor_company': 'ABHIRUCHI SEAFOODS', 'aging_bucket': '0-30 days', 'days_overdue': -32}], 'row_count': 41, 'has_more': False, 'note': None, 'schema_info': None}"
+      }
+    ],
+    "output_format": "table",
+    "summary": {
+      "total_records": 41,
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "total_amount",
+        "balance_due",
+        "vendor_name",
+        "vendor_company",
+        "aging_bucket",
+        "days_overdue"
+      ],
+      "description": "Query returned 41 record(s) with 9 column(s).",
+      "invoice_breakdown": {
+        "328": {
+          "invoice_number": "328",
+          "line_items": 2,
+          "date": "02/03/2025",
+          "vendor": "meat Hub"
+        },
+        "417": {
+          "invoice_number": "417",
+          "line_items": 1,
+          "date": "02/26/2023",
+          "vendor": "ABHIRUCHI SEAFOODS"
+        },
+        "5666": {
+          "invoice_number": "5666",
+          "line_items": 2,
+          "date": "02/02/2025",
+          "vendor": "S.P. SOAP OIL"
+        },
+        "15635": {
+          "invoice_number": "15635",
+          "line_items": 1,
+          "date": "",
+          "vendor": "C&A"
+        },
+        "23436": {
+          "invoice_number": "23436",
+          "line_items": 1,
+          "date": "02/07/2024",
+          "vendor": "Preferred Sportswear Inc"
+        },
+        "330247": {
+          "invoice_number": "330247",
+          "line_items": 1,
+          "date": "12/14/2023",
+          "vendor": "Fidelity Burglar & Fire Alarm Co. HIC:"
+        },
+        "1234567": {
+          "invoice_number": "1234567",
+          "line_items": 1,
+          "date": "02/11/2025",
+          "vendor": "meat Hub"
+        },
+        "2022435": {
+          "invoice_number": "2022435",
+          "line_items": 1,
+          "date": "07/19/2022",
+          "vendor": "Your Business Name"
+        },
+        "2076677": {
+          "invoice_number": "2076677",
+          "line_items": 1,
+          "date": "03/07/2024",
+          "vendor": "Cooper Pest Solutions"
+        },
+        "2081940": {
+          "invoice_number": "2081940",
+          "line_items": 1,
+          "date": "07/17/2024",
+          "vendor": "Cooper Pest Solutions"
+        },
+        "2090931": {
+          "invoice_number": "2090931",
+          "line_items": 1,
+          "date": "07/08/2024",
+          "vendor": "Cooper Pest Solutions"
+        },
+        "US-001": {
+          "invoice_number": "US-001",
+          "line_items": 1,
+          "date": "11/02/2019",
+          "vendor": "East Repair Inc."
+        },
+        "INV-001": {
+          "invoice_number": "INV-001",
+          "line_items": 2,
+          "date": "07/31/2021",
+          "vendor": "Your company name"
+        },
+        "0635361": {
+          "invoice_number": "0635361",
+          "line_items": 1,
+          "date": "06/08/2024",
+          "vendor": "Arway Linen & Uniform Rental Service"
+        },
+        "XC-EAEA205C": {
+          "invoice_number": "XC-EAEA205C",
+          "line_items": 1,
+          "date": "05/20/2024",
+          "vendor": "Spread Commissary"
+        },
+        "5330336267": {
+          "invoice_number": "5330336267",
+          "line_items": 1,
+          "date": "04/17/2024",
+          "vendor": "ARAMARK"
+        },
+        "5330332929": {
+          "invoice_number": "5330332929",
+          "line_items": 1,
+          "date": "10/04/2024",
+          "vendor": "ARAMARK"
+        },
+        "5330329530": {
+          "invoice_number": "5330329530",
+          "line_items": 1,
+          "date": "03/04/2024",
+          "vendor": "ARAMARK"
+        },
+        "5330331450": {
+          "invoice_number": "5330331450",
+          "line_items": 1,
+          "date": "08/04/2024",
+          "vendor": "ARAMARK"
+        },
+        "5330328809": {
+          "invoice_number": "5330328809",
+          "line_items": 1,
+          "date": "02/04/2024",
+          "vendor": "ARAMARK"
+        },
+        "01394951": {
+          "invoice_number": "01394951",
+          "line_items": 1,
+          "date": "07/08/2024",
+          "vendor": "Pp"
+        },
+        "0635629": {
+          "invoice_number": "0635629",
+          "line_items": 1,
+          "date": "07/08/2024",
+          "vendor": "Arway Linen & Uniform Rental Service"
+        },
+        "XC-DADCCEF6": {
+          "invoice_number": "XC-DADCCEF6",
+          "line_items": 1,
+          "date": "06/25/2024",
+          "vendor": "Spread Commissary"
+        },
+        "XC-932DB102": {
+          "invoice_number": "XC-932DB102",
+          "line_items": 1,
+          "date": "06/25/2024",
+          "vendor": "Spread Commissary"
+        },
+        "XC-FED55C40": {
+          "invoice_number": "XC-FED55C40",
+          "line_items": 1,
+          "date": "06/24/2024",
+          "vendor": "Spread Commissary"
+        },
+        "XC-E38E1883": {
+          "invoice_number": "XC-E38E1883",
+          "line_items": 1,
+          "date": "06/25/2024",
+          "vendor": "Spread Commissary"
+        },
+        "XC-6EC8680A": {
+          "invoice_number": "XC-6EC8680A",
+          "line_items": 1,
+          "date": "06/25/2024",
+          "vendor": "Spread Commissary"
+        },
+        "XC-F329B787": {
+          "invoice_number": "XC-F329B787",
+          "line_items": 1,
+          "date": "06/08/2024",
+          "vendor": "Spread Commissary"
+        },
+        "INV02500310": {
+          "invoice_number": "INV02500310",
+          "line_items": 1,
+          "date": "05/22/2024",
+          "vendor": "Yext, Inc."
+        },
+        "XC-1C7DE4D7": {
+          "invoice_number": "XC-1C7DE4D7",
+          "line_items": 1,
+          "date": "08/08/2024",
+          "vendor": "Spread Commissary"
+        },
+        "1502744-IN": {
+          "invoice_number": "1502744-IN",
+          "line_items": 1,
+          "date": "06/08/2024",
+          "vendor": "La Colombe Coffee"
+        },
+        "1502751-IN": {
+          "invoice_number": "1502751-IN",
+          "line_items": 1,
+          "date": "06/08/2024",
+          "vendor": "La Colombe Coffee"
+        },
+        "1502577-IN": {
+          "invoice_number": "1502577-IN",
+          "line_items": 1,
+          "date": "06/08/2024",
+          "vendor": "La Colombe Coffee"
+        },
+        "XC-D4D5F253": {
+          "invoice_number": "XC-D4D5F253",
+          "line_items": 1,
+          "date": "08/08/2024",
+          "vendor": "Spread Commissary"
+        },
+        "XC-ECBF2F90": {
+          "invoice_number": "XC-ECBF2F90",
+          "line_items": 1,
+          "date": "09/08/2024",
+          "vendor": "Spread Commissary"
+        },
+        "XC-179B1357": {
+          "invoice_number": "XC-179B1357",
+          "line_items": 1,
+          "date": "09/08/2024",
+          "vendor": "Spread Commissary"
+        },
+        "SSA/5514/22-23": {
+          "invoice_number": "SSA/5514/22-23",
+          "line_items": 1,
+          "date": "02/02/2025",
+          "vendor": "Sun Shine Agencies"
+        },
+        "10409/2022-23": {
+          "invoice_number": "10409/2022-23",
+          "line_items": 1,
+          "date": "02/20/2025",
+          "vendor": "Fab Dairy & Trading (I) Pvt. Ltd."
+        }
+      },
+      "invoice_summary_text": "**01394951** | Vendor: Pp | Date: 07/08/2024 | Line Items: 1\n**0635361** | Vendor: Arway Linen & Uniform Rental Service | Date: 06/08/2024 | Line Items: 1\n**0635629** | Vendor: Arway Linen & Uniform Rental Service | Date: 07/08/2024 | Line Items: 1\n**10409/2022-23** | Vendor: Fab Dairy & Trading (I) Pvt. Ltd. | Date: 02/20/2025 | Line Items: 1\n**1234567** | Vendor: meat Hub | Date: 02/11/2025 | Line Items: 1\n**1502577-IN** | Vendor: La Colombe Coffee | Date: 06/08/2024 | Line Items: 1\n**1502744-IN** | Vendor: La Colombe Coffee | Date: 06/08/2024 | Line Items: 1\n**1502751-IN** | Vendor: La Colombe Coffee | Date: 06/08/2024 | Line Items: 1\n**15635** | Vendor: C&A | Line Items: 1\n**2022435** | Vendor: Your Business Name | Date: 07/19/2022 | Line Items: 1\n**2076677** | Vendor: Cooper Pest Solutions | Date: 03/07/2024 | Line Items: 1\n**2081940** | Vendor: Cooper Pest Solutions | Date: 07/17/2024 | Line Items: 1\n**2090931** | Vendor: Cooper Pest Solutions | Date: 07/08/2024 | Line Items: 1\n**23436** | Vendor: Preferred Sportswear Inc | Date: 02/07/2024 | Line Items: 1\n**328** | Vendor: meat Hub | Date: 02/03/2025 | Line Items: 2\n**330247** | Vendor: Fidelity Burglar & Fire Alarm Co. HIC: | Date: 12/14/2023 | Line Items: 1\n**417** | Vendor: ABHIRUCHI SEAFOODS | Date: 02/26/2023 | Line Items: 1\n**5330328809** | Vendor: ARAMARK | Date: 02/04/2024 | Line Items: 1\n**5330329530** | Vendor: ARAMARK | Date: 03/04/2024 | Line Items: 1\n**5330331450** | Vendor: ARAMARK | Date: 08/04/2024 | Line Items: 1\n**5330332929** | Vendor: ARAMARK | Date: 10/04/2024 | Line Items: 1\n**5330336267** | Vendor: ARAMARK | Date: 04/17/2024 | Line Items: 1\n**5666** | Vendor: S.P. SOAP OIL | Date: 02/02/2025 | Line Items: 2\n**INV-001** | Vendor: Your company name | Date: 07/31/2021 | Line Items: 2\n**INV02500310** | Vendor: Yext, Inc. | Date: 05/22/2024 | Line Items: 1\n**SSA/5514/22-23** | Vendor: Sun Shine Agencies | Date: 02/02/2025 | Line Items: 1\n**US-001** | Vendor: East Repair Inc. | Date: 11/02/2019 | Line Items: 1\n**XC-179B1357** | Vendor: Spread Commissary | Date: 09/08/2024 | Line Items: 1\n**XC-1C7DE4D7** | Vendor: Spread Commissary | Date: 08/08/2024 | Line Items: 1\n**XC-6EC8680A** | Vendor: Spread Commissary | Date: 06/25/2024 | Line Items: 1\n**XC-932DB102** | Vendor: Spread Commissary | Date: 06/25/2024 | Line Items: 1\n**XC-D4D5F253** | Vendor: Spread Commissary | Date: 08/08/2024 | Line Items: 1\n**XC-DADCCEF6** | Vendor: Spread Commissary | Date: 06/25/2024 | Line Items: 1\n**XC-E38E1883** | Vendor: Spread Commissary | Date: 06/25/2024 | Line Items: 1\n**XC-EAEA205C** | Vendor: Spread Commissary | Date: 05/20/2024 | Line Items: 1\n**XC-ECBF2F90** | Vendor: Spread Commissary | Date: 09/08/2024 | Line Items: 1\n**XC-F329B787** | Vendor: Spread Commissary | Date: 06/08/2024 | Line Items: 1\n**XC-FED55C40** | Vendor: Spread Commissary | Date: 06/24/2024 | Line Items: 1",
+      "numeric_analysis": {
+        "total_amount": {
+          "sum": 43065.82,
+          "average": 1163.94,
+          "min": 1,
+          "max": 21324,
+          "count": 37,
+          "is_currency": true,
+          "description": "**total_amount**: Total = $43,065.82, Average = $1,163.94, Range = $1.00 - $21,324.00"
+        }
+      },
+      "numeric_summary_text": "**total_amount**: Total = $43,065.82, Average = $1,163.94, Range = $1.00 - $21,324.00",
+      "date_analysis": {
+        "invoice_date": {
+          "from": "02/02/2025",
+          "to": "12/14/2023",
+          "count": 40,
+          "unique_count": 25,
+          "description": "**invoice_date**: From *02/02/2025* to *12/14/2023* (40 entries, 25 unique dates)"
+        },
+        "due_date": {
+          "from": "02/07/2024",
+          "to": "12/28/2023",
+          "count": 41,
+          "unique_count": 23,
+          "description": "**due_date**: From *02/07/2024* to *12/28/2023* (41 entries, 23 unique dates)"
+        }
+      },
+      "date_summary_text": "**invoice_date**: From *02/02/2025* to *12/14/2023* (40 entries, 25 unique dates)\n**due_date**: From *02/07/2024* to *12/28/2023* (41 entries, 23 unique dates)",
+      "categorical_analysis": {
+        "invoice_number": {
+          "unique_count": 38,
+          "total_entries": 41,
+          "description": "**invoice_number**: 38 unique value(s) across 41 entries"
+        },
+        "vendor_name": {
+          "unique_count": 18,
+          "total_entries": 41,
+          "description": "**vendor_name**: 18 unique value(s) across 41 entries",
+          "top_values": [
+            {
+              "value": "Spread Commissary",
+              "count": 11
+            },
+            {
+              "value": "ARAMARK",
+              "count": 5
+            },
+            {
+              "value": "Cooper Pest Solutions",
+              "count": 3
+            },
+            {
+              "value": "La Colombe Coffee",
+              "count": 3
+            },
+            {
+              "value": "meat Hub",
+              "count": 3
+            }
+          ]
+        },
+        "vendor_company": {
+          "unique_count": 18,
+          "total_entries": 41,
+          "description": "**vendor_company**: 18 unique value(s)"
+        },
+        "aging_bucket": {
+          "unique_count": 2,
+          "total_entries": 41,
+          "description": "**aging_bucket**: 2 unique value(s)",
+          "top_values": [
+            {
+              "value": "90+ days",
+              "count": 40
+            },
+            {
+              "value": "0-30 days",
+              "count": 1
+            }
+          ]
+        },
+        "days_overdue": {
+          "unique_count": 23,
+          "total_entries": 41,
+          "description": "**days_overdue**: 23 unique value(s)"
+        }
+      },
+      "categorical_summary_text": "**invoice_number**: 38 unique value(s) across 41 entries\n**vendor_name**: 18 unique value(s) across 41 entries\n**vendor_company**: 18 unique value(s)\n**aging_bucket**: 2 unique value(s)\n**days_overdue**: 23 unique value(s)",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Invoice Aging Report Summary\n\n### Key Findings\n- The dataset contains **41 unique invoices** with a total amount of **$43,065.82**.\n- The average invoice amount is **$1,163.94**, with a range from **$1.00 to $21,324.00**.\n- **18 unique vendors** are represented, with **Spread Commissary** being the most frequent, appearing **11 times**.\n\n### Invoice Aging Insights\n- A significant majority of invoices (approximately **97.6%**, or **40 out of 41**) fall into the **90+ days** aging bucket, indicating a critical cash flow issue.\n- Only **1 invoice** is categorized within the **0-30 days** aging bucket, highlighting a lack of timely payments.\n\n> ⚠️ The overwhelming majority of overdue invoices poses a risk to cash flow and vendor relationships.\n\n### Notable Trends\n1. **Vendor Concentration**:\n   - **Spread Commissary** is the most frequently billed vendor with **11 invoices**, potentially indicating high dependency on this vendor.\n   - Other notable vendors include **ARAMARK** (5 invoices) and **Cooper Pest Solutions** (3 invoices).\n\n2. **Invoice Patterns**:\n   - Multiple invoices share identical invoice numbers (e.g., **INV-001**), which could complicate payment tracking and reconciliation.\n   - The highest single invoice amount is **$21,324.00**, which should be monitored for payment prioritization.\n\n3. **Days Overdue**:\n   - The **days overdue** ranges significantly, with the highest being **2,508 days** for the invoice from **East Repair Inc.** This indicates a severe delay in payment.\n\n### Business Impact\n> ⚠️ The high volume of overdue invoices, particularly those exceeding **90 days**, can severely impact cash flow and operational efficiency.\n\n### Recommendations\n1. **Prioritize Payments**:\n   - Focus on vendors with multiple overdue invoices, particularly **Spread Commissary** and **ARAMARK**, to mitigate risks.\n   \n2. **Engage with Vendors**:\n   - Initiate discussions with vendors like **East Repair Inc.** regarding their overdue invoices to negotiate terms or payment plans.\n\n3. **Strengthen Invoice Management**:\n   - Implement stricter invoice validation processes to avoid duplicate entries and errors in invoice numbering.\n\n4. **Monitor Aging Buckets Regularly**:\n   - Establish a routine review of aging invoices to identify trends and take proactive steps to reduce overdue amounts.\n\n5. **Cash Flow Analysis**:\n   - Conduct a detailed cash flow analysis to understand the impact of overdue invoices on overall financial health and operational capabilities.\n\nBy addressing these insights and implementing the recommendations, the organization can enhance its cash flow management and strengthen vendor relationships effectively.\n\n---\n\n# 📊 Query Results Summary\n\n**41** records found with **9** columns\n\n## 📎 Invoices\n\n**330247** - Fidelity Burglar & Fire Alarm Co. HIC: (12/14/2023)\n  └ 1 items, 0 units\n\n**US-001** - East Repair Inc. (11/02/2019)\n  └ 1 items, 0 units\n\n**5330332929** - ARAMARK (10/04/2024)\n  └ 1 items, 0 units\n\n**XC-ECBF2F90** - Spread Commissary (09/08/2024)\n  └ 1 items, 0 units\n\n**XC-179B1357** - Spread Commissary (09/08/2024)\n  └ 1 items, 0 units\n\n**XC-1C7DE4D7** - Spread Commissary (08/08/2024)\n  └ 1 items, 0 units\n\n**XC-D4D5F253** - Spread Commissary (08/08/2024)\n  └ 1 items, 0 units\n\n**5330331450** - ARAMARK (08/04/2024)\n  └ 1 items, 0 units\n\n**INV-001** - Your company name (07/31/2021)\n  └ 2 items, 0 units\n\n**2022435** - Your Business Name (07/19/2022)\n  └ 1 items, 0 units\n\n**2081940** - Cooper Pest Solutions (07/17/2024)\n  └ 1 items, 0 units\n\n**01394951** - Pp (07/08/2024)\n  └ 1 items, 0 units\n\n**0635629** - Arway Linen & Uniform Rental Service (07/08/2024)\n  └ 1 items, 0 units\n\n**2090931** - Cooper Pest Solutions (07/08/2024)\n  └ 1 items, 0 units\n\n**XC-DADCCEF6** - Spread Commissary (06/25/2024)\n  └ 1 items, 0 units\n\n**XC-932DB102** - Spread Commissary (06/25/2024)\n  └ 1 items, 0 units\n\n**XC-E38E1883** - Spread Commissary (06/25/2024)\n  └ 1 items, 0 units\n\n**XC-6EC8680A** - Spread Commissary (06/25/2024)\n  └ 1 items, 0 units\n\n**XC-FED55C40** - Spread Commissary (06/24/2024)\n  └ 1 items, 0 units\n\n**0635361** - Arway Linen & Uniform Rental Service (06/08/2024)\n  └ 1 items, 0 units\n\n**XC-F329B787** - Spread Commissary (06/08/2024)\n  └ 1 items, 0 units\n\n**1502744-IN** - La Colombe Coffee (06/08/2024)\n  └ 1 items, 0 units\n\n**1502751-IN** - La Colombe Coffee (06/08/2024)\n  └ 1 items, 0 units\n\n**1502577-IN** - La Colombe Coffee (06/08/2024)\n  └ 1 items, 0 units\n\n**INV02500310** - Yext, Inc. (05/22/2024)\n  └ 1 items, 0 units\n\n**XC-EAEA205C** - Spread Commissary (05/20/2024)\n  └ 1 items, 0 units\n\n**5330336267** - ARAMARK (04/17/2024)\n  └ 1 items, 0 units\n\n**2076677** - Cooper Pest Solutions (03/07/2024)\n  └ 1 items, 0 units\n\n**5330329530** - ARAMARK (03/04/2024)\n  └ 1 items, 0 units\n\n**417** - ABHIRUCHI SEAFOODS (02/26/2023)\n  └ 1 items, 0 units\n\n**10409/2022-23** - Fab Dairy & Trading (I) Pvt. Ltd. (02/20/2025)\n  └ 1 items, 0 units\n\n**1234567** - meat Hub (02/11/2025)\n  └ 1 items, 0 units\n\n**23436** - Preferred Sportswear Inc (02/07/2024)\n  └ 1 items, 0 units\n\n**5330328809** - ARAMARK (02/04/2024)\n  └ 1 items, 0 units\n\n**328** - meat Hub (02/03/2025)\n  └ 2 items, 0 units\n\n**5666** - S.P. SOAP OIL (02/02/2025)\n  └ 2 items, 0 units\n\n**SSA/5514/22-23** - Sun Shine Agencies (02/02/2025)\n  └ 1 items, 0 units\n\n**15635** - C&A ()\n  └ 1 items, 0 units\n\n## 💰 Numbers\n\n**total_amount:** $43,065.82 total, $1,163.94 avg\n\n## 📅 Dates\n\n**invoice_date:** 25 unique dates from 02/02/2025 to 12/14/2023\n**due_date:** 23 unique dates from 02/07/2024 to 12/28/2023\n\n## 🏷️ Categories\n\n**vendor_name:** Spread Commissary (11), ARAMARK (5), Cooper Pest Solutions (3)\n**aging_bucket:** 90+ days (40), 0-30 days (1)\n",
+      "ai_summary": "## Invoice Aging Report Summary\n\n### Key Findings\n- The dataset contains **41 unique invoices** with a total amount of **$43,065.82**.\n- The average invoice amount is **$1,163.94**, with a range from **$1.00 to $21,324.00**.\n- **18 unique vendors** are represented, with **Spread Commissary** being the most frequent, appearing **11 times**.\n\n### Invoice Aging Insights\n- A significant majority of invoices (approximately **97.6%**, or **40 out of 41**) fall into the **90+ days** aging bucket, indicating a critical cash flow issue.\n- Only **1 invoice** is categorized within the **0-30 days** aging bucket, highlighting a lack of timely payments.\n\n> ⚠️ The overwhelming majority of overdue invoices poses a risk to cash flow and vendor relationships.\n\n### Notable Trends\n1. **Vendor Concentration**:\n   - **Spread Commissary** is the most frequently billed vendor with **11 invoices**, potentially indicating high dependency on this vendor.\n   - Other notable vendors include **ARAMARK** (5 invoices) and **Cooper Pest Solutions** (3 invoices).\n\n2. **Invoice Patterns**:\n   - Multiple invoices share identical invoice numbers (e.g., **INV-001**), which could complicate payment tracking and reconciliation.\n   - The highest single invoice amount is **$21,324.00**, which should be monitored for payment prioritization.\n\n3. **Days Overdue**:\n   - The **days overdue** ranges significantly, with the highest being **2,508 days** for the invoice from **East Repair Inc.** This indicates a severe delay in payment.\n\n### Business Impact\n> ⚠️ The high volume of overdue invoices, particularly those exceeding **90 days**, can severely impact cash flow and operational efficiency.\n\n### Recommendations\n1. **Prioritize Payments**:\n   - Focus on vendors with multiple overdue invoices, particularly **Spread Commissary** and **ARAMARK**, to mitigate risks.\n   \n2. **Engage with Vendors**:\n   - Initiate discussions with vendors like **East Repair Inc.** regarding their overdue invoices to negotiate terms or payment plans.\n\n3. **Strengthen Invoice Management**:\n   - Implement stricter invoice validation processes to avoid duplicate entries and errors in invoice numbering.\n\n4. **Monitor Aging Buckets Regularly**:\n   - Establish a routine review of aging invoices to identify trends and take proactive steps to reduce overdue amounts.\n\n5. **Cash Flow Analysis**:\n   - Conduct a detailed cash flow analysis to understand the impact of overdue invoices on overall financial health and operational capabilities.\n\nBy addressing these insights and implementing the recommendations, the organization can enhance its cash flow management and strengthen vendor relationships effectively."
+    },
+    "table_data": {
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "total_amount",
+        "balance_due",
+        "vendor_name",
+        "vendor_company",
+        "aging_bucket",
+        "days_overdue"
+      ],
+      "rows": [
+        {
+          "invoice_number": "US-001",
+          "invoice_date": "11/02/2019",
+          "due_date": "02/26/2019",
+          "total_amount": 154.06,
+          "balance_due": null,
+          "vendor_name": "East Repair Inc.",
+          "vendor_company": "East Repair Inc.",
+          "aging_bucket": "90+ days",
+          "days_overdue": 2508
+        },
+        {
+          "invoice_number": "INV-001",
+          "invoice_date": "07/31/2021",
+          "due_date": "07/31/2021",
+          "total_amount": 0,
+          "balance_due": null,
+          "vendor_name": "Your company name",
+          "vendor_company": "Your company name",
+          "aging_bucket": "90+ days",
+          "days_overdue": 1622
+        },
+        {
+          "invoice_number": "INV-001",
+          "invoice_date": "07/31/2021",
+          "due_date": "07/31/2021",
+          "total_amount": 0,
+          "balance_due": null,
+          "vendor_name": "Your company name",
+          "vendor_company": "Your company name",
+          "aging_bucket": "90+ days",
+          "days_overdue": 1622
+        },
+        {
+          "invoice_number": "2022435",
+          "invoice_date": "07/19/2022",
+          "due_date": "03/08/2022",
+          "total_amount": 2510,
+          "balance_due": null,
+          "vendor_name": "Your Business Name",
+          "vendor_company": "Your Business Name",
+          "aging_bucket": "90+ days",
+          "days_overdue": 1402
+        },
+        {
+          "invoice_number": "330247",
+          "invoice_date": "12/14/2023",
+          "due_date": "12/28/2023",
+          "total_amount": 540,
+          "balance_due": null,
+          "vendor_name": "Fidelity Burglar & Fire Alarm Co. HIC:",
+          "vendor_company": "Fidelity Burglar & Fire Alarm Co. HIC:",
+          "aging_bucket": "90+ days",
+          "days_overdue": 742
+        },
+        {
+          "invoice_number": "15635",
+          "invoice_date": "",
+          "due_date": "02/07/2024",
+          "total_amount": 2700,
+          "balance_due": null,
+          "vendor_name": "C&A",
+          "vendor_company": "C&A",
+          "aging_bucket": "90+ days",
+          "days_overdue": 701
+        },
+        {
+          "invoice_number": "23436",
+          "invoice_date": "02/07/2024",
+          "due_date": "02/07/2024",
+          "total_amount": 1074,
+          "balance_due": null,
+          "vendor_name": "Preferred Sportswear Inc",
+          "vendor_company": "Preferred Sportswear Inc",
+          "aging_bucket": "90+ days",
+          "days_overdue": 701
+        },
+        {
+          "invoice_number": "2076677",
+          "invoice_date": "03/07/2024",
+          "due_date": "02/08/2024",
+          "total_amount": 58.64,
+          "balance_due": null,
+          "vendor_name": "Cooper Pest Solutions",
+          "vendor_company": "Cooper Pest Solutions",
+          "aging_bucket": "90+ days",
+          "days_overdue": 700
+        },
+        {
+          "invoice_number": "0635361",
+          "invoice_date": "06/08/2024",
+          "due_date": "05/09/2024",
+          "total_amount": 90.3,
+          "balance_due": null,
+          "vendor_name": "Arway Linen & Uniform Rental Service",
+          "vendor_company": "Arway Linen & Uniform Rental Service",
+          "aging_bucket": "90+ days",
+          "days_overdue": 609
+        },
+        {
+          "invoice_number": "XC-EAEA205C",
+          "invoice_date": "05/20/2024",
+          "due_date": "05/21/2024",
+          "total_amount": 234.6,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 597
+        },
+        {
+          "invoice_number": "5330336267",
+          "invoice_date": "04/17/2024",
+          "due_date": "05/31/2024",
+          "total_amount": 797.76,
+          "balance_due": null,
+          "vendor_name": "ARAMARK",
+          "vendor_company": "ARAMARK",
+          "aging_bucket": "90+ days",
+          "days_overdue": 587
+        },
+        {
+          "invoice_number": "5330332929",
+          "invoice_date": "10/04/2024",
+          "due_date": "05/31/2024",
+          "total_amount": 698.04,
+          "balance_due": null,
+          "vendor_name": "ARAMARK",
+          "vendor_company": "ARAMARK",
+          "aging_bucket": "90+ days",
+          "days_overdue": 587
+        },
+        {
+          "invoice_number": "5330329530",
+          "invoice_date": "03/04/2024",
+          "due_date": "05/31/2024",
+          "total_amount": 598.32,
+          "balance_due": null,
+          "vendor_name": "ARAMARK",
+          "vendor_company": "ARAMARK",
+          "aging_bucket": "90+ days",
+          "days_overdue": 587
+        },
+        {
+          "invoice_number": "5330331450",
+          "invoice_date": "08/04/2024",
+          "due_date": "05/31/2024",
+          "total_amount": 581.7,
+          "balance_due": null,
+          "vendor_name": "ARAMARK",
+          "vendor_company": "ARAMARK",
+          "aging_bucket": "90+ days",
+          "days_overdue": 587
+        },
+        {
+          "invoice_number": "5330328809",
+          "invoice_date": "02/04/2024",
+          "due_date": "05/31/2024",
+          "total_amount": 509.9,
+          "balance_due": null,
+          "vendor_name": "ARAMARK",
+          "vendor_company": "ARAMARK",
+          "aging_bucket": "90+ days",
+          "days_overdue": 587
+        },
+        {
+          "invoice_number": "01394951",
+          "invoice_date": "07/08/2024",
+          "due_date": "06/09/2024",
+          "total_amount": null,
+          "balance_due": null,
+          "vendor_name": "Pp",
+          "vendor_company": "Pp",
+          "aging_bucket": "90+ days",
+          "days_overdue": 578
+        },
+        {
+          "invoice_number": "0635629",
+          "invoice_date": "07/08/2024",
+          "due_date": "06/09/2024",
+          "total_amount": 99.87,
+          "balance_due": null,
+          "vendor_name": "Arway Linen & Uniform Rental Service",
+          "vendor_company": "Arway Linen & Uniform Rental Service",
+          "aging_bucket": "90+ days",
+          "days_overdue": 578
+        },
+        {
+          "invoice_number": "2090931",
+          "invoice_date": "07/08/2024",
+          "due_date": "06/09/2024",
+          "total_amount": 58.64,
+          "balance_due": null,
+          "vendor_name": "Cooper Pest Solutions",
+          "vendor_company": "Cooper Pest Solutions",
+          "aging_bucket": "90+ days",
+          "days_overdue": 578
+        },
+        {
+          "invoice_number": "XC-DADCCEF6",
+          "invoice_date": "06/25/2024",
+          "due_date": "06/26/2024",
+          "total_amount": 1233.7,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 561
+        },
+        {
+          "invoice_number": "XC-932DB102",
+          "invoice_date": "06/25/2024",
+          "due_date": "06/26/2024",
+          "total_amount": 1052.32,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 561
+        },
+        {
+          "invoice_number": "XC-FED55C40",
+          "invoice_date": "06/24/2024",
+          "due_date": "06/26/2024",
+          "total_amount": 1046.13,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 561
+        },
+        {
+          "invoice_number": "XC-E38E1883",
+          "invoice_date": "06/25/2024",
+          "due_date": "06/26/2024",
+          "total_amount": 913.85,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 561
+        },
+        {
+          "invoice_number": "XC-6EC8680A",
+          "invoice_date": "06/25/2024",
+          "due_date": "06/26/2024",
+          "total_amount": 602.82,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 561
+        },
+        {
+          "invoice_number": "XC-F329B787",
+          "invoice_date": "06/08/2024",
+          "due_date": "07/08/2024",
+          "total_amount": 491.9,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 549
+        },
+        {
+          "invoice_number": "INV02500310",
+          "invoice_date": "05/22/2024",
+          "due_date": "07/21/2024",
+          "total_amount": 311.99,
+          "balance_due": null,
+          "vendor_name": "Yext, Inc.",
+          "vendor_company": "Yext, Inc.",
+          "aging_bucket": "90+ days",
+          "days_overdue": 536
+        },
+        {
+          "invoice_number": "XC-1C7DE4D7",
+          "invoice_date": "08/08/2024",
+          "due_date": "08/08/2024",
+          "total_amount": 1270.3,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 518
+        },
+        {
+          "invoice_number": "2081940",
+          "invoice_date": "07/17/2024",
+          "due_date": "08/16/2024",
+          "total_amount": 58.64,
+          "balance_due": null,
+          "vendor_name": "Cooper Pest Solutions",
+          "vendor_company": "Cooper Pest Solutions",
+          "aging_bucket": "90+ days",
+          "days_overdue": 510
+        },
+        {
+          "invoice_number": "1502744-IN",
+          "invoice_date": "06/08/2024",
+          "due_date": "08/26/2024",
+          "total_amount": 461.5,
+          "balance_due": null,
+          "vendor_name": "La Colombe Coffee",
+          "vendor_company": "La Colombe Coffee",
+          "aging_bucket": "90+ days",
+          "days_overdue": 500
+        },
+        {
+          "invoice_number": "1502751-IN",
+          "invoice_date": "06/08/2024",
+          "due_date": "08/26/2024",
+          "total_amount": 184.13,
+          "balance_due": null,
+          "vendor_name": "La Colombe Coffee",
+          "vendor_company": "La Colombe Coffee",
+          "aging_bucket": "90+ days",
+          "days_overdue": 500
+        },
+        {
+          "invoice_number": "1502577-IN",
+          "invoice_date": "06/08/2024",
+          "due_date": "08/26/2024",
+          "total_amount": 172,
+          "balance_due": null,
+          "vendor_name": "La Colombe Coffee",
+          "vendor_company": "La Colombe Coffee",
+          "aging_bucket": "90+ days",
+          "days_overdue": 500
+        },
+        {
+          "invoice_number": "XC-D4D5F253",
+          "invoice_date": "08/08/2024",
+          "due_date": "09/08/2024",
+          "total_amount": 771.52,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 487
+        },
+        {
+          "invoice_number": "XC-ECBF2F90",
+          "invoice_date": "09/08/2024",
+          "due_date": "09/08/2024",
+          "total_amount": 127.84,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 487
+        },
+        {
+          "invoice_number": "XC-179B1357",
+          "invoice_date": "09/08/2024",
+          "due_date": "10/08/2024",
+          "total_amount": 43.2,
+          "balance_due": null,
+          "vendor_name": "Spread Commissary",
+          "vendor_company": "Spread Commissary",
+          "aging_bucket": "90+ days",
+          "days_overdue": 457
+        },
+        {
+          "invoice_number": "5666",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/02/2025",
+          "total_amount": 150,
+          "balance_due": null,
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "aging_bucket": "90+ days",
+          "days_overdue": 312
+        },
+        {
+          "invoice_number": "5666",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/02/2025",
+          "total_amount": 150,
+          "balance_due": null,
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "aging_bucket": "90+ days",
+          "days_overdue": 312
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "total_amount": 21324,
+          "balance_due": null,
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "aging_bucket": "90+ days",
+          "days_overdue": 311
+        },
+        {
+          "invoice_number": "328",
+          "invoice_date": "02/03/2025",
+          "due_date": "03/03/2025",
+          "total_amount": 1,
+          "balance_due": null,
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "aging_bucket": "90+ days",
+          "days_overdue": 311
+        },
+        {
+          "invoice_number": "328",
+          "invoice_date": "02/03/2025",
+          "due_date": "03/03/2025",
+          "total_amount": 1,
+          "balance_due": null,
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "aging_bucket": "90+ days",
+          "days_overdue": 311
+        },
+        {
+          "invoice_number": "1234567",
+          "invoice_date": "02/11/2025",
+          "due_date": "03/12/2025",
+          "total_amount": null,
+          "balance_due": null,
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "aging_bucket": "90+ days",
+          "days_overdue": 302
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "total_amount": 1985,
+          "balance_due": null,
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "aging_bucket": "90+ days",
+          "days_overdue": 294
+        },
+        {
+          "invoice_number": "417",
+          "invoice_date": "02/26/2023",
+          "due_date": "02/09/2026",
+          "total_amount": 7.15,
+          "balance_due": null,
+          "vendor_name": "ABHIRUCHI SEAFOODS",
+          "vendor_company": "ABHIRUCHI SEAFOODS",
+          "aging_bucket": "0-30 days",
+          "days_overdue": -32
+        }
+      ],
+      "row_count": 41
+    }
+  }
+}

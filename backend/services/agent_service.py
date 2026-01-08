@@ -1718,6 +1718,44 @@ ERROR MESSAGE:
 DATABASE SCHEMA CONTEXT:
 {schema_context_str}
 
+🔴 THE 4 GOLDEN RULES OF DEFENSIVE SQL (MUST FOLLOW EVERY TIME):
+
+📌 RULE 1: Defensive Join Pattern (for UUID fields)
+   Never cast JSONB to UUID directly in JOIN. Always verify data exists first.
+   ❌ BAD: LEFT JOIN icap_product_master prod ON (detail.product_id->>'value')::uuid = prod.id
+   ✅ GOOD: LEFT JOIN icap_product_master prod ON NULLIF(detail.product_id->>'value', '') IS NOT NULL AND (detail.product_id->>'value')::uuid = prod.id
+
+📌 RULE 2: Safe Numeric Pattern
+   OCR data contains empty strings ''. Casting '' to numeric causes errors.
+   ❌ BAD: (invoice.total->>'value')::numeric
+   ✅ GOOD: NULLIF(invoice.total->>'value', '')::numeric
+   Alternative: COALESCE(NULLIF(invoice.total->>'value', '')::numeric, 0)
+
+📌 RULE 3: Date Handling Pattern (CRITICAL!)
+   Dates are stored as MM/DD/YYYY strings. Use TO_DATE for all date operations.
+   ❌ BAD: (invoice.due_date->>'value')::date
+   ❌ BAD: invoice.due_date::date
+   ❌ BAD: CURRENT_DATE - invoice.due_date
+   ✅ GOOD: TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY')
+   
+   Date aging calculation:
+   ✅ CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') AS days_overdue
+   
+   Date filtering:
+   ✅ WHERE TO_DATE(invoice.invoice_date->>'value', 'MM/DD/YYYY') BETWEEN TO_DATE('01/01/2024', 'MM/DD/YYYY') AND TO_DATE('12/31/2024', 'MM/DD/YYYY')
+   
+   Age buckets:
+   ✅ CASE 
+        WHEN CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') <= 30 THEN '0-30 days'
+        WHEN CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') <= 60 THEN '31-60 days'
+        ELSE '90+ days'
+      END AS age_bucket
+
+📌 RULE 4: Always Include Document Join
+   batch_name lives in icap_document, not icap_invoice. Always join it.
+   ✅ INNER JOIN icap_document d ON invoice.document_id = d.id
+   This provides: batch_name, status, sub_status, accuracy
+
 IMPORTANT RULES (Based on Actual Schema):
 1. **CHECK COLUMN TYPES FIRST** - Look at the schema above to see each column's data type
 2. **ONLY USE COLUMNS THAT EXIST** - DO NOT invent or assume columns exist
@@ -1725,42 +1763,42 @@ IMPORTANT RULES (Based on Actual Schema):
    - If a column doesn't appear in schema, DO NOT use it
 3. **JSONB Columns**: Use ->>'value' operator (listed in schema as "JSONB")
    Example: i.invoice_date->>'value' (if invoice_date is JSONB)
-4. **VARCHAR/TEXT Columns**: Access directly, NO ->> operator
+4. **Apply RULE 2 (NULLIF) for ALL numeric JSONB fields**
+5. **Apply RULE 3 (TO_DATE) for ALL date JSONB fields**
+6. **Apply RULE 1 (defensive join) for ALL UUID JSONB fields in JOIN conditions**
+7. **VARCHAR/TEXT Columns**: Access directly, NO ->> operator
    Example: v.name, v.address (if these are VARCHAR/TEXT)
    If VARCHAR contains JSON: Cast first: (v.address::jsonb)->>'street'
-5. **Date Filtering on JSONB**: Use string comparison BEFORE casting
-   WRONG: NULLIF(field->>'value', '')::date LIKE 'pattern' ❌ (can't LIKE on DATE)
-   CORRECT: field->>'value' LIKE 'pattern' ✅ (string comparison)
-6. **Other Types** (uuid, int, numeric, bool, timestamp, date): Access directly
+8. **Other Types** (uuid, int, numeric, bool, timestamp, date): Access directly
    Example: i.id, v.tenant_id, i.created_on
-7. For numeric JSONB fields: NULLIF((field->>'value'), '')::numeric
-8. Use LEFT JOIN (not INNER JOIN) to preserve all records
-9. **NEVER EXPOSE ID COLUMNS** - ID columns must NEVER appear in SELECT:
+9. Use LEFT JOIN for optional relationships (vendor, product, category)
+10. Use INNER JOIN for required relationships (document)
+11. **NEVER EXPOSE ID COLUMNS** - ID columns must NEVER appear in SELECT:
    - ❌ WRONG: SELECT d.id, v.vendor_id, cat.id
    - ✅ CORRECT: SELECT d.description, v.name, cat.name
    - If you need to reference an entity, JOIN its table and show the name/description column
    - ID columns are: id, document_id, vendor_id, product_id, category_id, tenant_id, user_id, etc.
    - **CRITICAL**: Remove ALL id/ID columns from SELECT, even if they were in the original query
-10. Use column names EXACTLY as shown in schema
-11. **USE SCHEMA FOREIGN KEYS FOR JOINS** - DO NOT hallucinate JOIN conditions:
+12. Use column names EXACTLY as shown in schema
+13. **USE SCHEMA FOREIGN KEYS FOR JOINS** - DO NOT hallucinate JOIN conditions:
    - Look at "Foreign keys" section in schema above
    - Use ONLY the foreign key relationships shown in schema
    - Example from schema: "vendor_id → icap_vendor.id" means JOIN icap_vendor v ON i.vendor_id = v.id
    - ❌ WRONG: Guessing JOIN conditions based on column names
    - ✅ CORRECT: Using exact foreign key relationships from schema
-   - If a foreign key is JSONB (contains ->>'value'), cast it: (detail.product_id->>'value')::uuid = prod.id
-12. **CRITICAL**: If you're not sure a column exists, DON'T use it - check schema first
-13. **RESOLVE ID COLUMNS TO NAMES** - NEVER expose raw ID values:
+   - If a foreign key is JSONB (contains ->>'value'), cast it AND use RULE 1: LEFT JOIN prod ON NULLIF(detail.product_id->>'value', '') IS NOT NULL AND (detail.product_id->>'value')::uuid = prod.id
+14. **CRITICAL**: If you're not sure a column exists, DON'T use it - check schema first
+15. **RESOLVE ID COLUMNS TO NAMES** - NEVER expose raw ID values:
    - If you see category_id (JSONB): JOIN icap_tenant_category_master and show category.name instead
    - If you see product_id (JSONB): JOIN icap_product_master and show product.name instead
    - ID columns stored as JSONB contain {{"value": "uuid-string"}}, extract with ->>'value'
-   - Example JOIN: LEFT JOIN icap_tenant_category_master cat ON (d.category_id->>'value')::uuid = cat.id
+   - Example JOIN: LEFT JOIN icap_tenant_category_master cat ON NULLIF(d.category_id->>'value', '') IS NOT NULL AND (d.category_id->>'value')::uuid = cat.id
    - Then SELECT: cat.name as category_name (NOT d.category_id)
-14. **GROUP BY VALIDATION** - Check if all non-aggregated columns in SELECT are in GROUP BY:
+16. **GROUP BY VALIDATION** - Check if all non-aggregated columns in SELECT are in GROUP BY:
    - If SELECT has cat.name, GROUP BY must include cat.name (or cat.id)
    - If using CASE expressions with table columns, add those columns to GROUP BY
    - Better: Use aggregate function MAX(cat.name) if grouping doesn't need cat.name
-15. **PROACTIVE ERROR CHECKING** - Before returning the query, verify:
+17. **PROACTIVE ERROR CHECKING** - Before returning the query, verify:
    ✅ All columns in SELECT exist in the schema
    ✅ All non-aggregated SELECT columns are in GROUP BY
    ✅ All table aliases are defined in FROM/JOIN clauses
@@ -1768,7 +1806,10 @@ IMPORTANT RULES (Based on Actual Schema):
    ✅ WHERE clause comes before GROUP BY
    ✅ **NO ID COLUMNS in SELECT** (check for: .id, _id, document_id, vendor_id, product_id, category_id, etc.)
    ✅ **JOIN conditions match schema's foreign keys** - verify each JOIN uses the exact foreign key relationship from schema
-16. Return ONLY the corrected SQL query, no explanations
+   ✅ **All date operations use TO_DATE** - no ::date casts
+   ✅ **All numeric JSONB fields use NULLIF** - no direct ::numeric casts
+   ✅ **All UUID joins use defensive pattern** - NULLIF check before casting
+18. Return ONLY the corrected SQL query, no explanations
 
 CORRECTED QUERY:"""
             
@@ -2463,25 +2504,63 @@ User Request: {prompt}
 Database Schema Information:
 {schema_info}
 
+🔴 THE 4 GOLDEN RULES OF DEFENSIVE SQL (MUST FOLLOW EVERY TIME):
+
+📌 RULE 1: Defensive Join Pattern (for UUID fields)
+   Never cast JSONB to UUID directly in JOIN. Always verify data exists first.
+   ❌ BAD: LEFT JOIN icap_product_master prod ON (detail.product_id->>'value')::uuid = prod.id
+   ✅ GOOD: LEFT JOIN icap_product_master prod ON NULLIF(detail.product_id->>'value', '') IS NOT NULL AND (detail.product_id->>'value')::uuid = prod.id
+
+📌 RULE 2: Safe Numeric Pattern
+   OCR data contains empty strings ''. Casting '' to numeric causes errors.
+   ❌ BAD: (invoice.total->>'value')::numeric
+   ✅ GOOD: NULLIF(invoice.total->>'value', '')::numeric
+   Alternative: COALESCE(NULLIF(invoice.total->>'value', '')::numeric, 0)
+
+📌 RULE 3: Date Handling Pattern (CRITICAL!)
+   Dates are stored as MM/DD/YYYY strings. Use TO_DATE for all date operations.
+   ❌ BAD: (invoice.due_date->>'value')::date
+   ❌ BAD: invoice.due_date::date
+   ❌ BAD: CURRENT_DATE - invoice.due_date
+   ✅ GOOD: TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY')
+   
+   Date aging calculation:
+   ✅ CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') AS days_overdue
+   
+   Date filtering:
+   ✅ WHERE TO_DATE(invoice.invoice_date->>'value', 'MM/DD/YYYY') BETWEEN TO_DATE('01/01/2024', 'MM/DD/YYYY') AND TO_DATE('12/31/2024', 'MM/DD/YYYY')
+   
+   Age buckets:
+   ✅ CASE 
+        WHEN CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') <= 30 THEN '0-30 days'
+        WHEN CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') <= 60 THEN '31-60 days'
+        ELSE '90+ days'
+      END AS age_bucket
+
+📌 RULE 4: Always Include Document Join
+   batch_name lives in icap_document, not icap_invoice. Always join it.
+   ✅ INNER JOIN icap_document d ON invoice.document_id = d.id
+   This provides: batch_name, status, sub_status, accuracy
+
 IMPORTANT Requirements:
-1. Use LEFT JOIN (not INNER JOIN) to preserve all records
-2. Never include ID columns in SELECT (no invoice_id, vendor_id, document_id, etc.)
-3. Use JSONB operators (->>'value') for JSONB columns - this is CRITICAL for JSONB fields
-4. Order results appropriately (e.g., ORDER BY invoice_number, line_item_id)
-5. Include ALL relevant business fields from primary table first, then related tables, then detail tables
-6. DO NOT add any WHERE clause for date filtering - I will add that separately
-7. Use proper PostgreSQL syntax - check for typos, correct column names, valid operators
-8. Ensure all table aliases are consistent throughout the query
-9. Use lowercase for SQL keywords (select, from, left join, where, order by)
-10. Test that all referenced columns exist in the schema provided
-11. When using GROUP BY with aggregate functions (COUNT, SUM, AVG, MAX, MIN, etc.) in HAVING clause, ALWAYS include those aggregates in the SELECT clause with meaningful aliases
+1. Use LEFT JOIN (not INNER JOIN) for optional relationships (vendor, product, category)
+2. Use INNER JOIN for required relationships (document)
+3. Never include ID columns in SELECT (no invoice_id, vendor_id, document_id, etc.)
+4. Use JSONB operators (->>'value') for JSONB columns - this is CRITICAL for JSONB fields
+5. Apply RULE 2 (NULLIF) for ALL numeric JSONB fields
+6. Apply RULE 3 (TO_DATE) for ALL date JSONB fields
+7. Apply RULE 1 (defensive join) for ALL UUID JSONB fields in JOIN conditions
+8. Order results appropriately (e.g., ORDER BY invoice_number, line_item_id)
+9. Include ALL relevant business fields from primary table first, then related tables, then detail tables
+10. DO NOT add any WHERE clause for date filtering - I will add that separately
+11. Use proper PostgreSQL syntax - check for typos, correct column names, valid operators
+12. Ensure all table aliases are consistent throughout the query
+13. Use lowercase for SQL keywords (select, from, left join, where, order by)
+14. Test that all referenced columns exist in the schema provided
+15. When using GROUP BY with aggregate functions (COUNT, SUM, AVG, MAX, MIN, etc.) in HAVING clause, ALWAYS include those aggregates in the SELECT clause with meaningful aliases
     Example: If using HAVING count(*) > 1, then SELECT must include "count(*) as duplicate_count" or similar
     This allows users to see the aggregate values, not just filter by them
-12. **CRITICAL**: For numeric fields that might contain empty strings, use NULLIF to handle empty values gracefully:
-    - CORRECT: NULLIF((total->>'value'), '')::numeric AS total
-    - WRONG: (total->>'value')::numeric AS total
-    This prevents "invalid input syntax for type numeric" errors when empty strings are encountered
-13. **CRITICAL - RESOLVE ID COLUMNS TO NAMES**: 
+16. **CRITICAL - RESOLVE ID COLUMNS TO NAMES**: 
     ⚠️ If you see icap_invoice_detail table with category_id or product_id JSONB columns:
     - category_id: JOIN icap_tenant_category_master to resolve to category name
       * JOIN condition: LEFT JOIN icap_tenant_category_master cat ON NULLIF(detail.category_id->>'value', '') IS NOT NULL AND (detail.category_id->>'value')::uuid = cat.id

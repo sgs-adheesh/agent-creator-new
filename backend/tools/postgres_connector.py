@@ -34,7 +34,8 @@ Execute read-only SQL queries on PostgreSQL database. Only SELECT queries are al
 1. ALWAYS call postgres_inspect_schema(table_name='your_table') FIRST
 2. Read the 'ready_to_use_query' template (auto-generated from postgres_schema_cache)
 3. Copy the template and modify it for your specific needs
-4. Execute the query using this tool
+4. Apply the 4 GOLDEN RULES of defensive SQL coding
+5. Execute the query using this tool
 
 🔴 WHY SCHEMA INSPECTION IS MANDATORY:
 - Column names are NOT hardcoded anywhere - they're discovered from postgres_schema_cache
@@ -42,9 +43,61 @@ Execute read-only SQL queries on PostgreSQL database. Only SELECT queries are al
 - JSONB columns require special ->>'value' extraction
 - The schema cache contains the ONLY source of truth for table structure
 
+🔴 THE 4 GOLDEN RULES OF DEFENSIVE SQL (MUST FOLLOW EVERY TIME):
+
+📌 RULE 1: The "Defensive Join" Pattern
+   Never cast JSONB to UUID directly in JOIN. Always verify data exists first.
+   
+   ❌ BAD: LEFT JOIN icap_product_master prod ON (detail.product_id->>'value')::uuid = prod.id
+   ✅ GOOD: LEFT JOIN icap_product_master prod ON 
+              NULLIF(detail.product_id->>'value', '') IS NOT NULL 
+              AND (detail.product_id->>'value')::uuid = prod.id
+
+📌 RULE 2: The "Safe Numeric" Pattern
+   OCR data contains empty strings ''. Casting '' to numeric causes errors.
+   
+   ❌ BAD: (invoice.total->>'value')::numeric
+   ✅ GOOD: NULLIF(invoice.total->>'value', '')::numeric
+   
+   Alternative with default: COALESCE(NULLIF(invoice.total->>'value', '')::numeric, 0)
+
+📌 RULE 3: The "Date Handling" Pattern
+   Dates are stored as MM/DD/YYYY strings. Use TO_DATE for all date operations.
+   
+   ❌ BAD: (invoice.due_date->>'value')::date
+   ❌ BAD: CURRENT_DATE - invoice.due_date->>'value'
+   ✅ GOOD: TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY')
+   
+   Date aging calculation:
+   ✅ CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') AS days_overdue
+   
+   Date filtering:
+   ✅ WHERE TO_DATE(invoice.invoice_date->>'value', 'MM/DD/YYYY') 
+         BETWEEN TO_DATE('01/01/2024', 'MM/DD/YYYY') 
+         AND TO_DATE('12/31/2024', 'MM/DD/YYYY')
+   
+   Age buckets:
+   ✅ CASE 
+        WHEN CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') <= 30 
+          THEN '0-30 days'
+        WHEN CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') <= 60 
+          THEN '31-60 days'
+        ELSE '90+ days'
+      END AS age_bucket
+
+📌 RULE 4: Always Include the Document Join
+   batch_name lives in icap_document, not icap_invoice. Always join it.
+   
+   ❌ BAD: Missing document join (no batch_name available)
+   ✅ GOOD: INNER JOIN icap_document d ON invoice.document_id = d.id
+   
+   This provides: batch_name, status, sub_status, accuracy
+
+
 🔴 CRITICAL JSONB RULES (MUST FOLLOW FOR EVERY JSONB COLUMN):
 
-1. JSONB columns contain: {{\"value\": \"actual_data\", \"confidence\": 0.95, \"pageNo\": 1}}
+1. JSONB columns contain: {{"value": "actual_data", "confidence": 0.95, "pageNo": 1}}
+
 
 2. NEVER select the column directly - you'll get the entire JSON object
    ❌ WRONG: SELECT invoice_number, invoice_date, total FROM invoice
@@ -53,49 +106,56 @@ Execute read-only SQL queries on PostgreSQL database. Only SELECT queries are al
 3. EVERY JSONB column MUST use this pattern:
    - Extract value: column_name->>'value'
    - Cast to text: (column_name->>'value')::text
-   - For math only: (column_name->>'value')::numeric
+   - For math: NULLIF(column_name->>'value', '')::numeric (RULE 2!)
+   - For dates: TO_DATE(column_name->>'value', 'MM/DD/YYYY') (RULE 3!)
 
 4. Treat ALL JSONB values as TEXT (including dates, numbers for display):
    ✅ (invoice_number->>'value')::text
-   ✅ (invoice_date->>'value')::text  -- Dates are MM/DD/YYYY text
+   ✅ TO_DATE(invoice_date->>'value', 'MM/DD/YYYY')  -- Dates use TO_DATE
    ✅ (quantity->>'value')::text  -- Display as text
-   ✅ (total->>'value')::numeric  -- Only for SUM, calculations
+   ✅ NULLIF(total->>'value', '')::numeric  -- Safe numeric for calculations
 
-5. Date filtering uses LIKE on text:
-   ✅ WHERE invoice_date->>'value' LIKE '02/%/2025'
-   ❌ WRONG: WHERE invoice_date LIKE '02/%/2025'  -- Missing ->>'value'
-   ❌ WRONG: WHERE (invoice_date->>'value')::date >= '2025-01-01'  -- Not date type
-
-6. NEVER use ::int (causes overflow), NEVER use ::date (data is text):
+5. NEVER use ::int (causes overflow), NEVER use simple ::date (wrong format):
    ❌ WRONG: (quantity->>'value')::int
    ❌ WRONG: (invoice_date->>'value')::date
-   ✅ CORRECT: (quantity->>'value')::text or ::numeric for calculations
+   ✅ CORRECT: (quantity->>'value')::numeric or TO_DATE(..., 'MM/DD/YYYY')
 
-📘 EXAMPLE WORKFLOW:
-Step 1: result = postgres_inspect_schema(table_name='invoice')
-Step 2: Copy result['ready_to_use_query']:
-  SELECT
-    id,
-    vendor_id,
-    (invoice_number->>'value')::text AS invoice_number,
-    (invoice_date->>'value')::text AS invoice_date,
-    (total->>'value')::text AS total
-  FROM icap_invoice
-  LIMIT 10;
+📘 COMPLETE EXAMPLE WITH ALL 4 RULES:
+SELECT 
+    -- RULE 4: Always include document join
+    d.batch_name,
+    
+    -- JSONB extraction
+    (inv.invoice_number->>'value')::text AS invoice_number,
+    
+    -- RULE 3: Use TO_DATE for dates
+    TO_DATE(inv.invoice_date->>'value', 'MM/DD/YYYY') AS invoice_date,
+    TO_DATE(inv.due_date->>'value', 'MM/DD/YYYY') AS due_date,
+    
+    -- RULE 3: Date aging calculation
+    CURRENT_DATE - TO_DATE(inv.due_date->>'value', 'MM/DD/YYYY') AS days_overdue,
+    
+    -- RULE 2: Safe numeric casting
+    NULLIF(inv.total->>'value', '')::numeric AS total_amount,
+    
+    -- Vendor info
+    v.name AS vendor_name
+    
+FROM icap_invoice inv
 
-Step 3: Modify for your needs:
-  SELECT
-    (i.invoice_number->>'value')::text,
-    (i.invoice_date->>'value')::text,
-    (i.total->>'value')::numeric,
-    v.name
-  FROM icap_invoice i
-  LEFT JOIN icap_vendor v ON i.vendor_id = v.id
-  WHERE i.invoice_date->>'value' LIKE '02/%/2025';
+-- RULE 4: INNER JOIN with document
+INNER JOIN icap_document d ON inv.document_id = d.id
 
-Step 4: Execute with postgres_query(query='...')
+-- Regular LEFT JOIN
+LEFT JOIN icap_vendor v ON inv.vendor_id = v.id
 
-Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
+-- RULE 2: Safe numeric filtering
+WHERE NULLIF(inv.balance_amount->>'value', '')::numeric > 0
+
+ORDER BY d.batch_name, days_overdue DESC;
+
+Note: NEVER guess column names or types - ALWAYS inspect schema first!
+See backend/docs/DEFENSIVE_SQL_RULES.md for complete documentation."""
         
         super().__init__(
             name="postgres_query",
@@ -902,7 +962,7 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
                 # Add JSONB guidance with specific query syntax
                 if jsonb_cols:
                     response["jsonb_columns"] = jsonb_cols
-                    response["WARNING"] = f"⚠️⚠️⚠️ CRITICAL: {len(jsonb_cols)} columns are JSONB type - MUST use ->>'value' extraction!"
+                    response["WARNING"] = f"⚠️⚠️⚠️ CRITICAL: {len(jsonb_cols)} columns are JSONB type - MUST use ->> 'value' extraction AND defensive patterns!"
                     
                     # Show first 3 JSONB columns as examples (don't hardcode specific names)
                     example_cols = jsonb_cols[:3]
@@ -916,20 +976,39 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
                         f"  SELECT {', '.join(example_cols)} FROM {actual_table};\n\n"
                         f"✅ CORRECT - ALWAYS extract 'value' and cast to ::text:\n"
                         f"  SELECT {correct_examples_str} FROM {actual_table};\n\n"
+                        f"🔴 THE 4 GOLDEN RULES FOR ALL {len(jsonb_cols)} JSONB COLUMNS:\n\n"
+                        f"  📌 RULE 1: Defensive Join Pattern (for UUID fields)\n"
+                        f"     ❌ BAD: LEFT JOIN table ON (field->>'value')::uuid = table.id\n"
+                        f"     ✅ GOOD: LEFT JOIN table ON NULLIF(field->>'value', '') IS NOT NULL \n"
+                        f"                              AND (field->>'value')::uuid = table.id\n\n"
+                        f"  📌 RULE 2: Safe Numeric Pattern (for money/number fields)\n"
+                        f"     ❌ BAD: (field->>'value')::numeric\n"
+                        f"     ✅ GOOD: NULLIF(field->>'value', '')::numeric\n"
+                        f"     ✅ BETTER: COALESCE(NULLIF(field->>'value', '')::numeric, 0)\n\n"
+                        f"  📌 RULE 3: Date Handling Pattern (dates are MM/DD/YYYY)\n"
+                        f"     ❌ BAD: (field->>'value')::date\n"
+                        f"     ✅ GOOD: TO_DATE(field->>'value', 'MM/DD/YYYY')\n"
+                        f"     ✅ AGING: CURRENT_DATE - TO_DATE(field->>'value', 'MM/DD/YYYY')\n\n"
+                        f"  📌 RULE 4: Always Include Document Join\n"
+                        f"     ✅ INNER JOIN icap_document d ON {actual_table}.document_id = d.id\n"
+                        f"     This provides: batch_name, status, sub_status, accuracy\n\n"
                         f"MANDATORY Rules for ALL {len(jsonb_cols)} JSONB columns:\n"
                         f"  1. Structure: {{\"value\": \"actual_data\", \"confidence\": 0.95, \"pageNo\": 1}}\n"
                         f"  2. ALWAYS extract: column_name->>'value'\n"
                         f"  3. ALWAYS cast to ::text for display/filtering\n"
-                        f"  4. Use ::numeric ONLY for SUM/math (NEVER ::int)\n"
-                        f"  5. Dates are TEXT (MM/DD/YYYY), use LIKE for filtering\n\n"
+                        f"  4. Use NULLIF for ::numeric (NEVER ::int)\n"
+                        f"  5. Use TO_DATE for dates (format: MM/DD/YYYY)\n\n"
                         f"Query Patterns:\n"
                         f"  • Text/ID: (column_name->>'value')::text\n"
-                        f"  • Date: (column_name->>'value')::text  (stored as MM/DD/YYYY)\n"
+                        f"  • Date: TO_DATE(column_name->>'value', 'MM/DD/YYYY')\n"
                         f"  • Number display: (column_name->>'value')::text\n"
-                        f"  • Number math: (column_name->>'value')::numeric\n"
-                        f"  • Date filter: WHERE column_name->>'value' LIKE '02/%/2025'\n\n"
+                        f"  • Number math: NULLIF(column_name->>'value', '')::numeric\n"
+                        f"  • Date filter: WHERE TO_DATE(column_name->>'value', 'MM/DD/YYYY') BETWEEN ...\n"
+                        f"  • UUID join: LEFT JOIN table ON NULLIF(field->>'value', '') IS NOT NULL \n"
+                        f"                                AND (field->>'value')::uuid = table.id\n\n"
                         f"JSONB columns in this table: {', '.join(jsonb_cols)}\n\n"
-                        f"USE THE 'ready_to_use_query' FIELD - it shows correct syntax for EVERY column!"
+                        f"USE THE 'ready_to_use_query' FIELD - it shows correct syntax for EVERY column!\n"
+                        f"See backend/docs/DEFENSIVE_SQL_RULES.md for complete documentation."
                     )
                     
                     # Add query examples for each JSONB column
@@ -938,25 +1017,33 @@ Note: NEVER guess column names or types - ALWAYS inspect schema first!"""
                         # Infer likely data type from column name
                         if any(keyword in jcol.lower() for keyword in ['date', 'time', 'day', 'month', 'year']):
                             response["jsonb_query_examples"][jcol] = {
-                                "type": "text (date stored as MM/DD/YYYY)",
-                                "select": f"({jcol}->>'value')::text",
-                                "where": f"WHERE {jcol}->>'value' LIKE '02/%/2025'",
-                                "example": f"SELECT ({jcol}->>'value')::text AS {jcol}_value FROM {actual_table} WHERE {jcol}->>'value' LIKE '01/%/2024'"
+                                "type": "date (stored as MM/DD/YYYY)",
+                                "select": f"TO_DATE({jcol}->>'value', 'MM/DD/YYYY')",
+                                "where": f"WHERE TO_DATE({jcol}->>'value', 'MM/DD/YYYY') BETWEEN TO_DATE('01/01/2024', 'MM/DD/YYYY') AND TO_DATE('12/31/2024', 'MM/DD/YYYY')",
+                                "example": f"SELECT TO_DATE({jcol}->>'value', 'MM/DD/YYYY') AS {jcol}_value, CURRENT_DATE - TO_DATE({jcol}->>'value', 'MM/DD/YYYY') AS days_ago FROM {actual_table}"
                             }
                         elif any(keyword in jcol.lower() for keyword in ['total', 'amount', 'price', 'cost', 'tax', 'sum', 'balance']):
                             response["jsonb_query_examples"][jcol] = {
-                                "type": "numeric",
-                                "select": f"({jcol}->>'value')::numeric",
-                                "where": f"WHERE ({jcol}->>'value')::numeric > 0",
-                                "example": f"SELECT ({jcol}->>'value')::numeric AS {jcol}_value FROM {actual_table}"
+                                "type": "numeric (use NULLIF for safety)",
+                                "select": f"NULLIF({jcol}->>'value', '')::numeric",
+                                "where": f"WHERE NULLIF({jcol}->>'value', '')::numeric > 0",
+                                "example": f"SELECT NULLIF({jcol}->>'value', '')::numeric AS {jcol}_value FROM {actual_table} WHERE NULLIF({jcol}->>'value', '')::numeric > 0"
                             }
                         elif any(keyword in jcol.lower() for keyword in ['qty', 'quantity', 'count', 'number']):
                             # Quantity should be numeric for calculations but can be text if not calculating
                             response["jsonb_query_examples"][jcol] = {
-                                "type": "text or numeric (use ::numeric only for calculations)",
+                                "type": "text or numeric (use NULLIF for calculations)",
                                 "select": f"({jcol}->>'value')::text",
-                                "where": f"WHERE ({jcol}->>'value')::numeric > 0",
+                                "where": f"WHERE NULLIF({jcol}->>'value', '')::numeric > 0",
                                 "example": f"SELECT ({jcol}->>'value')::text AS {jcol}_value FROM {actual_table}"
+                            }
+                        elif any(keyword in jcol.lower() for keyword in ['id', 'uuid']):
+                            # UUID fields need defensive join pattern
+                            response["jsonb_query_examples"][jcol] = {
+                                "type": "uuid (use defensive join pattern)",
+                                "select": f"({jcol}->>'value')::text",
+                                "where": f"WHERE NULLIF({jcol}->>'value', '') IS NOT NULL",
+                                "example": f"LEFT JOIN related_table rt ON NULLIF({jcol}->>'value', '') IS NOT NULL AND ({jcol}->>'value')::uuid = rt.id"
                             }
                         else:
                             response["jsonb_query_examples"][jcol] = {

@@ -90,6 +90,7 @@ class ExecuteAgentRequest(BaseModel):
     query: Optional[str] = None  # Text query (for text_query type)
     input_data: Optional[Dict[str, Any]] = None  # Dynamic input data (dates, conditions, etc.)
     tool_configs: Optional[Dict[str, Dict[str, str]]] = None  # Runtime tool configurations
+    visualization_preferences: Optional[str] = None  # User-specified visualization approach (e.g., "pie chart by vendor", "bar chart over time")
 
 
 class AgentResponse(BaseModel):
@@ -116,6 +117,7 @@ class ExecuteAgentResponse(BaseModel):
     summary: Optional[Dict[str, Any]] = None
     cached_execution: Optional[bool] = None
     used_cache: Optional[bool] = None
+    visualization_config: Optional[Dict[str, Any]] = None  # LLM-generated visualization configuration
 
 
 class UpdateAgentRequest(BaseModel):
@@ -180,8 +182,12 @@ async def get_templates():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class CreateAgentFromTemplateRequest(BaseModel):
+    name: Optional[str] = None
+    visualization_preferences: Optional[str] = None  # User's visualization preferences
+
 @app.post("/api/templates/{template_id}/create", response_model=AgentResponse)
-async def create_agent_from_template(template_id: str, name: Optional[str] = None):
+async def create_agent_from_template(template_id: str, request: CreateAgentFromTemplateRequest = CreateAgentFromTemplateRequest()):
     """Create a new agent from a template (instant - no AI processing)"""
     try:
         # Load template
@@ -200,7 +206,14 @@ async def create_agent_from_template(template_id: str, name: Optional[str] = Non
         
         # Generate new agent ID
         agent_id = str(uuid.uuid4())
-        agent_name = name or template["name"]
+        agent_name = request.name if request.name else template["name"]
+        
+        # Get visualization preferences: user input > template default > None
+        visualization_prefs = None
+        if request.visualization_preferences:
+            visualization_prefs = request.visualization_preferences
+        elif template.get("template", {}).get("default_visualization_preferences"):
+            visualization_prefs = template["template"]["default_visualization_preferences"]
         
         # Extract template data
         template_data = template["template"]
@@ -226,7 +239,8 @@ async def create_agent_from_template(template_id: str, name: Optional[str] = Non
             },
             "created_at": datetime.now().isoformat(),
             "use_cases": template.get("use_cases", []),
-            "execution_guidance": template_data.get("execution_guidance")  # Copy pre-built execution guidance
+            "execution_guidance": template_data.get("execution_guidance"),  # Copy pre-built execution guidance
+            "visualization_preferences": visualization_prefs  # Store visualization preferences
         }
         
         # Save agent
@@ -447,7 +461,7 @@ Return ONLY year {year} records."""
                 # Generic conversion
                 query = f"Input Data: {request.input_data}\n{query}"
         
-        result = agent_service.execute_agent(agent_id, query, request.tool_configs, request.input_data)
+        result = agent_service.execute_agent(agent_id, query, request.tool_configs, request.input_data, None, request.visualization_preferences)
         return ExecuteAgentResponse(**result)
     except HTTPException:
         raise
@@ -492,7 +506,7 @@ async def execute_agent_stream(agent_id: str, request: ExecuteAgentRequest):
             
             # Execute agent with progress streaming AND AI thinking
             for progress_event in agent_service.execute_agent_with_ai_streaming(
-                agent_id, query, request.tool_configs, request.input_data
+                agent_id, query, request.tool_configs, request.input_data, request.visualization_preferences
             ):
                 # Send progress update as SSE
                 yield f"data: {json.dumps(progress_event)}\n\n"

@@ -118,7 +118,7 @@ class AgentService:
         """Reload all tools from directory (useful after generating new tools)"""
         self.tools = self._load_all_tools()
     
-    def _format_output(self, output: str, output_format: str, intermediate_steps: List, agent_data: Dict[str, Any] = None) -> Dict[str, Any]:
+    def _format_output(self, output: str, output_format: str, intermediate_steps: List, agent_data: Dict[str, Any] = None, visualization_preferences: str = None) -> Dict[str, Any]:
         """
         Format agent output based on the specified output_format
         
@@ -213,6 +213,240 @@ class AgentService:
         if table_data:
             base_response["table_data"] = table_data
             print(f"\n📊 Table data extracted for visualization: {table_data.get('row_count', 0)} rows")
+            print(f"  📋 Columns: {table_data.get('columns', [])}")
+            
+            # Generate visualization config if agent data is available
+            if agent_data:
+                print(f"  🎯 Agent data available, generating visualization config...")
+                print(f"  📝 Visualization preferences: {visualization_preferences}")
+                agent_purpose = agent_data.get('prompt', '') or agent_data.get('description', '')
+                
+                # Note: streaming_callback is not available in _format_output context
+                # Visualization streaming will be handled in execute_agent_with_ai_streaming
+                try:
+                    visualization_config = self._generate_visualization_config(
+                        query_result=base_response,
+                        agent_purpose=agent_purpose,
+                        user_preferences=visualization_preferences,
+                        streaming_callback=None  # Will be set in streaming context
+                    )
+                    
+                    if visualization_config:
+                        base_response["visualization_config"] = visualization_config
+                        print(f"  ✅ Visualization config generated and added to response")
+                    else:
+                        print(f"  ⚠️ _generate_visualization_config returned None")
+                except Exception as e:
+                    print(f"  ❌ Error in _generate_visualization_config: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    visualization_config = None
+                
+                if not visualization_config:
+                    # Fallback: Create basic visualization config from table_data
+                    print(f"  ⚠️ Visualization config generation returned None, creating fallback config...")
+                    if table_data and table_data.get('rows'):
+                        # Extract requested types from preferences
+                        # Parse chart types from visualization preferences (same logic as _generate_visualization_config)
+                        requested_types = []
+                        if visualization_preferences:
+                            prefs_lower = visualization_preferences.lower().strip()
+                            
+                            # Try comma-separated parsing first (checkbox format)
+                            parts = [p.strip() for p in prefs_lower.split(',')]
+                            supported_types = {
+                                "pie": "pie", "bar": "bar", "line": "line", "area": "area",
+                                "scatter": "scatter", "radar": "radar", "radialbar": "radialbar",
+                                "radial": "radialbar", "composed": "composed", "mixed": "composed",
+                                "funnel": "funnel", "treemap": "treemap"
+                            }
+                            
+                            for part in parts:
+                                for chart_key, chart_type in supported_types.items():
+                                    if chart_key == part or part.startswith(chart_key + " ") or part == chart_key + "chart":
+                                        normalized_type = supported_types[chart_key]
+                                        if normalized_type not in requested_types:
+                                            requested_types.append(normalized_type)
+                                        break
+                            
+                            # Fallback to substring search if no matches
+                            if not requested_types:
+                                for chart_key, chart_type in supported_types.items():
+                                    if chart_key in prefs_lower:
+                                        normalized_type = supported_types[chart_key]
+                                        if normalized_type not in requested_types:
+                                            requested_types.append(normalized_type)
+                        
+                        # Limit to 4 chart types (matching frontend limit)
+                        if len(requested_types) > 4:
+                            print(f"  ⚠️ Limiting requested chart types from {len(requested_types)} to 4")
+                            requested_types = requested_types[:4]
+                        
+                        # Create minimal fallback config
+                        fallback_config = {
+                            "charts": [],
+                            "insights": "Visualization configuration generated from data structure.",
+                            "recommended_view": "dashboard"
+                        }
+                        
+                        # Add at least pie and bar if no preferences specified
+                        if not requested_types:
+                            requested_types = ["pie", "bar"]
+                        
+                        # Try to create charts from requested types
+                        rows = table_data.get('rows', [])
+                        columns = table_data.get('columns', [])
+                        if rows and columns:
+                            # Analyze fields
+                            first_row = rows[0]
+                            numeric_fields = []
+                            categorical_fields = []
+                            
+                            for col in columns:
+                                if col in first_row:
+                                    value = first_row[col]
+                                    if isinstance(value, dict) and 'value' in value:
+                                        value = value['value']
+                                    if isinstance(value, (int, float)) or (isinstance(value, str) and value.replace('.', '').replace('-', '').isdigit()):
+                                        if 'date' not in col.lower() and 'time' not in col.lower():
+                                            numeric_fields.append(col)
+                                    elif isinstance(value, str) and 'date' not in col.lower() and 'time' not in col.lower():
+                                        categorical_fields.append(col)
+                            
+                            # Create charts for requested types
+                            chart_id = 1
+                            for chart_type in requested_types[:5]:  # Limit to 5 charts
+                                if chart_type == 'pie' and categorical_fields and numeric_fields:
+                                    fallback_config["charts"].append({
+                                        "id": f"fallback_{chart_id}",
+                                        "type": "pie",
+                                        "title": f"{numeric_fields[0]} by {categorical_fields[0]}",
+                                        "description": "Distribution analysis",
+                                        "data_source": {
+                                            "group_by": categorical_fields[0],
+                                            "aggregate": {"field": numeric_fields[0], "function": "sum"}
+                                        },
+                                        "config": {"colors": ["#6366f1", "#8b5cf6", "#ec4899"]}
+                                    })
+                                    chart_id += 1
+                                elif chart_type == 'bar' and categorical_fields and numeric_fields:
+                                    fallback_config["charts"].append({
+                                        "id": f"fallback_{chart_id}",
+                                        "type": "bar",
+                                        "title": f"{numeric_fields[0]} by {categorical_fields[0]}",
+                                        "description": "Comparison analysis",
+                                        "data_source": {
+                                            "group_by": categorical_fields[0],
+                                            "aggregate": {"field": numeric_fields[0], "function": "sum"}
+                                        },
+                                        "config": {"colors": ["#10b981", "#3b82f6"], "orientation": "vertical"}
+                                    })
+                                    chart_id += 1
+                                elif chart_type == 'line' and categorical_fields and numeric_fields:
+                                    fallback_config["charts"].append({
+                                        "id": f"fallback_{chart_id}",
+                                        "type": "line",
+                                        "title": f"{numeric_fields[0]} over {categorical_fields[0]}",
+                                        "description": "Trend analysis",
+                                        "data_source": {
+                                            "x_axis": categorical_fields[0],
+                                            "y_axis": numeric_fields[0]
+                                        },
+                                        "config": {"colors": ["#2563EB"]}
+                                    })
+                                    chart_id += 1
+                                elif chart_type == 'area' and categorical_fields and numeric_fields:
+                                    fallback_config["charts"].append({
+                                        "id": f"fallback_{chart_id}",
+                                        "type": "area",
+                                        "title": f"{numeric_fields[0]} over {categorical_fields[0]}",
+                                        "description": "Accumulation analysis",
+                                        "data_source": {
+                                            "x_axis": categorical_fields[0],
+                                            "y_axis": numeric_fields[0]
+                                        },
+                                        "config": {"colors": ["#8B5CF6"]}
+                                    })
+                                    chart_id += 1
+                                elif chart_type == 'scatter' and len(numeric_fields) >= 2:
+                                    fallback_config["charts"].append({
+                                        "id": f"fallback_{chart_id}",
+                                        "type": "scatter",
+                                        "title": f"{numeric_fields[1]} vs {numeric_fields[0]}",
+                                        "description": "Relationship analysis",
+                                        "data_source": {
+                                            "x_axis": numeric_fields[0],
+                                            "y_axis": numeric_fields[1]
+                                        },
+                                        "config": {"colors": ["#F59E0B"]}
+                                    })
+                                    chart_id += 1
+                            
+                            if fallback_config["charts"]:
+                                base_response["visualization_config"] = fallback_config
+                                print(f"  ✅ Created fallback visualization config with {len(fallback_config['charts'])} chart(s)")
+                            else:
+                                print(f"  ⚠️ Could not create fallback charts - insufficient data fields")
+                                # Create minimal config with at least one chart if possible
+                                if numeric_fields and categorical_fields:
+                                    base_response["visualization_config"] = {
+                                        "charts": [{
+                                            "id": "minimal_1",
+                                            "type": "bar",
+                                            "title": f"{numeric_fields[0]} by {categorical_fields[0]}",
+                                            "description": "Basic visualization",
+                                            "data_source": {
+                                                "group_by": categorical_fields[0],
+                                                "aggregate": {"field": numeric_fields[0], "function": "sum"}
+                                            },
+                                            "config": {"colors": ["#6366f1"]}
+                                        }],
+                                        "insights": "Basic visualization generated from available data.",
+                                        "recommended_view": "dashboard"
+                                    }
+                                    print(f"  ✅ Created minimal visualization config")
+                    else:
+                        print(f"  ⚠️ No table_data rows available for fallback visualization")
+                
+                # Final check: ensure visualization_config is always present if we have table_data
+                if table_data and table_data.get('rows') and 'visualization_config' not in base_response:
+                    print(f"  ⚠️ WARNING: visualization_config missing despite having table_data - this should not happen!")
+                    # Last resort: create absolute minimal config
+                    rows = table_data.get('rows', [])
+                    columns = table_data.get('columns', [])
+                    if rows and columns:
+                        first_row = rows[0]
+                        # Find any numeric and categorical field
+                        for col in columns:
+                            if col in first_row:
+                                value = first_row[col]
+                                if isinstance(value, dict) and 'value' in value:
+                                    value = value['value']
+                                if isinstance(value, (int, float)) or (isinstance(value, str) and value.replace('.', '').replace('-', '').isdigit()):
+                                    numeric_field = col
+                                    break
+                        for col in columns:
+                            if col in first_row and col != numeric_field:
+                                categorical_field = col
+                                break
+                        
+                        if 'numeric_field' in locals() and 'categorical_field' in locals():
+                            base_response["visualization_config"] = {
+                                "charts": [{
+                                    "id": "emergency_1",
+                                    "type": "bar",
+                                    "title": f"Data visualization",
+                                    "description": "Emergency fallback visualization",
+                                    "data_source": {
+                                        "group_by": categorical_field,
+                                        "aggregate": {"field": numeric_field, "function": "sum"}
+                                    },
+                                    "config": {"colors": ["#6366f1"]}
+                                }],
+                                "insights": "Visualization generated from data structure.",
+                                "recommended_view": "dashboard"
+                            }
+                            print(f"  ✅ Created emergency visualization config")
         
         # TEXT format (default) - return as-is
         if output_format == "text":
@@ -255,6 +489,595 @@ class AgentService:
         # Unknown format - return as text
         else:
             return base_response
+    
+    def _generate_visualization_config(self, query_result: Dict[str, Any], agent_purpose: str, user_preferences: str = None, streaming_callback = None) -> Dict[str, Any]:
+        """
+        Generate visualization configuration using LLM based on agent purpose and data structure
+        
+        Args:
+            query_result: Query result data (table_data with rows, columns, etc.)
+            agent_purpose: Agent's prompt/description
+            user_preferences: Optional user-specified visualization approach
+            streaming_callback: Optional callback for streaming visualization generation steps
+            
+        Returns:
+            Visualization configuration dictionary
+        """
+        try:
+            from langchain_core.messages import HumanMessage
+            
+            if streaming_callback:
+                streaming_callback({
+                    "type": "ai_thinking",
+                    "step": "visualization_analysis",
+                    "message": "Analyzing data structure for visualization generation...",
+                    "detail": "Examining columns, field types, and data patterns"
+                })
+            
+            # Extract data structure
+            table_data = query_result.get('table_data', {})
+            rows = table_data.get('rows', [])
+            columns = table_data.get('columns', [])
+            row_count = table_data.get('row_count', len(rows))
+            
+            if not rows or len(rows) == 0:
+                print("  ⚠️ No data available for visualization generation")
+                if streaming_callback:
+                    streaming_callback({
+                        "type": "ai_thinking",
+                        "step": "visualization_analysis",
+                        "message": "⚠️ No data available for visualization",
+                        "detail": "Skipping visualization generation"
+                    })
+                return None
+            
+            if streaming_callback:
+                streaming_callback({
+                    "type": "ai_thinking",
+                    "step": "visualization_analysis",
+                    "message": f"Found {row_count} rows with {len(columns)} columns",
+                    "detail": f"Columns: {', '.join(columns[:5])}{'...' if len(columns) > 5 else ''}"
+                })
+            
+            # Analyze data structure
+            numeric_fields = []
+            categorical_fields = []
+            date_fields = []
+            
+            if rows:
+                first_row = rows[0]
+                for col in columns:
+                    if col in first_row:
+                        value = first_row[col]
+                        # Handle JSONB structure
+                        if isinstance(value, dict) and 'value' in value:
+                            value = value['value']
+                        
+                        # Classify field type
+                        if isinstance(value, (int, float)) or (isinstance(value, str) and value.replace('.', '').replace('-', '').isdigit()):
+                            if 'date' not in col.lower() and 'time' not in col.lower():
+                                numeric_fields.append(col)
+                        elif isinstance(value, str):
+                            # Check if it's a date string
+                            if any(keyword in col.lower() for keyword in ['date', 'time', 'created', 'updated']):
+                                date_fields.append(col)
+                            else:
+                                categorical_fields.append(col)
+            
+            # Build data summary - include actual data for LLM to process
+            # Limit rows to prevent token overflow, but include enough for meaningful aggregation
+            max_rows_for_prompt = min(100, len(rows))  # Include up to 100 rows for LLM processing
+            data_rows_for_prompt = rows[:max_rows_for_prompt]
+            
+            data_summary = {
+                "row_count": row_count,
+                "columns": columns,
+                "numeric_fields": numeric_fields[:8],  # More fields for better selection
+                "categorical_fields": categorical_fields[:8],
+                "date_fields": date_fields[:5],
+                "sample_row": dict(list(first_row.items())[:10]) if rows else {},
+                "all_data": data_rows_for_prompt  # Include actual data for LLM to process
+            }
+            
+            if streaming_callback:
+                streaming_callback({
+                    "type": "ai_thinking",
+                    "step": "visualization_analysis",
+                    "message": "Classified data fields",
+                    "detail": f"Numeric: {len(numeric_fields)}, Categorical: {len(categorical_fields)}, Date: {len(date_fields)}"
+                })
+            
+            # Build LLM prompt
+            preferences_text = user_preferences if user_preferences else "auto-generate appropriate visualizations"
+
+            # Detect explicitly requested chart types from user preferences
+            # Handle both checkbox format (comma-separated: "pie, bar, line") and text format
+            requested_types = []
+            if user_preferences:
+                prefs_lower = user_preferences.lower().strip()
+                
+                # First, try to parse as comma-separated list (from checkbox selections)
+                # Split by comma and clean each part
+                parts = [p.strip() for p in prefs_lower.split(',')]
+                
+                # All supported chart types from Recharts
+                supported_types = {
+                    "pie": "pie",
+                    "bar": "bar",
+                    "line": "line",
+                    "area": "area",
+                    "scatter": "scatter",
+                    "radar": "radar",
+                    "radialbar": "radialbar",
+                    "radial": "radialbar",  # alias
+                    "composed": "composed",
+                    "mixed": "composed",  # alias
+                    "funnel": "funnel",
+                    "treemap": "treemap",
+                    "table": "table"
+                }
+                
+                # Check each part for chart type matches
+                for part in parts:
+                    # Direct match (e.g., "pie", "bar chart", "line chart")
+                    for chart_key, chart_type in supported_types.items():
+                        # Match whole word or at start of string to avoid false matches
+                        if chart_key == part or part.startswith(chart_key + " ") or part == chart_key + "chart":
+                            normalized_type = supported_types[chart_key]
+                            if normalized_type not in requested_types:
+                                requested_types.append(normalized_type)
+                            break
+                
+                # If no matches found from comma-separated parsing, fall back to substring search
+                # (for text-based preferences like "I want a pie chart and bar chart")
+                if not requested_types:
+                    for chart_key, chart_type in supported_types.items():
+                        if chart_key in prefs_lower:
+                            normalized_type = supported_types[chart_key]
+                            if normalized_type not in requested_types:
+                                requested_types.append(normalized_type)
+                
+                # Limit to 4 chart types (matching frontend limit)
+                if len(requested_types) > 4:
+                    print(f"  ⚠️ Limiting requested chart types from {len(requested_types)} to 4 (frontend limit)")
+                    requested_types = requested_types[:4]
+                
+                print(f"  📊 Detected chart types from preferences: {requested_types}")
+            
+            requested_types_str = ", ".join(requested_types) if requested_types else "none explicitly requested"
+            
+            # Helper functions for chart creation (defined before try block for use in exception handler)
+            def pick_first_or_fallback(preferred_names, available):
+                for name in preferred_names:
+                    if name in available:
+                        return name
+                return available[0] if available else None
+            
+            def create_chart_for_type(chart_type: str, chart_id: str, cat_fields: list, num_fields: list, date_fields_list: list) -> dict:
+                """Create a chart configuration for a missing chart type"""
+                # Determine data source based on chart type
+                if chart_type in ['pie', 'bar', 'radialbar', 'treemap']:
+                    # Use group_by + aggregate
+                    group_by_field = pick_first_or_fallback(
+                        ['vendor_name', 'supplier_name', 'category', 'status', 'type'],
+                        cat_fields
+                    )
+                    aggregate_field = pick_first_or_fallback(
+                        ['duplicate_count', 'total', 'amount', 'count', 'quantity'],
+                        num_fields
+                    )
+                    if group_by_field and aggregate_field:
+                        return {
+                            "id": chart_id,
+                            "type": chart_type,
+                            "title": f"{aggregate_field} by {group_by_field}",
+                            "description": f"Auto-generated {chart_type} chart added to honor user preference.",
+                            "data_source": {
+                                "group_by": group_by_field,
+                                "aggregate": {"field": aggregate_field, "function": "sum"}
+                            },
+                            "config": {"colors": ["#2563EB", "#10B981", "#F59E0B"]}
+                        }
+                elif chart_type in ['line', 'area']:
+                    # Use x_axis + y_axis
+                    x_axis_field = pick_first_or_fallback(
+                        ['invoice_date', 'created_at', 'updated_at', 'vendor_name', 'category'],
+                        date_fields_list + cat_fields
+                    )
+                    y_axis_field = pick_first_or_fallback(
+                        ['duplicate_count', 'total', 'amount', 'count'],
+                        num_fields
+                    )
+                    if x_axis_field and y_axis_field:
+                        return {
+                            "id": chart_id,
+                            "type": chart_type,
+                            "title": f"{y_axis_field} over {x_axis_field}",
+                            "description": f"Auto-generated {chart_type} chart added to honor user preference.",
+                            "data_source": {
+                                "x_axis": x_axis_field,
+                                "y_axis": y_axis_field
+                            },
+                            "config": {"colors": ["#2563EB"], "orientation": "horizontal"}
+                        }
+                elif chart_type == 'scatter':
+                    # CRITICAL: Scatter MUST use x_axis + y_axis (both numeric), NEVER group_by
+                    # Scatter charts need individual data points, not aggregated groups
+                    if len(num_fields) >= 2:
+                        return {
+                            "id": chart_id,
+                            "type": "scatter",
+                            "title": f"{num_fields[1]} vs {num_fields[0]}",
+                            "description": "Auto-generated scatter chart showing relationship between two numeric variables. Each point represents an individual data row.",
+                            "data_source": {
+                                "x_axis": num_fields[0],  # First numeric field
+                                "y_axis": num_fields[1]   # Second numeric field
+                            },
+                            "config": {"colors": ["#F59E0B"]}
+                        }
+                    else:
+                        print(f"    ⚠️ Cannot create scatter chart - need at least 2 numeric fields, found {len(num_fields)}")
+                        return None
+                elif chart_type == 'radar':
+                    # Use group_by + metrics
+                    group_by_field = pick_first_or_fallback(
+                        ['vendor_name', 'supplier_name', 'category'],
+                        cat_fields
+                    )
+                    if group_by_field and len(num_fields) >= 2:
+                        return {
+                            "id": chart_id,
+                            "type": "radar",
+                            "title": f"Multi-metric comparison by {group_by_field}",
+                            "description": "Auto-generated radar chart added to honor user preference.",
+                            "data_source": {
+                                "group_by": group_by_field,
+                                "metrics": num_fields[:5]
+                            },
+                            "config": {"colors": ["#8B5CF6"]}
+                        }
+                return None
+
+            # Helper text for when specific types are requested
+            required_charts_text = ""
+            if requested_types:
+                # e.g. "You MUST include at least one 'line' chart and one 'bar' chart"
+                type_list = "', '".join(requested_types)
+                required_charts_text = f"You MUST include at least one chart for EACH of these types: '{type_list}'.\n"
+            
+            visualization_prompt = f"""You are a Recharts specialist and expert data visualization analyst. Your job is to generate PERFECT visualization configurations that work flawlessly with Recharts library.
+
+🎯 AGENT PURPOSE (CRITICAL - STRICTLY FOLLOW THIS):
+{agent_purpose}
+
+⚠️ MANDATORY REQUIREMENT: Every chart you generate MUST directly relate to and support the agent's purpose above. 
+- If the agent is for "duplicate finder" → visualizations MUST show duplicate-related insights (duplicate counts, duplicate patterns, etc.)
+- If the agent is for "invoice analysis" → visualizations MUST show invoice-related insights (totals, vendors, dates, etc.)
+- If the agent is for "vendor management" → visualizations MUST show vendor-related insights
+- The chart titles, descriptions, and field selections MUST align with the agent's purpose
+- DO NOT create generic visualizations - make them purpose-specific
+
+DATA STRUCTURE ANALYSIS:
+- Total rows: {row_count}
+- Available columns: {', '.join(columns[:15])}
+- Numeric fields (for aggregations): {', '.join(numeric_fields[:8]) if numeric_fields else 'None'}
+- Categorical fields (for grouping): {', '.join(categorical_fields[:8]) if categorical_fields else 'None'}
+- Date/time fields (for trends): {', '.join(date_fields[:5]) if date_fields else 'None'}
+
+USER VISUALIZATION PREFERENCES:
+{preferences_text}
+
+EXPLICITLY REQUESTED CHART TYPES: {requested_types_str}
+
+QUERY RESULT DATA (use this to build actual chart data):
+{json.dumps(data_summary.get('all_data', [])[:50], indent=2)}  // First 50 rows for processing
+
+SAMPLE DATA (first row for reference):
+{json.dumps(data_summary.get('sample_row', {}), indent=2)}
+
+YOUR TASK:
+Generate a comprehensive JSON visualization configuration that:
+1. **STRICTLY follows the agent's purpose** - every chart must relate directly to what the agent does
+2. Honors ALL user-requested chart types ({requested_types_str if requested_types_str != "none explicitly requested" else "auto-select based on data"})
+3. Uses appropriate fields from the available data structure that align with agent purpose
+4. Provides meaningful insights that support the agent's purpose
+5. **CRITICAL: Follow Recharts data format requirements exactly**
+6. Chart titles and descriptions must be purpose-specific (e.g., "Duplicate Invoices by Vendor" for duplicate finder, not generic "Data by Category")
+
+REQUIRED JSON STRUCTURE:
+{{
+  "charts": [
+    {{
+      "id": "chart_1",
+      "type": "pie|bar|line|area|scatter|radar|radialbar|composed|funnel|treemap|table",
+      "title": "Descriptive title aligned with agent purpose",
+      "description": "What this chart shows (purpose-specific)",
+      "data": [
+        // ⚠️ CRITICAL: You MUST include the actual processed data array here
+        // Process the QUERY RESULT DATA above to build this array
+        // For pie: [{{"name": "Category1", "value": 100}}, {{"name": "Category2", "value": 200}}]
+        // For bar/line/area: [{{"name": "X1", "field_name": 100}}, {{"name": "X2", "field_name": 200}}]
+        // For scatter: [{{"name": "Point1", "x_field": 10, "y_field": 20}}, ...]
+        // For radar: [{{"name": "Category1", "metric1": 10, "metric2": 20}}, ...]
+      ],
+      "data_source": {{
+        // Include for reference: which fields were used
+        "group_by": "vendor_name",  // or x_axis/y_axis for line/area/scatter
+        "aggregate": {{"field": "total", "function": "sum"}}  // or metrics array for radar
+      }},
+      "config": {{"colors": ["#4CAF50", "#2196F3"], "orientation": "vertical"}}
+    }}
+  ],
+  "insights": "2-3 sentences about data patterns aligned with agent purpose",
+  "recommended_view": "dashboard"
+}}
+
+⚠️ CRITICAL: You MUST process the QUERY RESULT DATA and build the actual "data" array for each chart.
+DO NOT just specify data_source - you must include the processed data array!
+
+🎯 RECHARTS DATA FORMAT REQUIREMENTS (CRITICAL - FOLLOW EXACTLY):
+
+1. **PIE CHART** (type: "pie"):
+   - REQUIRED: group_by (categorical) + aggregate (numeric field)
+   - Data format: Array of {{name: string, value: number}}
+   - Example: {{"group_by": "vendor_name", "aggregate": {{"field": "total", "function": "sum"}}}}
+   - ❌ NEVER use x_axis/y_axis for pie charts
+
+2. **BAR CHART** (type: "bar"):
+   - OPTION A: group_by (categorical) + aggregate (numeric) - creates grouped bars
+   - OPTION B: x_axis (categorical) + y_axis (numeric) - creates sequential bars
+   - Data format: Array of {{name: string, [field]: number}}
+   - Example A: {{"group_by": "vendor_name", "aggregate": {{"field": "total", "function": "sum"}}}}
+   - Example B: {{"x_axis": "vendor_name", "y_axis": "total"}}
+   - ✅ Prefer group_by + aggregate for better aggregation
+
+3. **LINE CHART** (type: "line"):
+   - REQUIRED: x_axis (categorical or date) + y_axis (numeric)
+   - Data format: Array of {{name: string, [field]: number}}
+   - Example: {{"x_axis": "vendor_name", "y_axis": "total"}}
+   - ✅ Use date fields for x_axis if available for trends
+
+4. **AREA CHART** (type: "area"):
+   - REQUIRED: x_axis (categorical or date) + y_axis (numeric)
+   - Data format: Array of {{name: string, [field]: number}}
+   - Example: {{"x_axis": "vendor_name", "y_axis": "total"}}
+   - ✅ Use date fields for x_axis if available for cumulative trends
+
+5. **SCATTER CHART** (type: "scatter"):
+   - REQUIRED: x_axis (NUMERIC field) + y_axis (NUMERIC field)
+   - ⚠️ CRITICAL: BOTH axes MUST be numeric fields from the raw data
+   - ⚠️ NEVER use group_by for scatter - it needs individual data points
+   - Data format: Array of {{name: string, [x_field]: number, [y_field]: number}}
+   - Example: {{"x_axis": "duplicate_count", "y_axis": "total"}}
+   - ✅ Both fields must exist in numeric_fields list above
+   - ❌ NEVER use: group_by for scatter charts
+
+6. **RADAR CHART** (type: "radar"):
+   - REQUIRED: group_by (categorical) + metrics (array of numeric fields)
+   - Data format: Array of {{name: string, [metric1]: number, [metric2]: number, ...}}
+   - Example: {{"group_by": "vendor_name", "metrics": ["total", "duplicate_count"]}}
+   - ✅ Use 2-5 metrics for best visualization
+
+7. **RADIALBAR CHART** (type: "radialbar"):
+   - REQUIRED: group_by (categorical) + aggregate (numeric)
+   - Data format: Array of {{name: string, value: number}}
+   - Example: {{"group_by": "vendor_name", "aggregate": {{"field": "total", "function": "sum"}}}}
+   - ✅ Similar to pie chart structure
+
+8. **TREEMAP** (type: "treemap"):
+   - REQUIRED: group_by (categorical) + aggregate (numeric)
+   - Data format: Array of {{name: string, value: number}}
+   - Example: {{"group_by": "vendor_name", "aggregate": {{"field": "total", "function": "sum"}}}}
+   - ✅ Shows proportional distribution
+
+CRITICAL RULES:
+1. {required_charts_text if required_charts_text else "If user specified chart types, you MUST include at least one chart for EACH requested type."}
+2. **NEVER use identifier fields** (invoice_number, id, uuid, code, reference, batch_names) for group_by or x_axis
+3. **ALWAYS prefer descriptive fields** (vendor_name, supplier_name, category, status, type, name)
+4. **For scatter charts:** 
+   - MUST use x_axis + y_axis (both numeric)
+   - NEVER use group_by (scatter needs individual points, not aggregated groups)
+   - Both fields must be in the numeric_fields list
+5. **For pie/bar/radialbar/treemap:** 
+   - MUST use group_by (categorical) + aggregate (numeric)
+   - aggregate.field must be a numeric field that makes sense to sum/count/avg
+6. **For line/area:** 
+   - MUST use x_axis + y_axis
+   - Prefer date fields for x_axis if available
+7. **Field validation:** Check that ALL fields you use actually exist in the columns list above
+
+COMMON MISTAKES TO AVOID:
+❌ Scatter chart with group_by → Use x_axis + y_axis instead
+❌ Using identifier fields (invoice_number, id) for grouping → Use vendor_name, category, etc.
+❌ Using non-numeric fields for scatter axes → Both must be numeric
+❌ Missing aggregate field for pie/bar/radialbar/treemap → Always include aggregate
+❌ Using wrong data_source pattern for chart type → Follow the patterns above exactly
+
+FIELD SELECTION EXAMPLES:
+✅ GOOD: 
+  - Pie: {{"group_by": "vendor_name", "aggregate": {{"field": "total", "function": "sum"}}}}
+  - Scatter: {{"x_axis": "duplicate_count", "y_axis": "total"}}
+  - Bar: {{"group_by": "vendor_name", "aggregate": {{"field": "total", "function": "sum"}}}}
+  - Line: {{"x_axis": "vendor_name", "y_axis": "total"}}
+
+❌ BAD:
+  - Scatter: {{"group_by": "vendor_name", "aggregate": {{"field": "total", "function": "sum"}}}} → Wrong pattern!
+  - Pie: {{"x_axis": "vendor_name", "y_axis": "total"}} → Wrong pattern!
+  - Any chart: {{"group_by": "invoice_number"}} → Identifier field!
+
+ANALYSIS APPROACH (FOLLOW STRICTLY):
+1. **FIRST: Read the agent purpose VERY carefully** - identify the key theme (duplicate finder, invoice analysis, vendor management, etc.)
+2. **SECOND: Select fields that directly relate to the agent purpose**:
+   - For duplicate finder: prioritize duplicate_count, invoice_number, vendor_name (fields that show duplicates)
+   - For invoice analysis: prioritize total, amount, invoice_date, vendor_name (fields that show invoice data)
+   - For vendor management: prioritize vendor_name, supplier_name, category (fields that show vendor data)
+3. **THIRD: Create chart titles and descriptions that reflect the agent purpose**:
+   - ✅ GOOD: "Duplicate Invoices by Vendor" (for duplicate finder)
+   - ✅ GOOD: "Invoice Totals Over Time" (for invoice analysis)
+   - ❌ BAD: "Data Distribution" (too generic, doesn't reflect purpose)
+   - ❌ BAD: "Category Analysis" (unless agent is specifically for category analysis)
+4. Analyze the user preferences - what chart types are explicitly requested?
+5. For EACH requested chart type, select the CORRECT data_source pattern from above
+6. Match available fields to chart requirements (check numeric_fields, categorical_fields lists)
+7. Generate charts that provide meaningful insights that DIRECTLY support the agent's purpose
+8. If user requested specific types, ensure ALL are included with correct data_source patterns
+9. **VERIFY: Every chart title/description mentions or implies the agent's purpose**
+
+Return ONLY valid JSON (no markdown, no code blocks, no explanations). The JSON must be parseable.
+
+Visualization Configuration JSON:"""
+            
+            print(f"\n🎨 Generating visualization config for {row_count} rows...")
+            
+            if streaming_callback:
+                streaming_callback({
+                    "type": "ai_thinking",
+                    "step": "visualization_generation",
+                    "message": "🤖 Generating visualization configuration with AI...",
+                    "detail": f"Analyzing agent purpose and user preferences: {preferences_text[:100]}"
+                })
+            
+            response = self.llm.invoke([HumanMessage(content=visualization_prompt)])
+            config_text = response.content.strip()
+            
+            if streaming_callback:
+                streaming_callback({
+                    "type": "ai_thinking",
+                    "step": "visualization_generation",
+                    "message": "✅ AI generated visualization configuration",
+                    "detail": "Parsing and validating chart configurations..."
+                })
+            
+            # Remove markdown code blocks if present
+            if '```' in config_text:
+                import re
+                code_match = re.search(r'```(?:json)?\n(.*?)\n```', config_text, re.DOTALL)
+                if code_match:
+                    config_text = code_match.group(1).strip()
+            
+            # Clean up common JSON issues
+            import re
+            # Fix escaped quotes - LLM sometimes returns \"key" instead of "key"
+            # The pattern shows: { \"charts": [ which means escaped quotes in property names
+            # Replace all instances of \" with " (unescape quotes globally)
+            config_text = config_text.replace('\\"', '"')
+            
+            # Remove trailing commas before closing braces/brackets
+            config_text = re.sub(r',(\s*[}\]])', r'\1', config_text)
+            
+            # Remove any comments
+            config_text = re.sub(r'//.*?$', '', config_text, flags=re.MULTILINE)
+            config_text = re.sub(r'/\*.*?\*/', '', config_text, flags=re.DOTALL)
+            
+            print(f"  🔍 Cleaned JSON preview (first 300 chars): {config_text[:300]}")
+            
+            # Parse JSON
+            try:
+                visualization_config = json.loads(config_text)
+                
+                # Ensure base structure
+                charts = visualization_config.get('charts') or []
+                insights = visualization_config.get('insights')
+                recommended_view = visualization_config.get('recommended_view')
+                
+                if not isinstance(charts, list):
+                    charts = []
+                visualization_config['charts'] = charts
+                if not insights:
+                    visualization_config['insights'] = "Data visualization generated successfully."
+                if not recommended_view:
+                    visualization_config['recommended_view'] = "dashboard"
+
+                # ✅ Guarantee ALL user-requested chart types are present
+                existing_types = {str(c.get('type', '')).lower() for c in charts}
+
+                # Check for missing chart types and add them
+                missing_types = [t for t in requested_types if t not in existing_types]
+                # Limit missing types to 4 total (including existing)
+                max_additional = max(0, 4 - len(existing_types))
+                if missing_types and max_additional > 0:
+                    missing_types = missing_types[:max_additional]
+                    print(f"  ➕ Adding {len(missing_types)} missing chart type(s): {', '.join(missing_types)}")
+                    chart_counter = len(charts) + 1
+                    for missing_type in missing_types:
+                        chart_id = f"auto_{missing_type}_{chart_counter}"
+                        new_chart = create_chart_for_type(missing_type, chart_id, categorical_fields, numeric_fields, date_fields)
+                        if new_chart:
+                            charts.append(new_chart)
+                            print(f"    ✅ Added {missing_type} chart: {new_chart.get('title')}")
+                            chart_counter += 1
+                        else:
+                            print(f"    ⚠️ Could not create {missing_type} chart - insufficient data fields")
+
+                visualization_config['charts'] = charts
+                
+                chart_count = len(visualization_config.get('charts', []))
+                chart_types = [c.get('type', 'unknown') for c in visualization_config.get('charts', [])]
+                
+                print(f"  ✅ Generated visualization config with {chart_count} chart(s)")
+                
+                if streaming_callback:
+                    streaming_callback({
+                        "type": "ai_thinking",
+                        "step": "visualization_complete",
+                        "message": f"✅ Visualization configuration complete",
+                        "detail": f"Generated {chart_count} chart(s): {', '.join(chart_types)}"
+                    })
+                
+                return visualization_config
+                
+            except json.JSONDecodeError as e:
+                print(f"  ⚠️ Failed to parse visualization config JSON: {e}")
+                print(f"  Response preview: {config_text[:500]}...")
+                print(f"  Error at position: {e.pos if hasattr(e, 'pos') else 'unknown'}")
+                
+                # Try to recover by creating charts from requested types
+                if requested_types:
+                    print(f"  🔧 Attempting to recover from JSON error by creating charts from requested types...")
+                    # Create a minimal valid config with requested chart types
+                    # Limit to 4 chart types (matching frontend limit)
+                    limited_types = requested_types[:4] if len(requested_types) > 4 else requested_types
+                    if len(requested_types) > 4:
+                        print(f"  ⚠️ Limiting recovery to 4 chart types (frontend limit)")
+                    recovered_charts = []
+                    chart_id = 1
+                    for chart_type in limited_types:
+                        chart_config = create_chart_for_type(chart_type, f"recovered_{chart_type}_{chart_id}", categorical_fields, numeric_fields, date_fields)
+                        if chart_config:
+                            recovered_charts.append(chart_config)
+                            chart_id += 1
+                    
+                    if recovered_charts:
+                        visualization_config = {
+                            "charts": recovered_charts,
+                            "insights": "Visualization configuration recovered after JSON parsing error.",
+                            "recommended_view": "dashboard"
+                        }
+                        print(f"  ✅ Recovered {len(recovered_charts)} chart(s) from requested types")
+                        if streaming_callback:
+                            streaming_callback({
+                                "type": "ai_thinking",
+                                "step": "visualization_recovered",
+                                "message": "✅ Recovered visualization config",
+                                "detail": f"Created {len(recovered_charts)} chart(s) from requested types"
+                            })
+                        return visualization_config
+                
+                if streaming_callback:
+                    streaming_callback({
+                        "type": "ai_thinking",
+                        "step": "visualization_error",
+                        "message": "⚠️ JSON parsing error in visualization config",
+                        "detail": f"Error: {str(e)}. Attempting recovery..."
+                    })
+                
+                return None
+                
+        except Exception as e:
+            print(f"  ❌ Error generating visualization config: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
     
     def _generate_csv_from_output(self, output: str, intermediate_steps: List) -> str:
         """
@@ -1269,7 +2092,7 @@ Return ONLY the markdown-formatted version:"""
             # Fallback: return original text
             return text
     
-    def _execute_with_guidance(self, agent_data: Dict, user_query: str, input_data: Dict = None, progress_callback = None) -> Dict[str, Any]:
+    def _execute_with_guidance(self, agent_data: Dict, user_query: str, input_data: Dict = None, progress_callback = None, visualization_preferences: str = None) -> Dict[str, Any]:
         """
         Execute agent using pre-built execution guidance (FAST PATH)
         Includes automatic SQL error correction with retry logic (max 5 attempts)
@@ -1443,7 +2266,8 @@ Return ONLY the markdown-formatted version:"""
                         output=markdown_output,  # Use markdown-formatted output
                         output_format=output_format,
                         intermediate_steps=intermediate_steps,
-                        agent_data=agent_data  # Pass full agent data for context-aware summaries
+                        agent_data=agent_data,  # Pass full agent data for context-aware summaries
+                        visualization_preferences=visualization_preferences
                     )
                     
                     formatted_result['used_guidance'] = True
@@ -1922,6 +2746,84 @@ CORRECTED QUERY:"""
             print(f"  ⚠️ Error removing ID columns: {e}")
             return query  # Return original on error
     
+    def _validate_column_types(self, query: str, schema_context: Dict) -> List[str]:
+        """
+        Validate that columns in query match their types from schema
+        
+        Args:
+            query: SQL query to validate
+            schema_context: Schema information with column types
+            
+        Returns:
+            List of validation issues found (empty if all valid)
+        """
+        try:
+            import re
+            from tools.postgres_connector import PostgresConnector
+            
+            issues = []
+            
+            # Extract table names from query
+            table_pattern = r'(?:FROM|JOIN)\s+([\w_]+)'
+            tables = re.findall(table_pattern, query, re.IGNORECASE)
+            
+            # Get schema for each table
+            pg_connector = PostgresConnector()
+            table_schemas = {}
+            
+            for table_name in set(tables):
+                schema_info = pg_connector.get_table_schema(table_name)
+                if schema_info.get('success'):
+                    columns = {col['name']: col for col in schema_info.get('columns', [])}
+                    table_schemas[table_name] = columns
+            
+            # Extract column references from SELECT clause
+            select_match = re.search(r'SELECT\s+(.*?)\s+FROM', query, re.IGNORECASE | re.DOTALL)
+            if select_match:
+                select_clause = select_match.group(1)
+                
+                # Find column references (table.column or just column)
+                column_patterns = [
+                    r'(\w+)\.(\w+)',  # table.column
+                    r'\b(\w+)\s+as\s+\w+',  # column as alias
+                ]
+                
+                for pattern in column_patterns:
+                    matches = re.findall(pattern, select_clause, re.IGNORECASE)
+                    for match in matches:
+                        if isinstance(match, tuple):
+                            table_alias, col_name = match
+                        else:
+                            table_alias, col_name = None, match
+                        
+                        # Find which table this alias refers to
+                        if table_alias:
+                            # Check if this table exists in our schemas
+                            for table_name, columns in table_schemas.items():
+                                if table_name == table_alias or table_name.endswith('_' + table_alias):
+                                    if col_name in columns:
+                                        col_info = columns[col_name]
+                                        col_type = col_info.get('type', 'unknown')
+                                        
+                                        # Check if JSONB column is used correctly
+                                        if col_type == 'jsonb':
+                                            # Check if it uses ->>'value'
+                                            if f"{col_name}->>'value'" not in select_clause and f"{table_alias}.{col_name}->>'value'" not in select_clause:
+                                                # Check if it's used incorrectly
+                                                if re.search(rf'\b{col_name}\b(?!->>)', select_clause, re.IGNORECASE):
+                                                    issues.append(f"⚠️ JSONB column '{table_alias}.{col_name}' should use ->>'value' extraction")
+                                        
+                                        # Check if non-JSONB column incorrectly uses ->>
+                                        elif col_type != 'jsonb':
+                                            if f"{col_name}->>" in select_clause or f"{table_alias}.{col_name}->>" in select_clause:
+                                                issues.append(f"⚠️ Non-JSONB column '{table_alias}.{col_name}' (type: {col_type}) incorrectly uses ->> operator")
+            
+            return issues
+            
+        except Exception as e:
+            print(f"  ⚠️ Error in column type validation: {e}")
+            return []
+    
     def _validate_and_fix_query(self, query: str, schema_context: Dict) -> tuple[str, bool]:
         """
         Proactively validate query for common errors and attempt to fix them before execution
@@ -1941,6 +2843,10 @@ CORRECTED QUERY:"""
             print("\n🔍 PRE-EXECUTION VALIDATION: Checking query for common errors...")
             
             issues_found = []
+            
+            # Add column type validation
+            type_issues = self._validate_column_types(query, schema_context)
+            issues_found.extend(type_issues)
             
             # 1. Check for ID columns in SELECT
             id_patterns = [
@@ -2443,21 +3349,73 @@ CORRECTED QUERY:"""
                         related_tables = schema_info.get('related_tables', '')
                         sample_data = schema_info.get('sample_data', [])
                         
-                        # Build context for this table
+                        # Build context for this table with explicit column types
                         table_context = f"\n**Table: {table_name}**\n"
-                        table_context += f"- Columns ({len(columns)}): {', '.join([c['name'] for c in columns[:10]])}"  # Show first 10
-                        if len(columns) > 10:
-                            table_context += f" ... and {len(columns) - 10} more"
+                        table_context += f"- Total columns: {len(columns)}\n"
                         
-                        if jsonb_cols:
-                            table_context += f"\n- JSONB columns (require ->> operator): {', '.join(jsonb_cols)}"
+                        # Group columns by type for better clarity
+                        column_by_type = {}
+                        for col in columns:
+                            col_type = col.get('type', 'unknown')
+                            if col_type not in column_by_type:
+                                column_by_type[col_type] = []
+                            column_by_type[col_type].append(col['name'])
+                        
+                        # Show columns grouped by type
+                        for col_type, col_names in column_by_type.items():
+                            if col_type == 'jsonb':
+                                table_context += f"\n- **JSONB columns** ({len(col_names)}): {', '.join(col_names[:8])}"
+                                if len(col_names) > 8:
+                                    table_context += f" ... and {len(col_names) - 8} more"
+                                table_context += f"\n  ⚠️ These MUST use ->>'value' extraction: ({col_names[0]}->>'value')::text"
+                            elif col_type == 'uuid':
+                                table_context += f"\n- **UUID columns** ({len(col_names)}): {', '.join(col_names[:5])}"
+                                if len(col_names) > 5:
+                                    table_context += f" ... and {len(col_names) - 5} more"
+                            elif col_type in ['varchar', 'text', 'character varying']:
+                                table_context += f"\n- **Text columns** ({len(col_names)}): {', '.join(col_names[:5])}"
+                                if len(col_names) > 5:
+                                    table_context += f" ... and {len(col_names) - 5} more"
+                            elif col_type in ['numeric', 'integer', 'bigint', 'decimal']:
+                                table_context += f"\n- **Numeric columns** ({len(col_names)}): {', '.join(col_names[:5])}"
+                                if len(col_names) > 5:
+                                    table_context += f" ... and {len(col_names) - 5} more"
+                            else:
+                                table_context += f"\n- **{col_type} columns** ({len(col_names)}): {', '.join(col_names[:5])}"
+                                if len(col_names) > 5:
+                                    table_context += f" ... and {len(col_names) - 5} more"
+                        
+                        # Show key columns with their types explicitly
+                        table_context += f"\n\n- **Key columns with types**:"
+                        for col in columns[:10]:  # Show first 10 with types
+                            col_name = col['name']
+                            col_type = col.get('type', 'unknown')
+                            nullable = col.get('nullable', True)
+                            null_str = "NULL" if nullable else "NOT NULL"
+                            
+                            if col_type == 'jsonb':
+                                table_context += f"\n  • {col_name}: JSONB ({null_str}) → Use ({col_name}->>'value')::text"
+                            else:
+                                table_context += f"\n  • {col_name}: {col_type.upper()} ({null_str})"
+                        
+                        if len(columns) > 10:
+                            table_context += f"\n  ... and {len(columns) - 10} more columns"
                         
                         if foreign_keys:
-                            fk_desc = [f"{fk['column']} → {fk['references_table']}" for fk in foreign_keys[:5]]
-                            table_context += f"\n- Joins with: {', '.join(fk_desc)}"
+                            table_context += f"\n\n- **Foreign Key Relationships**:"
+                            for fk in foreign_keys[:5]:
+                                fk_col = fk.get('column', 'unknown')
+                                ref_table = fk.get('references_table', 'unknown')
+                                ref_col = fk.get('references_column', 'id')
+                                # Check if FK column is JSONB
+                                fk_col_info = next((c for c in columns if c['name'] == fk_col), None)
+                                if fk_col_info and fk_col_info.get('type') == 'jsonb':
+                                    table_context += f"\n  • {fk_col} (JSONB) → {ref_table}.{ref_col} (use defensive join pattern)"
+                                else:
+                                    table_context += f"\n  • {fk_col} → {ref_table}.{ref_col}"
                         
                         if related_tables:
-                            table_context += f"\n- {related_tables}"
+                            table_context += f"\n- Related tables: {related_tables}"
                         
                         # Show sample data structure (first record only)
                         if sample_data and len(sample_data) > 0:
@@ -2542,25 +3500,44 @@ Database Schema Information:
    ✅ INNER JOIN icap_document d ON invoice.document_id = d.id
    This provides: batch_name, status, sub_status, accuracy
 
+🔴 CRITICAL COLUMN TYPE VALIDATION (CHECK BEFORE USING ANY COLUMN):
+
+Before using ANY column in your query, you MUST:
+1. **Find the column in the schema above** - verify it exists
+2. **Check its type** - is it JSONB, UUID, VARCHAR, NUMERIC, DATE, etc.?
+3. **Apply the correct syntax** based on type:
+   - JSONB columns: MUST use (column->>'value')::text or (column->>'value')::numeric with NULLIF
+   - UUID columns: Use directly (e.g., table.id) or cast JSONB: (column->>'value')::uuid with NULLIF check
+   - VARCHAR/TEXT columns: Use directly (e.g., table.name)
+   - NUMERIC columns: Use directly (e.g., table.amount) or NULLIF for JSONB numerics
+   - DATE columns: Use TO_DATE(column->>'value', 'MM/DD/YYYY') for JSONB dates
+
+4. **Verify foreign key types** - if joining on a JSONB FK column, use defensive join pattern (RULE 1)
+5. **Match operations to types** - don't use ::date on JSONB, don't use ::numeric without NULLIF
+
 IMPORTANT Requirements:
-1. Use LEFT JOIN (not INNER JOIN) for optional relationships (vendor, product, category)
-2. Use INNER JOIN for required relationships (document)
-3. Never include ID columns in SELECT (no invoice_id, vendor_id, document_id, etc.)
-4. Use JSONB operators (->>'value') for JSONB columns - this is CRITICAL for JSONB fields
-5. Apply RULE 2 (NULLIF) for ALL numeric JSONB fields
-6. Apply RULE 3 (TO_DATE) for ALL date JSONB fields
-7. Apply RULE 1 (defensive join) for ALL UUID JSONB fields in JOIN conditions
-8. Order results appropriately (e.g., ORDER BY invoice_number, line_item_id)
-9. Include ALL relevant business fields from primary table first, then related tables, then detail tables
-10. DO NOT add any WHERE clause for date filtering - I will add that separately
-11. Use proper PostgreSQL syntax - check for typos, correct column names, valid operators
-12. Ensure all table aliases are consistent throughout the query
-13. Use lowercase for SQL keywords (select, from, left join, where, order by)
-14. Test that all referenced columns exist in the schema provided
-15. When using GROUP BY with aggregate functions (COUNT, SUM, AVG, MAX, MIN, etc.) in HAVING clause, ALWAYS include those aggregates in the SELECT clause with meaningful aliases
+1. **COLUMN TYPE CHECKING**: For EVERY column you use, verify its type from the schema above
+   - If schema shows "invoice_date: JSONB" → use TO_DATE(invoice_date->>'value', 'MM/DD/YYYY')
+   - If schema shows "vendor_id: UUID" → use vendor_id directly (not ->'value')
+   - If schema shows "name: VARCHAR" → use name directly
+2. Use LEFT JOIN (not INNER JOIN) for optional relationships (vendor, product, category)
+3. Use INNER JOIN for required relationships (document)
+4. Never include ID columns in SELECT (no invoice_id, vendor_id, document_id, etc.)
+5. Use JSONB operators (->>'value') for JSONB columns - this is CRITICAL for JSONB fields
+6. Apply RULE 2 (NULLIF) for ALL numeric JSONB fields
+7. Apply RULE 3 (TO_DATE) for ALL date JSONB fields
+8. Apply RULE 1 (defensive join) for ALL UUID JSONB fields in JOIN conditions
+9. Order results appropriately (e.g., ORDER BY invoice_number, line_item_id)
+10. Include ALL relevant business fields from primary table first, then related tables, then detail tables
+11. DO NOT add any WHERE clause for date filtering - I will add that separately
+12. Use proper PostgreSQL syntax - check for typos, correct column names, valid operators
+13. Ensure all table aliases are consistent throughout the query
+14. Use lowercase for SQL keywords (select, from, left join, where, order by)
+15. **VERIFY ALL COLUMNS EXIST**: Cross-reference every column name with the schema above before using it
+16. When using GROUP BY with aggregate functions (COUNT, SUM, AVG, MAX, MIN, etc.) in HAVING clause, ALWAYS include those aggregates in the SELECT clause with meaningful aliases
     Example: If using HAVING count(*) > 1, then SELECT must include "count(*) as duplicate_count" or similar
     This allows users to see the aggregate values, not just filter by them
-16. **CRITICAL - RESOLVE ID COLUMNS TO NAMES**: 
+17. **CRITICAL - RESOLVE ID COLUMNS TO NAMES**: 
     ⚠️ If you see icap_invoice_detail table with category_id or product_id JSONB columns:
     - category_id: JOIN icap_tenant_category_master to resolve to category name
       * JOIN condition: LEFT JOIN icap_tenant_category_master cat ON NULLIF(detail.category_id->>'value', '') IS NOT NULL AND (detail.category_id->>'value')::uuid = cat.id
@@ -2570,6 +3547,12 @@ IMPORTANT Requirements:
       * SELECT: CASE WHEN detail.product_id->>'value' != '' THEN prod.name ELSE NULL END AS product_name
     ⚠️ NEVER expose raw category_id or product_id values - ALWAYS resolve to names from master tables
     ⚠️ Use NULLIF checks in JOIN conditions to prevent empty string to UUID casting errors
+18. **TYPE CONSISTENCY CHECK**: Before returning the query, verify:
+    - All JSONB columns use ->>'value' extraction
+    - All date operations use TO_DATE (never ::date on JSONB)
+    - All numeric JSONB fields use NULLIF before casting
+    - All UUID JSONB joins use defensive pattern
+    - All regular columns (VARCHAR, UUID, NUMERIC) are used directly without ->> operator
 
 Generate ONLY the SQL query without date filters. Return just the SQL, no explanations.
 
@@ -4056,7 +5039,7 @@ Start by explaining your understanding and reasoning:"""
                 "error_type": type(e).__name__
             }
     
-    def execute_agent_with_ai_streaming(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None):
+    def execute_agent_with_ai_streaming(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None, visualization_preferences: str = None):
         """
         Execute an agent with AI thinking streams (enhanced version of execute_agent_with_progress)
         
@@ -4104,7 +5087,7 @@ Start by explaining your understanding and reasoning:"""
             def execute_in_thread():
                 try:
                     result_container['result'] = self.execute_agent(
-                        agent_id, user_query, tool_configs, input_data, capturing_callback
+                        agent_id, user_query, tool_configs, input_data, capturing_callback, visualization_preferences
                     )
                 except Exception as e:
                     result_container['error'] = e
@@ -4258,6 +5241,82 @@ Start by explaining your understanding and reasoning:"""
                         ]
                     }
                     
+                    # 🎨 Generate visualization config with streaming
+                    if result and result.get('table_data'):
+                        agent_data = self.storage.get_agent(agent_id)
+                        if agent_data:
+                            agent_purpose = agent_data.get('prompt', '') or agent_data.get('description', '')
+                            
+                            # Create streaming callback for visualization generation
+                            def viz_streaming_callback(event):
+                                yield event
+                            
+                            # Generate visualization with streaming
+                            query_result = {
+                                'table_data': result.get('table_data')
+                            }
+                            
+                            yield {
+                                "type": "progress",
+                                "step": 4,
+                                "status": "in_progress",
+                                "message": "Generating output",
+                                "substeps": [
+                                    {
+                                        "id": "processing",
+                                        "label": "Processing complete",
+                                        "status": "completed",
+                                        "detail": f"Processed {len(rows)} records"
+                                    },
+                                    {
+                                        "id": "visualization",
+                                        "label": "Generating visualizations...",
+                                        "status": "in_progress"
+                                    }
+                                ]
+                            }
+                            
+                            # Stream visualization generation steps
+                            viz_events = []
+                            def capture_viz_event(event):
+                                viz_events.append(event)
+                            
+                            visualization_config = self._generate_visualization_config(
+                                query_result=query_result,
+                                agent_purpose=agent_purpose,
+                                user_preferences=visualization_preferences,
+                                streaming_callback=capture_viz_event
+                            )
+                            
+                            # Yield all visualization events
+                            for event in viz_events:
+                                yield event
+                            
+                            # Update result with visualization config
+                            if visualization_config:
+                                result['visualization_config'] = visualization_config
+                                
+                                yield {
+                                    "type": "progress",
+                                    "step": 4,
+                                    "status": "in_progress",
+                                    "message": "Generating output",
+                                    "substeps": [
+                                        {
+                                            "id": "processing",
+                                            "label": "Processing complete",
+                                            "status": "completed",
+                                            "detail": f"Processed {len(rows)} records"
+                                        },
+                                        {
+                                            "id": "visualization",
+                                            "label": "Visualization configuration complete",
+                                            "status": "completed",
+                                            "detail": f"Generated {len(visualization_config.get('charts', []))} chart(s)"
+                                        }
+                                    ]
+                                }
+                    
                     # Now complete step 4
                     yield {
                         "type": "progress",
@@ -4318,7 +5377,7 @@ Start by explaining your understanding and reasoning:"""
                 "error_type": type(e).__name__
             }
     
-    def execute_agent(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None, progress_callback = None) -> Dict[str, Any]:
+    def execute_agent(self, agent_id: str, user_query: str, tool_configs: Dict[str, Dict[str, str]] = None, input_data: Dict[str, Any] = None, progress_callback = None, visualization_preferences: str = None) -> Dict[str, Any]:
         """
         Execute an agent with a user query
         
@@ -4351,7 +5410,7 @@ Start by explaining your understanding and reasoning:"""
         # This is the NEW pre-built execution guidance system
         if agent_data.get("execution_guidance"):
             print("\n⚡⚡⚡ ULTRA-FAST PATH: Using pre-built execution guidance")
-            guidance_result = self._execute_with_guidance(agent_data, user_query, input_data, progress_callback)
+            guidance_result = self._execute_with_guidance(agent_data, user_query, input_data, progress_callback, visualization_preferences)
             if guidance_result and guidance_result.get("success"):
                 print("✅ Execution guidance succeeded - returning result")
                 return guidance_result
@@ -4404,7 +5463,7 @@ Start by explaining your understanding and reasoning:"""
                         print(f"📝 Final query: {final_query}")
                         
                         # Execute cached query directly via postgres_query tool
-                        result = self._execute_cached_query(agent_id, final_query, tool_configs)
+                        result = self._execute_cached_query(agent_id, final_query, tool_configs, visualization_preferences)
                         if result.get("success"):
                             result["used_cache"] = True
                             result["output_format"] = output_format
@@ -4569,7 +5628,8 @@ Start by explaining your understanding and reasoning:"""
                     markdown_output,
                     output_format,
                     result.get("intermediate_steps", []),
-                    agent_data=agent_data  # Pass full agent data for context-aware summaries
+                    agent_data=agent_data,  # Pass full agent data for context-aware summaries
+                    visualization_preferences=visualization_preferences
                 )
                 
                 # Add flag if query was auto-saved
@@ -4611,7 +5671,8 @@ Start by explaining your understanding and reasoning:"""
                     response.content,
                     output_format,
                     [],
-                    agent_data=agent_data  # Pass full agent data for context-aware summaries
+                    agent_data=agent_data,  # Pass full agent data for context-aware summaries
+                    visualization_preferences=visualization_preferences
                 )
                 
                 if progress_callback:
@@ -5410,7 +6471,7 @@ Do NOT format as markdown, just plain text."""
             # Fallback to simple message
             return f"Query executed successfully. Results contain {row_count} records."
     
-    def _execute_cached_query(self, agent_id: str, query: str, tool_configs: Dict[str, Dict[str, str]] = None) -> Dict[str, Any]:
+    def _execute_cached_query(self, agent_id: str, query: str, tool_configs: Dict[str, Dict[str, str]] = None, visualization_preferences: str = None) -> Dict[str, Any]:
         """
         Execute a cached PostgreSQL query directly
         
@@ -5486,7 +6547,7 @@ Do NOT format as markdown, just plain text."""
                     ]
                     
                     # ✅ Use _format_output to handle CSV generation and summary
-                    formatted_result = self._format_output(output, output_format, intermediate_steps, agent_data=agent_data)
+                    formatted_result = self._format_output(output, output_format, intermediate_steps, agent_data=agent_data, visualization_preferences=visualization_preferences)
                     formatted_result["cached_execution"] = True
                     formatted_result["used_cache"] = True
                     

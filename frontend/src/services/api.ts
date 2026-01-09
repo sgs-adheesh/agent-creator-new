@@ -17,6 +17,7 @@ export interface Agent {
   workflow_config?: WorkflowConfig;
   selected_tools?: string[];
   tool_configs?: Record<string, Record<string, string>>;
+  visualization_preferences?: string;  // Stored visualization preferences from template
 }
 
 export interface WorkflowConfig {
@@ -42,6 +43,7 @@ export interface ExecuteAgentRequest {
   query: string;
   input_data?: Record<string, string | number | boolean>;
   tool_configs?: Record<string, Record<string, string>>;
+  visualization_preferences?: string;  // User-specified visualization approach
 }
 
 export interface ExecuteAgentResponse {
@@ -53,6 +55,18 @@ export interface ExecuteAgentResponse {
   saved_query?: string;
   query_corrected?: boolean;
   query_attempts?: number;
+  visualization_config?: {
+    charts?: Array<{
+      id: string;
+      type: string;
+      title: string;
+      description: string;
+      data_source: Record<string, unknown>;
+      config?: Record<string, unknown>;
+    }>;
+    insights?: string;
+    recommended_view?: string;
+  };
 }
 
 export interface WorkflowNode {

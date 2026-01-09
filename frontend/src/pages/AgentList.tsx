@@ -19,6 +19,10 @@ export default function AgentList() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
+  const [showVizModal, setShowVizModal] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [visualizationPreferences, setVisualizationPreferences] = useState<string>('');
+  const [selectedChartTypes, setSelectedChartTypes] = useState<string[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,12 +63,32 @@ export default function AgentList() {
     }
   };
 
-  const handleUseTemplate = async (templateId: string) => {
-    setCreatingTemplate(templateId);
+  const handleUseTemplate = (templateId: string) => {
+    // Show modal to ask for visualization preferences
+    setSelectedTemplateId(templateId);
+    setVisualizationPreferences('');
+    setSelectedChartTypes([]);
+    setShowVizModal(true);
+  };
+
+  const handleConfirmTemplate = async () => {
+    if (!selectedTemplateId) return;
+    
+    setCreatingTemplate(selectedTemplateId);
+    setShowVizModal(false);
+    
+    // Convert selected chart types to string format
+    const vizPrefsString = selectedChartTypes.length > 0 
+      ? selectedChartTypes.join(', ') 
+      : (visualizationPreferences || undefined);
+    
     try {
-      const response = await fetch(`http://localhost:8000/api/templates/${templateId}/create`, {
+      const response = await fetch(`http://localhost:8000/api/templates/${selectedTemplateId}/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          visualization_preferences: vizPrefsString
+        })
       });
       
       if (!response.ok) throw new Error('Failed to create agent from template');
@@ -74,7 +98,17 @@ export default function AgentList() {
     } catch {
       alert('Failed to create agent from template');
       setCreatingTemplate(null);
+    } finally {
+      setSelectedTemplateId(null);
+      setVisualizationPreferences('');
     }
+  };
+
+  const handleSkipVizModal = async () => {
+    // Use default (no preferences)
+    setSelectedChartTypes([]);
+    setVisualizationPreferences('');
+    await handleConfirmTemplate();
   };
 
   const categories = ['All', ...Array.from(new Set(templates.map(t => t.category)))];
@@ -260,6 +294,102 @@ export default function AgentList() {
           </div>
         )}
       </div>
+
+      {/* Visualization Preferences Modal */}
+      {showVizModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Configure Visualization Preferences
+            </h3>
+            
+            <p className="text-sm text-gray-600 mb-4">
+              How would you like the data to be visualized? You can specify chart types, grouping, or leave empty for auto-generated visualizations.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Visualization Types <span className="text-gray-400 text-xs">(Optional, max 4)</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3 p-3 border border-gray-300 rounded-lg bg-gray-50 max-h-64 overflow-y-auto">
+                {[
+                  { value: 'pie', label: 'Pie Chart', icon: '🥧' },
+                  { value: 'bar', label: 'Bar Chart', icon: '📊' },
+                  { value: 'line', label: 'Line Chart', icon: '📈' },
+                  { value: 'area', label: 'Area Chart', icon: '📉' },
+                  { value: 'scatter', label: 'Scatter Plot', icon: '🔍' },
+                  { value: 'radar', label: 'Radar Chart', icon: '🕸️' },
+                  { value: 'radialbar', label: 'Radial Bar', icon: '⭕' },
+                  { value: 'treemap', label: 'Treemap', icon: '🗺️' }
+                ].map((chart) => (
+                  <label
+                    key={chart.value}
+                    className={`flex items-center space-x-2 p-2 rounded-lg cursor-pointer transition-all ${
+                      selectedChartTypes.includes(chart.value)
+                        ? 'bg-blue-100 border-2 border-blue-500'
+                        : 'bg-white border-2 border-transparent hover:bg-gray-100'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedChartTypes.includes(chart.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          if (selectedChartTypes.length < 4) {
+                            setSelectedChartTypes([...selectedChartTypes, chart.value]);
+                          }
+                        } else {
+                          setSelectedChartTypes(selectedChartTypes.filter(t => t !== chart.value));
+                        }
+                      }}
+                      disabled={!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      <span className="mr-1">{chart.icon}</span>
+                      {chart.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {selectedChartTypes.length > 0 && (
+                <p className="mt-2 text-xs text-blue-600">
+                  Selected: {selectedChartTypes.join(', ')} ({selectedChartTypes.length}/4)
+                </p>
+              )}
+              <p className="mt-2 text-xs text-gray-500">
+                Select up to 4 chart types. Leave empty for auto-generated visualizations.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleConfirmTemplate}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              >
+                Continue with Preferences
+              </button>
+              <button
+                onClick={handleSkipVizModal}
+                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
+              >
+                Use Default
+              </button>
+              <button
+                onClick={() => {
+                  setShowVizModal(false);
+                  setSelectedTemplateId(null);
+                  setVisualizationPreferences('');
+                  setSelectedChartTypes([]);
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 focus:outline-none"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

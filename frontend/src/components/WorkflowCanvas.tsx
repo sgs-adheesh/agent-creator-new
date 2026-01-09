@@ -157,7 +157,11 @@ function ToolConfigForm({ toolName, initialConfig, onSave, onCancel }: ToolConfi
 
 
 function ResultDataVisualization({ data }: { data: unknown }) {  
-  return <DataVisualization data={data} title="Data Analysis" />;
+  // Extract visualization_config from result if available
+  const resultData = data as ExecuteAgentResponse;
+  const visualizationConfig = resultData?.visualization_config;
+  
+  return <DataVisualization data={data} title="Data Analysis" visualization_config={visualizationConfig} />;
 }
 
 
@@ -190,6 +194,17 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   const resultRef = useRef<HTMLDivElement>(null);
   const [showInputForm, setShowInputForm] = useState(true);
   const [executionProgress, setExecutionProgress] = useState<ProgressStep[]>([]);
+  const [visualizationPreferences, setVisualizationPreferences] = useState<string>('');
+  const [selectedChartTypes, setSelectedChartTypes] = useState<string[]>([]);
+  
+  // Convert selected chart types to string format for backend
+  const getVisualizationPreferencesString = () => {
+    if (selectedChartTypes.length === 0) {
+      return visualizationPreferences || undefined;
+    }
+    // Convert array to comma-separated string: "pie, bar, line, area"
+    return selectedChartTypes.join(', ');
+  };
 
 
   const loadWorkflow = useCallback(async () => {
@@ -200,6 +215,18 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       
       if (agentData.workflow_config) {
         setWorkflowConfig(agentData.workflow_config);
+      }
+      
+      // Load visualization preferences if stored in agent
+      if (agentData.visualization_preferences) {
+        setVisualizationPreferences(agentData.visualization_preferences);
+        // Parse stored preferences to extract chart types
+        const prefs = agentData.visualization_preferences.toLowerCase();
+        const chartTypes = ['pie', 'bar', 'line', 'area', 'scatter', 'radar', 'radialbar', 'treemap'];
+        const foundTypes = chartTypes.filter(type => prefs.includes(type));
+        if (foundTypes.length > 0) {
+          setSelectedChartTypes(foundTypes.slice(0, 4));
+        }
       }
       
       const workflow: WorkflowGraph = await agentApi.getWorkflow(agentId, false);
@@ -582,7 +609,8 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
           body: JSON.stringify({
             query: queryString,
             tool_configs: toolConfigs,
-            input_data: inputData
+            input_data: inputData,
+            visualization_preferences: getVisualizationPreferencesString()
           })
         })
         .then(response => {
@@ -884,6 +912,63 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                     />
                   </div>
 
+                  {/* Visualization Preferences (Optional) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Visualization Types <span className="text-gray-400 text-xs">(Optional, max 4)</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-3 p-3 border border-gray-300 rounded-xl bg-gray-50">
+                      {[
+                        { value: 'pie', label: 'Pie Chart', icon: '🥧' },
+                        { value: 'bar', label: 'Bar Chart', icon: '📊' },
+                        { value: 'line', label: 'Line Chart', icon: '📈' },
+                        { value: 'area', label: 'Area Chart', icon: '📉' },
+                        { value: 'scatter', label: 'Scatter Plot', icon: '🔍' },
+                        { value: 'radar', label: 'Radar Chart', icon: '🕸️' },
+                        { value: 'radialbar', label: 'Radial Bar', icon: '⭕' },
+                        { value: 'treemap', label: 'Treemap', icon: '🗺️' }
+                      ].map((chart) => (
+                        <label
+                          key={chart.value}
+                          className={`flex items-center space-x-2 p-2 rounded-lg cursor-pointer transition-all ${
+                            selectedChartTypes.includes(chart.value)
+                              ? 'bg-blue-100 border-2 border-blue-500'
+                              : 'bg-white border-2 border-transparent hover:bg-gray-100'
+                          } ${executing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedChartTypes.includes(chart.value)}
+                            onChange={(e) => {
+                              if (executing) return;
+                              if (e.target.checked) {
+                                if (selectedChartTypes.length < 4) {
+                                  setSelectedChartTypes([...selectedChartTypes, chart.value]);
+                                }
+                              } else {
+                                setSelectedChartTypes(selectedChartTypes.filter(t => t !== chart.value));
+                              }
+                            }}
+                            disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            <span className="mr-1">{chart.icon}</span>
+                            {chart.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {selectedChartTypes.length > 0 && (
+                      <p className="mt-2 text-xs text-blue-600">
+                        Selected: {selectedChartTypes.join(', ')} ({selectedChartTypes.length}/4)
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-gray-500">
+                      Select up to 4 chart types. Leave empty for auto-generated visualizations.
+                    </p>
+                  </div>
+
                   <button
                     type="submit"
                     disabled={executing || !query.trim()}
@@ -893,12 +978,71 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                   </button>
                 </form>
               ) : (
-                <DynamicPlayground
-                  triggerType={workflowConfig.trigger_type}
-                  inputFields={workflowConfig.input_fields}
-                  onExecute={handleDynamicExecute}
-                  loading={executing}
-                />
+                <div className="space-y-4">
+                  <DynamicPlayground
+                    triggerType={workflowConfig.trigger_type}
+                    inputFields={workflowConfig.input_fields}
+                    onExecute={handleDynamicExecute}
+                    loading={executing}
+                  />
+                  
+                  {/* Visualization Preferences for Dynamic Playground */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Visualization Types <span className="text-gray-400 text-xs">(Optional, max 4)</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-3 p-3 border border-gray-300 rounded-xl bg-gray-50">
+                      {[
+                        { value: 'pie', label: 'Pie Chart', icon: '🥧' },
+                        { value: 'bar', label: 'Bar Chart', icon: '📊' },
+                        { value: 'line', label: 'Line Chart', icon: '📈' },
+                        { value: 'area', label: 'Area Chart', icon: '📉' },
+                        { value: 'scatter', label: 'Scatter Plot', icon: '🔍' },
+                        { value: 'radar', label: 'Radar Chart', icon: '🕸️' },
+                        { value: 'radialbar', label: 'Radial Bar', icon: '⭕' },
+                        { value: 'treemap', label: 'Treemap', icon: '🗺️' }
+                      ].map((chart) => (
+                        <label
+                          key={chart.value}
+                          className={`flex items-center space-x-2 p-2 rounded-lg cursor-pointer transition-all ${
+                            selectedChartTypes.includes(chart.value)
+                              ? 'bg-blue-100 border-2 border-blue-500'
+                              : 'bg-white border-2 border-transparent hover:bg-gray-100'
+                          } ${executing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedChartTypes.includes(chart.value)}
+                            onChange={(e) => {
+                              if (executing) return;
+                              if (e.target.checked) {
+                                if (selectedChartTypes.length < 4) {
+                                  setSelectedChartTypes([...selectedChartTypes, chart.value]);
+                                }
+                              } else {
+                                setSelectedChartTypes(selectedChartTypes.filter(t => t !== chart.value));
+                              }
+                            }}
+                            disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            <span className="mr-1">{chart.icon}</span>
+                            {chart.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {selectedChartTypes.length > 0 && (
+                      <p className="mt-2 text-xs text-blue-600">
+                        Selected: {selectedChartTypes.join(', ')} ({selectedChartTypes.length}/4)
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-gray-500">
+                      Select up to 4 chart types. Leave empty for auto-generated visualizations.
+                    </p>
+                  </div>
+                </div>
               )}
               </div>
               )}

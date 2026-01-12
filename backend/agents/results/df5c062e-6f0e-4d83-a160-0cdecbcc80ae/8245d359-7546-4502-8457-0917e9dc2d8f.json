@@ -1,0 +1,780 @@
+{
+  "id": "8245d359-7546-4502-8457-0917e9dc2d8f",
+  "name": "Result - 12/01/2026, 18:43:12",
+  "timestamp": "2026-01-12T18:43:14.329523",
+  "data": {
+    "success": true,
+    "output": "## Analysis of Invoice Data\n\nThe analysis of the invoice data reveals significant instances of **duplicate invoices** that could lead to **payment errors**. \n\n### Examples of Duplicate Invoices\n\n- The invoice number **\"10409/2022-23\"** from vendor **\"Fab Dairy & Trading (I) Pvt. Ltd.\"** has been recorded **four times** with a total amount of **1985.00**, indicating a high risk of **double payment**.\n- Similarly, the invoice **\"INV-3337\"** from **\"DEMO - Sliced Invoices\"** appears **three times** with a total of **93.50**.\n- The invoice **\"328\"** from **\"meat Hub\"** has **three instances** with a total amount of only **1.00**, which highlights the potential for oversight in small transactions.\n- Additionally, the invoice number **\"5666\"** from **\"S.P. SOAP OIL\"** and **\"0000546\"** from **\"aroundsave Coffee Roasters\"** both have **two records**, underscoring the need for thorough checks to prevent **duplicate payments**.\n\n> These findings emphasize the critical requirement for a systematic review of the invoicing process to maintain **financial integrity** and **accuracy**.",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": null,
+          "log": null
+        },
+        "result": {
+          "success": true,
+          "columns": [
+            "batch_names",
+            "invoice_number",
+            "total",
+            "vendor_name",
+            "duplicate_count"
+          ],
+          "rows": [
+            {
+              "batch_names": "Batch-20251222113410085, Batch-20251222131201182, Batch-20260112121433086, Batch-20260112121450658",
+              "invoice_number": "10409/2022-23",
+              "total": "1985.00",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "duplicate_count": 4
+            },
+            {
+              "batch_names": "Batch-20251230062253061, Batch-20251230063512115, Batch-20260107064638780",
+              "invoice_number": "INV-3337",
+              "total": "93.50",
+              "vendor_name": "DEMO - Sliced Invoices",
+              "duplicate_count": 3
+            },
+            {
+              "batch_names": "Batch-20251224071950021, Batch-20251224072419069, Batch-20260108065212611",
+              "invoice_number": "328",
+              "total": "01",
+              "vendor_name": "meat Hub",
+              "duplicate_count": 3
+            },
+            {
+              "batch_names": "Batch-20251230055439548, Batch-20251230084858075, Batch-20251222095539306",
+              "invoice_number": "417",
+              "total": "7.15",
+              "vendor_name": "ABHIRUCHI SEAFOODS",
+              "duplicate_count": 3
+            },
+            {
+              "batch_names": "Batch-20251222113430256, Batch-20251224065936393",
+              "invoice_number": "5666",
+              "total": "150",
+              "vendor_name": "S.P. SOAP OIL",
+              "duplicate_count": 2
+            },
+            {
+              "batch_names": "Batch-20251223121719220, Batch-20251223121719225",
+              "invoice_number": "0000546",
+              "total": "623.00",
+              "vendor_name": "aroundsave Coffee Roasters",
+              "duplicate_count": 2
+            },
+            {
+              "batch_names": "Batch-20260107065820771, Batch-20260107070221978",
+              "invoice_number": "INV-001",
+              "total": "0",
+              "vendor_name": "Your company name",
+              "duplicate_count": 2
+            },
+            {
+              "batch_names": "Batch-20260108085417007, Batch-20260108085434883",
+              "invoice_number": "00000001",
+              "total": "2761",
+              "vendor_name": "Your Company LLC",
+              "duplicate_count": 2
+            },
+            {
+              "batch_names": "Batch-20251223121427412, Batch-20251231060410686",
+              "invoice_number": "1354035",
+              "total": "203.70",
+              "vendor_name": "Down East Seafood, Inc.",
+              "duplicate_count": 2
+            },
+            {
+              "batch_names": "Batch-20260107090029881, Batch-20260108073325656",
+              "invoice_number": "1111",
+              "total": "10821.63",
+              "vendor_name": "Logo\nL\nName",
+              "duplicate_count": 2
+            },
+            {
+              "batch_names": "Batch-20260112122930487, Batch-20260112122824794",
+              "invoice_number": "SSA/5514/22-23",
+              "total": "21324.00",
+              "vendor_name": "Sun Shine Agencies",
+              "duplicate_count": 2
+            },
+            {
+              "batch_names": "Batch-20251229053921417, Batch-20251229052849940",
+              "invoice_number": "52148",
+              "total": "220.00",
+              "vendor_name": "Lorem Ipsum",
+              "duplicate_count": 2
+            }
+          ],
+          "row_count": 12,
+          "has_more": false,
+          "note": null,
+          "schema_info": null
+        }
+      }
+    ],
+    "output_format": "table",
+    "summary": {
+      "total_records": 12,
+      "columns": [
+        "batch_names",
+        "invoice_number",
+        "total",
+        "vendor_name",
+        "duplicate_count"
+      ],
+      "description": "Query returned 12 record(s) with 5 column(s).",
+      "invoice_breakdown": {
+        "328": {
+          "invoice_number": "328",
+          "line_items": 1,
+          "vendor": "meat Hub"
+        },
+        "417": {
+          "invoice_number": "417",
+          "line_items": 1,
+          "vendor": "ABHIRUCHI SEAFOODS"
+        },
+        "1111": {
+          "invoice_number": "1111",
+          "line_items": 1,
+          "vendor": "Logo\nL\nName"
+        },
+        "5666": {
+          "invoice_number": "5666",
+          "line_items": 1,
+          "vendor": "S.P. SOAP OIL"
+        },
+        "52148": {
+          "invoice_number": "52148",
+          "line_items": 1,
+          "vendor": "Lorem Ipsum"
+        },
+        "1354035": {
+          "invoice_number": "1354035",
+          "line_items": 1,
+          "vendor": "Down East Seafood, Inc."
+        },
+        "10409/2022-23": {
+          "invoice_number": "10409/2022-23",
+          "line_items": 1,
+          "vendor": "Fab Dairy & Trading (I) Pvt. Ltd."
+        },
+        "INV-3337": {
+          "invoice_number": "INV-3337",
+          "line_items": 1,
+          "vendor": "DEMO - Sliced Invoices"
+        },
+        "0000546": {
+          "invoice_number": "0000546",
+          "line_items": 1,
+          "vendor": "aroundsave Coffee Roasters"
+        },
+        "INV-001": {
+          "invoice_number": "INV-001",
+          "line_items": 1,
+          "vendor": "Your company name"
+        },
+        "00000001": {
+          "invoice_number": "00000001",
+          "line_items": 1,
+          "vendor": "Your Company LLC"
+        },
+        "SSA/5514/22-23": {
+          "invoice_number": "SSA/5514/22-23",
+          "line_items": 1,
+          "vendor": "Sun Shine Agencies"
+        }
+      },
+      "invoice_summary_text": "**00000001** | Vendor: Your Company LLC | Line Items: 1\n**0000546** | Vendor: aroundsave Coffee Roasters | Line Items: 1\n**10409/2022-23** | Vendor: Fab Dairy & Trading (I) Pvt. Ltd. | Line Items: 1\n**1111** | Vendor: Logo\nL\nName | Line Items: 1\n**1354035** | Vendor: Down East Seafood, Inc. | Line Items: 1\n**328** | Vendor: meat Hub | Line Items: 1\n**417** | Vendor: ABHIRUCHI SEAFOODS | Line Items: 1\n**52148** | Vendor: Lorem Ipsum | Line Items: 1\n**5666** | Vendor: S.P. SOAP OIL | Line Items: 1\n**INV-001** | Vendor: Your company name | Line Items: 1\n**INV-3337** | Vendor: DEMO - Sliced Invoices | Line Items: 1\n**SSA/5514/22-23** | Vendor: Sun Shine Agencies | Line Items: 1",
+      "numeric_analysis": {
+        "total": {
+          "sum": 38189.98,
+          "average": 3182.5,
+          "min": 0,
+          "max": 21324,
+          "count": 12,
+          "is_currency": true,
+          "description": "**total**: Total = $38,189.98, Average = $3,182.50, Range = $0.00 - $21,324.00"
+        },
+        "duplicate_count": {
+          "unique_values": [
+            4,
+            3,
+            2
+          ],
+          "unique_count": 3,
+          "total_entries": 12,
+          "min": 2,
+          "max": 4,
+          "is_header_field": true,
+          "description": "**duplicate_count** (Header Field): 3 unique values across 12 entries. Range: $2.00 - $4.00"
+        }
+      },
+      "numeric_summary_text": "**total**: Total = $38,189.98, Average = $3,182.50, Range = $0.00 - $21,324.00\n**duplicate_count** (Header Field): 3 unique values across 12 entries. Range: $2.00 - $4.00",
+      "categorical_analysis": {
+        "batch_names": {
+          "unique_count": 12,
+          "total_entries": 12,
+          "description": "**batch_names**: 12 unique value(s) across 12 entries",
+          "top_values": [
+            {
+              "value": "Batch-20251222113410085, Batch-20251222131201182, Batch-20260112121433086, Batch-20260112121450658",
+              "count": 1
+            },
+            {
+              "value": "Batch-20251230062253061, Batch-20251230063512115, Batch-20260107064638780",
+              "count": 1
+            },
+            {
+              "value": "Batch-20251224071950021, Batch-20251224072419069, Batch-20260108065212611",
+              "count": 1
+            },
+            {
+              "value": "Batch-20251230055439548, Batch-20251230084858075, Batch-20251222095539306",
+              "count": 1
+            },
+            {
+              "value": "Batch-20251222113430256, Batch-20251224065936393",
+              "count": 1
+            }
+          ]
+        },
+        "invoice_number": {
+          "unique_count": 12,
+          "total_entries": 12,
+          "description": "**invoice_number**: 12 unique value(s) across 12 entries",
+          "top_values": [
+            {
+              "value": "10409/2022-23",
+              "count": 1
+            },
+            {
+              "value": "INV-3337",
+              "count": 1
+            },
+            {
+              "value": "328",
+              "count": 1
+            },
+            {
+              "value": "417",
+              "count": 1
+            },
+            {
+              "value": "5666",
+              "count": 1
+            }
+          ]
+        },
+        "vendor_name": {
+          "unique_count": 12,
+          "total_entries": 12,
+          "description": "**vendor_name**: 12 unique value(s) across 12 entries",
+          "top_values": [
+            {
+              "value": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "count": 1
+            },
+            {
+              "value": "DEMO - Sliced Invoices",
+              "count": 1
+            },
+            {
+              "value": "meat Hub",
+              "count": 1
+            },
+            {
+              "value": "ABHIRUCHI SEAFOODS",
+              "count": 1
+            },
+            {
+              "value": "S.P. SOAP OIL",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "categorical_summary_text": "**batch_names**: 12 unique value(s) across 12 entries\n**invoice_number**: 12 unique value(s) across 12 entries\n**vendor_name**: 12 unique value(s) across 12 entries",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Duplicate Invoice Analysis\n\n### Key Findings\n- The dataset contains a total of **12 unique invoices** from various **vendors**.\n- The **total invoice amount** is **$38,189.98**, with an **average invoice total** of **$3,182.50**.\n- The **invoice amounts** range from **$0.00** to **$21,324.00**, indicating potential anomalies, particularly with the highest invoice.\n\n### Notable Trends\n- **Vendor Distribution**: Each of the 12 invoices is associated with a unique **vendor**, highlighting a diverse supplier base:\n  - **Your Company LLC** and **Your company name** appear as vendors, suggesting potential internal duplicates or naming discrepancies.\n- **Duplicate Count Analysis**: There are **3 unique values** for the duplicate count, with a range of **$2.00 to $4.00**.\n  - Multiple invoices show a duplicate count of **3**, indicating a potential issue with invoice management and necessitating further investigation.\n\n### Anomalies\n- **Invoice #10409/2022-23** from **Fab Dairy & Trading (I) Pvt. Ltd.** has a significant total of **$1,985.00**, one of the higher amounts, which may warrant closer scrutiny for any duplicate issues.\n- The **invoice #328** from **meat Hub** shows a total of **$0.01**, suggesting a possible data entry error or an incomplete record.\n\n### Business Impact\n> ⚠️ The presence of multiple invoices with a duplicate count of **3** could lead to potential **duplicate payments**, significantly impacting cash flow and financial accuracy.\n\n### Recommendations\n1. **Prioritize Review**: Focus on invoices with a duplicate count of **3** or more for immediate review.\n2. **Data Validation**: Implement stricter validation checks during invoice entry to prevent duplicates from being recorded.\n3. **Audit High-Value Invoices**: Conduct an audit on high-value invoices, particularly those over **$1,000**, to ensure no duplicates exist.\n4. **Vendor Naming Consistency**: Standardize vendor names to avoid confusion and potential duplicate entries.\n\n---\n\n# 📊 Query Results Summary\n\n**12** records found with **5** columns\n\n## 📎 Invoices\n\n**10409/2022-23** - Fab Dairy & Trading (I) Pvt. Ltd. (No date)\n  └ 1 items, 0 units\n\n**INV-3337** - DEMO - Sliced Invoices (No date)\n  └ 1 items, 0 units\n\n**328** - meat Hub (No date)\n  └ 1 items, 0 units\n\n**417** - ABHIRUCHI SEAFOODS (No date)\n  └ 1 items, 0 units\n\n**5666** - S.P. SOAP OIL (No date)\n  └ 1 items, 0 units\n\n**0000546** - aroundsave Coffee Roasters (No date)\n  └ 1 items, 0 units\n\n**INV-001** - Your company name (No date)\n  └ 1 items, 0 units\n\n**00000001** - Your Company LLC (No date)\n  └ 1 items, 0 units\n\n**1354035** - Down East Seafood, Inc. (No date)\n  └ 1 items, 0 units\n\n**1111** - Logo\nL\nName (No date)\n  └ 1 items, 0 units\n\n**SSA/5514/22-23** - Sun Shine Agencies (No date)\n  └ 1 items, 0 units\n\n**52148** - Lorem Ipsum (No date)\n  └ 1 items, 0 units\n\n## 💰 Numbers\n\n**total:** $38,189.98 total, $3,182.50 avg\n**duplicate_count:** 3 unique values ($4.00, $3.00, $2.00)\n\n## 🏷️ Categories\n\n**batch_names:** Batch-20251222113410085, Batch-20251222131201182, Batch-20260112121433086, Batch-20260112121450658 (1), Batch-20251230062253061, Batch-20251230063512115, Batch-20260107064638780 (1), Batch-20251224071950021, Batch-20251224072419069, Batch-20260108065212611 (1)\n**invoice_number:** 10409/2022-23 (1), INV-3337 (1), 328 (1)\n**vendor_name:** Fab Dairy & Trading (I) Pvt. Ltd. (1), DEMO - Sliced Invoices (1), meat Hub (1)\n",
+      "ai_summary": "## Duplicate Invoice Analysis\n\n### Key Findings\n- The dataset contains a total of **12 unique invoices** from various **vendors**.\n- The **total invoice amount** is **$38,189.98**, with an **average invoice total** of **$3,182.50**.\n- The **invoice amounts** range from **$0.00** to **$21,324.00**, indicating potential anomalies, particularly with the highest invoice.\n\n### Notable Trends\n- **Vendor Distribution**: Each of the 12 invoices is associated with a unique **vendor**, highlighting a diverse supplier base:\n  - **Your Company LLC** and **Your company name** appear as vendors, suggesting potential internal duplicates or naming discrepancies.\n- **Duplicate Count Analysis**: There are **3 unique values** for the duplicate count, with a range of **$2.00 to $4.00**.\n  - Multiple invoices show a duplicate count of **3**, indicating a potential issue with invoice management and necessitating further investigation.\n\n### Anomalies\n- **Invoice #10409/2022-23** from **Fab Dairy & Trading (I) Pvt. Ltd.** has a significant total of **$1,985.00**, one of the higher amounts, which may warrant closer scrutiny for any duplicate issues.\n- The **invoice #328** from **meat Hub** shows a total of **$0.01**, suggesting a possible data entry error or an incomplete record.\n\n### Business Impact\n> ⚠️ The presence of multiple invoices with a duplicate count of **3** could lead to potential **duplicate payments**, significantly impacting cash flow and financial accuracy.\n\n### Recommendations\n1. **Prioritize Review**: Focus on invoices with a duplicate count of **3** or more for immediate review.\n2. **Data Validation**: Implement stricter validation checks during invoice entry to prevent duplicates from being recorded.\n3. **Audit High-Value Invoices**: Conduct an audit on high-value invoices, particularly those over **$1,000**, to ensure no duplicates exist.\n4. **Vendor Naming Consistency**: Standardize vendor names to avoid confusion and potential duplicate entries."
+    },
+    "table_data": {
+      "columns": [
+        "batch_names",
+        "invoice_number",
+        "total",
+        "vendor_name",
+        "duplicate_count"
+      ],
+      "rows": [
+        {
+          "batch_names": "Batch-20251222113410085, Batch-20251222131201182, Batch-20260112121433086, Batch-20260112121450658",
+          "invoice_number": "10409/2022-23",
+          "total": "1985.00",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "duplicate_count": 4
+        },
+        {
+          "batch_names": "Batch-20251230062253061, Batch-20251230063512115, Batch-20260107064638780",
+          "invoice_number": "INV-3337",
+          "total": "93.50",
+          "vendor_name": "DEMO - Sliced Invoices",
+          "duplicate_count": 3
+        },
+        {
+          "batch_names": "Batch-20251224071950021, Batch-20251224072419069, Batch-20260108065212611",
+          "invoice_number": "328",
+          "total": "01",
+          "vendor_name": "meat Hub",
+          "duplicate_count": 3
+        },
+        {
+          "batch_names": "Batch-20251230055439548, Batch-20251230084858075, Batch-20251222095539306",
+          "invoice_number": "417",
+          "total": "7.15",
+          "vendor_name": "ABHIRUCHI SEAFOODS",
+          "duplicate_count": 3
+        },
+        {
+          "batch_names": "Batch-20251222113430256, Batch-20251224065936393",
+          "invoice_number": "5666",
+          "total": "150",
+          "vendor_name": "S.P. SOAP OIL",
+          "duplicate_count": 2
+        },
+        {
+          "batch_names": "Batch-20251223121719220, Batch-20251223121719225",
+          "invoice_number": "0000546",
+          "total": "623.00",
+          "vendor_name": "aroundsave Coffee Roasters",
+          "duplicate_count": 2
+        },
+        {
+          "batch_names": "Batch-20260107065820771, Batch-20260107070221978",
+          "invoice_number": "INV-001",
+          "total": "0",
+          "vendor_name": "Your company name",
+          "duplicate_count": 2
+        },
+        {
+          "batch_names": "Batch-20260108085417007, Batch-20260108085434883",
+          "invoice_number": "00000001",
+          "total": "2761",
+          "vendor_name": "Your Company LLC",
+          "duplicate_count": 2
+        },
+        {
+          "batch_names": "Batch-20251223121427412, Batch-20251231060410686",
+          "invoice_number": "1354035",
+          "total": "203.70",
+          "vendor_name": "Down East Seafood, Inc.",
+          "duplicate_count": 2
+        },
+        {
+          "batch_names": "Batch-20260107090029881, Batch-20260108073325656",
+          "invoice_number": "1111",
+          "total": "10821.63",
+          "vendor_name": "Logo\nL\nName",
+          "duplicate_count": 2
+        },
+        {
+          "batch_names": "Batch-20260112122930487, Batch-20260112122824794",
+          "invoice_number": "SSA/5514/22-23",
+          "total": "21324.00",
+          "vendor_name": "Sun Shine Agencies",
+          "duplicate_count": 2
+        },
+        {
+          "batch_names": "Batch-20251229053921417, Batch-20251229052849940",
+          "invoice_number": "52148",
+          "total": "220.00",
+          "vendor_name": "Lorem Ipsum",
+          "duplicate_count": 2
+        }
+      ],
+      "row_count": 12
+    },
+    "visualization_config": {
+      "charts": [
+        {
+          "id": "chart_1",
+          "type": "waterfall",
+          "title": "Duplicate Invoice Counts by Vendor",
+          "description": "This waterfall chart illustrates the number of duplicate invoices identified for each vendor, highlighting potential invoice issues.",
+          "data": [
+            {
+              "name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "value": [
+                0,
+                4
+              ]
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "value": [
+                4,
+                7
+              ]
+            },
+            {
+              "name": "meat Hub",
+              "value": [
+                7,
+                10
+              ]
+            },
+            {
+              "name": "ABHIRUCHI SEAFOODS",
+              "value": [
+                10,
+                13
+              ]
+            },
+            {
+              "name": "S.P. SOAP OIL",
+              "value": [
+                13,
+                15
+              ]
+            },
+            {
+              "name": "aroundsave Coffee Roasters",
+              "value": [
+                15,
+                17
+              ]
+            },
+            {
+              "name": "Your company name",
+              "value": [
+                17,
+                19
+              ]
+            },
+            {
+              "name": "Your Company LLC",
+              "value": [
+                19,
+                21
+              ]
+            },
+            {
+              "name": "Down East Seafood, Inc.",
+              "value": [
+                21,
+                23
+              ]
+            },
+            {
+              "name": "Logo\nL\nName",
+              "value": [
+                23,
+                25
+              ]
+            },
+            {
+              "name": "Sun Shine Agencies",
+              "value": [
+                25,
+                27
+              ]
+            },
+            {
+              "name": "Lorem Ipsum",
+              "value": [
+                27,
+                29
+              ]
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "duplicate_count",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#4CAF50",
+              "#FF5722"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_2",
+          "type": "candlestick",
+          "title": "Invoice Totals Candlestick Chart",
+          "description": "This candlestick chart presents the total invoice amounts for vendors, helping to identify trends in invoice values.",
+          "data": [
+            {
+              "name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "open": 1985,
+              "close": 1985,
+              "high": 1985,
+              "low": 1985
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "open": 93.5,
+              "close": 93.5,
+              "high": 93.5,
+              "low": 93.5
+            },
+            {
+              "name": "meat Hub",
+              "open": 1,
+              "close": 1,
+              "high": 1,
+              "low": 1
+            },
+            {
+              "name": "ABHIRUCHI SEAFOODS",
+              "open": 7.15,
+              "close": 7.15,
+              "high": 7.15,
+              "low": 7.15
+            },
+            {
+              "name": "S.P. SOAP OIL",
+              "open": 150,
+              "close": 150,
+              "high": 150,
+              "low": 150
+            },
+            {
+              "name": "aroundsave Coffee Roasters",
+              "open": 623,
+              "close": 623,
+              "high": 623,
+              "low": 623
+            },
+            {
+              "name": "Your company name",
+              "open": 0,
+              "close": 0,
+              "high": 0,
+              "low": 0
+            },
+            {
+              "name": "Your Company LLC",
+              "open": 2761,
+              "close": 2761,
+              "high": 2761,
+              "low": 2761
+            },
+            {
+              "name": "Down East Seafood, Inc.",
+              "open": 203.7,
+              "close": 203.7,
+              "high": 203.7,
+              "low": 203.7
+            },
+            {
+              "name": "Logo\nL\nName",
+              "open": 10821.63,
+              "close": 10821.63,
+              "high": 10821.63,
+              "low": 10821.63
+            },
+            {
+              "name": "Sun Shine Agencies",
+              "open": 21324,
+              "close": 21324,
+              "high": 21324,
+              "low": 21324
+            },
+            {
+              "name": "Lorem Ipsum",
+              "open": 220,
+              "close": 220,
+              "high": 220,
+              "low": 220
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "total",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#FF5722",
+              "#4CAF50"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_3",
+          "type": "bubble",
+          "title": "Duplicate Invoices Bubble Chart",
+          "description": "This bubble chart visualizes the relationship between total invoice amounts and duplicate counts for each vendor.",
+          "data": [
+            {
+              "name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "x": 1985,
+              "y": 4,
+              "z": 4
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "x": 93.5,
+              "y": 3,
+              "z": 3
+            },
+            {
+              "name": "meat Hub",
+              "x": 1,
+              "y": 3,
+              "z": 3
+            },
+            {
+              "name": "ABHIRUCHI SEAFOODS",
+              "x": 7.15,
+              "y": 3,
+              "z": 3
+            },
+            {
+              "name": "S.P. SOAP OIL",
+              "x": 150,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "aroundsave Coffee Roasters",
+              "x": 623,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Your company name",
+              "x": 0,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Your Company LLC",
+              "x": 2761,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Down East Seafood, Inc.",
+              "x": 203.7,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Logo\nL\nName",
+              "x": 10821.63,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Sun Shine Agencies",
+              "x": 21324,
+              "y": 2,
+              "z": 2
+            },
+            {
+              "name": "Lorem Ipsum",
+              "x": 220,
+              "y": 2,
+              "z": 2
+            }
+          ],
+          "data_source": {
+            "x_axis": "duplicate_count",
+            "y_axis": "total"
+          },
+          "config": {
+            "colors": [
+              "#2196F3"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_4",
+          "type": "bar",
+          "title": "Total Amounts by Vendor",
+          "description": "This bar chart displays the total invoice amounts for each vendor, providing insight into vendor financial performance.",
+          "data": [
+            {
+              "name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "total": 1985
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "total": 93.5
+            },
+            {
+              "name": "meat Hub",
+              "total": 1
+            },
+            {
+              "name": "ABHIRUCHI SEAFOODS",
+              "total": 7.15
+            },
+            {
+              "name": "S.P. SOAP OIL",
+              "total": 150
+            },
+            {
+              "name": "aroundsave Coffee Roasters",
+              "total": 623
+            },
+            {
+              "name": "Your company name",
+              "total": 0
+            },
+            {
+              "name": "Your Company LLC",
+              "total": 2761
+            },
+            {
+              "name": "Down East Seafood, Inc.",
+              "total": 203.7
+            },
+            {
+              "name": "Logo\nL\nName",
+              "total": 10821.63
+            },
+            {
+              "name": "Sun Shine Agencies",
+              "total": 21324
+            },
+            {
+              "name": "Lorem Ipsum",
+              "total": 220
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "total",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#FF9800"
+            ],
+            "orientation": "vertical"
+          }
+        }
+      ],
+      "insights": "The visualizations reveal significant patterns in duplicate invoices across various vendors, indicating potential areas for financial discrepancies. Vendors like Fab Dairy & Trading and Sun Shine Agencies have notably high duplicate counts, warranting further investigation. Understanding these trends can help improve invoice management and reduce errors.",
+      "recommended_view": "dashboard"
+    },
+    "used_guidance": true,
+    "execution_time": "Fast (pre-built template, attempt 1)",
+    "query_attempts": 1
+  }
+}

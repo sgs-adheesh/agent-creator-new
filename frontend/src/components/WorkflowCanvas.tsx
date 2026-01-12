@@ -75,7 +75,7 @@ function ToolConfigForm({ toolName, initialConfig, onSave, onCancel }: ToolConfi
 
   const getConfigFields = (tool: string): Array<{ key: string; label: string; type: string; placeholder: string }> => {
     const name = tool.toLowerCase();
-    
+
     if (name.includes('gmail')) {
       return [{ key: 'api_key', label: 'Gmail API Key', type: 'password', placeholder: 'Enter your Gmail API key' }];
     }
@@ -107,7 +107,7 @@ function ToolConfigForm({ toolName, initialConfig, onSave, onCancel }: ToolConfi
     if (name.includes('sheets')) {
       return [{ key: 'api_key', label: 'Google Sheets API Key', type: 'password', placeholder: 'Enter your Google Sheets API key or OAuth token' }];
     }
-    
+
     return [{ key: 'api_key', label: 'API Key', type: 'password', placeholder: 'Enter API key' }];
   };
 
@@ -135,7 +135,7 @@ function ToolConfigForm({ toolName, initialConfig, onSave, onCancel }: ToolConfi
           />
         </div>
       ))}
-      
+
       <div className="flex gap-2 pt-2">
         <button
           type="submit"
@@ -156,11 +156,11 @@ function ToolConfigForm({ toolName, initialConfig, onSave, onCancel }: ToolConfi
 }
 
 
-function ResultDataVisualization({ data }: { data: unknown }) {  
+function ResultDataVisualization({ data }: { data: unknown }) {
   // Extract visualization_config from result if available
   const resultData = data as ExecuteAgentResponse;
   const visualizationConfig = resultData?.visualization_config;
-  
+
   return <DataVisualization data={data} title="Data Analysis" visualization_config={visualizationConfig} />;
 }
 
@@ -196,7 +196,26 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   const [executionProgress, setExecutionProgress] = useState<ProgressStep[]>([]);
   const [visualizationPreferences, setVisualizationPreferences] = useState<string>('');
   const [selectedChartTypes, setSelectedChartTypes] = useState<string[]>([]);
-  
+  const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
+
+  const chartOptions = [
+    { value: 'pie', label: 'Pie Chart', icon: '🥧' },
+    { value: 'bar', label: 'Bar Chart', icon: '📊' },
+    { value: 'line', label: 'Line Chart', icon: '📈' },
+    { value: 'area', label: 'Area Chart', icon: '📉' },
+    { value: 'scatter', label: 'Scatter Plot', icon: '🔍' },
+    { value: 'radar', label: 'Radar Chart', icon: '🕸️' },
+    { value: 'radialbar', label: 'Radial Bar', icon: '⭕' },
+    { value: 'treemap', label: 'Treemap', icon: '🗺️' },
+    { value: 'stacked_bar', label: 'Stacked Bar', icon: '📚' },
+    { value: 'waterfall', label: 'Waterfall', icon: '🌊' },
+    { value: 'candlestick', label: 'Candlestick', icon: '🕯️' },
+    { value: 'bubble', label: 'Bubble Chart', icon: '🫧' },
+    { value: 'heatmap', label: 'Heatmap', icon: '🔥' },
+    { value: 'sankey', label: 'Sankey', icon: '🔀' },
+    { value: 'funnel', label: 'Funnel', icon: '🌪️' }
+  ];
+
   // Convert selected chart types to string format for backend
   const getVisualizationPreferencesString = () => {
     if (selectedChartTypes.length === 0) {
@@ -212,25 +231,26 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     setError(null);
     try {
       const agentData = await agentApi.getAgent(agentId);
-      
+
       if (agentData.workflow_config) {
         setWorkflowConfig(agentData.workflow_config);
       }
-      
+
       // Load visualization preferences if stored in agent
       if (agentData.visualization_preferences) {
         setVisualizationPreferences(agentData.visualization_preferences);
         // Parse stored preferences to extract chart types
         const prefs = agentData.visualization_preferences.toLowerCase();
-        const chartTypes = ['pie', 'bar', 'line', 'area', 'scatter', 'radar', 'radialbar', 'treemap'];
+        const chartTypes = ['pie', 'bar', 'line', 'area', 'scatter', 'radar', 'radialbar', 'treemap',
+          'stacked_bar', 'waterfall', 'candlestick', 'bubble', 'heatmap', 'sankey', 'funnel'];
         const foundTypes = chartTypes.filter(type => prefs.includes(type));
         if (foundTypes.length > 0) {
           setSelectedChartTypes(foundTypes.slice(0, 4));
         }
       }
-      
+
       const workflow: WorkflowGraph = await agentApi.getWorkflow(agentId, false);
-      
+
       const enhancedNodes = (workflow.nodes as Node[]).map(node => ({
         ...node,
         data: {
@@ -239,7 +259,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
           isConfigured: node.data?.tool_name ? !!toolConfigs[node.data.tool_name] : false,
         }
       }));
-      
+
       setNodes(enhancedNodes);
       setEdges(workflow.edges as Edge[]);
     } catch (err: unknown) {
@@ -269,7 +289,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
 
     const container = document.getElementById('workflow-container');
     let resizeObserver: ResizeObserver | null = null;
-    
+
     if (container) {
       resizeObserver = new ResizeObserver(() => {
         handleResize();
@@ -278,7 +298,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     }
 
     window.addEventListener('resize', handleResize);
-    
+
     return () => {
       window.removeEventListener('resize', handleResize);
       if (resizeObserver) {
@@ -309,13 +329,13 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         format: 'a4',
       });
 
-      const imgWidth = 210; 
+      const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= 297; 
+      heightLeft -= 297;
 
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
@@ -337,7 +357,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     if (excludedTools.some(excluded => toolName.toLowerCase().includes(excluded.toLowerCase()))) {
       return;
     }
-    
+
     setConfigToolName(toolName);
     setShowConfigModal(true);
   };
@@ -347,7 +367,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       ...prev,
       [configToolName]: config
     }));
-    
+
     setNodes(nds => nds.map(node => {
       if (node.data?.tool_name === configToolName) {
         return {
@@ -360,7 +380,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       }
       return node;
     }));
-    
+
     setShowConfigModal(false);
   };
 
@@ -380,7 +400,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         className: node.id === nodeId ? 'active-node' : '',
       }))
     );
-    
+
     if (!skipEdges) {
       setEdges((eds) =>
         eds.map((edge) => ({
@@ -411,7 +431,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         className: '',
       }))
     );
-    
+
     setEdges((eds) =>
       eds.map((edge) => ({
         ...edge,
@@ -437,12 +457,12 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
 
   const handleApproveAndCacheQuery = async () => {
     if (!executedQuery) return;
-    
+
     setCachingQuery(true);
     try {
       const queryTemplate = convertToTemplate(executedQuery, workflowConfig.trigger_type);
       const parameters = getParametersForTriggerType(workflowConfig.trigger_type);
-      
+
       const response = await fetch(`http://localhost:8000/api/agents/${agentId}/cache-query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -453,9 +473,9 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
           joins: extractJoinsFromQuery(executedQuery)
         })
       });
-      
+
       if (!response.ok) throw new Error('Failed to cache query');
-      
+
       alert('✅ Query cached successfully! Future executions will use this query template.');
       setExecutedQuery(null);
     } catch (err) {
@@ -465,13 +485,13 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       setCachingQuery(false);
     }
   };
-            
+
   const handleSaveResult = async (resultName: string) => {
     if (!result) {
       alert('No result to save');
       return;
     }
-              
+
     try {
       const response = await fetch(`http://localhost:8000/api/agents/${agentId}/results/save`, {
         method: 'POST',
@@ -481,7 +501,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
           name: resultName
         })
       });
-                
+
       const data = await response.json();
       if (data.success) {
         setResultSaved(true);
@@ -494,12 +514,12 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       alert('❌ Failed to save result');
     }
   };
-            
+
   const handleLoadResult = async (resultId: string) => {
     try {
       const response = await fetch(`http://localhost:8000/api/agents/${agentId}/results/${resultId}`);
       const data = await response.json();
-                
+
       if (data.success && data.result) {
         setResult(data.result.data);
         setResultSaved(true);
@@ -512,7 +532,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       alert('❌ Failed to load result');
     }
   };
-  
+
   const convertToTemplate = (query: string, triggerType: string): string => {
     if (triggerType === 'month_year') {
       return query.replace(/(\d{2})\/%\/(\d{4})/g, '{month}/%/{year}');
@@ -525,7 +545,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
     }
     return query;
   };
-  
+
   const getParametersForTriggerType = (triggerType: string): string[] => {
     switch (triggerType) {
       case 'month_year': return ['month', 'year'];
@@ -534,12 +554,12 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       default: return [];
     }
   };
-  
+
   const extractTablesFromQuery = (query: string): string[] => {
     const tables: string[] = [];
     const fromMatch = query.match(/FROM\s+(\w+)/gi);
     const joinMatch = query.match(/JOIN\s+(\w+)/gi);
-    
+
     if (fromMatch) {
       fromMatch.forEach(m => {
         const table = m.replace(/FROM\s+/i, '');
@@ -552,18 +572,18 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         if (!tables.includes(table)) tables.push(table);
       });
     }
-    
+
     return tables;
   };
-  
+
   const extractJoinsFromQuery = (query: string): string[] => {
     const joins: string[] = [];
     const joinMatches = query.match(/LEFT\s+JOIN\s+[^;]+?(?=LEFT\s+JOIN|WHERE|ORDER|GROUP|$)/gi);
-    
+
     if (joinMatches) {
       joins.push(...joinMatches);
     }
-    
+
     return joins;
   };
 
@@ -590,14 +610,14 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
 
       setExecutionStatus('Activating agent...');
       highlightNode('agent', true);
-      
+
       let queryString = '';
       if (inputData.query) {
         queryString = String(inputData.query);
       } else {
         queryString = JSON.stringify(inputData);
       }
-      
+
       setExecutionStatus('Connecting to server...');
       // Use Server-Sent Events for real-time progress
       const response = await new Promise<ExecuteAgentResponse>((resolve, reject) => {
@@ -613,86 +633,86 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
             visualization_preferences: getVisualizationPreferencesString()
           })
         })
-        .then(response => {
-          if (!response.ok) {
-            setExecutionStatus('Server request failed');
-            throw new Error('Streaming request failed');
-          }
-          
-          setExecutionStatus('Streaming execution updates...');
-          const reader = response.body?.getReader();
-          if (!reader) throw new Error('No reader available');
-          
-          const decoder = new TextDecoder();
-          
-          const readStream = () => {
-            reader.read().then(({ done, value }) => {
-              if (done) return;
-              
-              const text = decoder.decode(value);
-              const lines = text.split('\n');
-              
-              for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                  try {
-                    const data = JSON.parse(line.substring(6));
-                    
-                    if (data.type === 'progress') {
-                      // Update execution status with current step
-                      setExecutionStatus(data.message || `Step ${data.step}: ${data.status}`);
-                      
-                      // Update progress step
-                      const stepIndex = data.step - 1;
-                      if (stepIndex >= 0 && stepIndex < steps.length) {
-                        steps[stepIndex].status = data.status;
-                        steps[stepIndex].label = data.message;
-                        if (data.detail) {
-                          steps[stepIndex].detail = data.detail;
+          .then(response => {
+            if (!response.ok) {
+              setExecutionStatus('Server request failed');
+              throw new Error('Streaming request failed');
+            }
+
+            setExecutionStatus('Streaming execution updates...');
+            const reader = response.body?.getReader();
+            if (!reader) throw new Error('No reader available');
+
+            const decoder = new TextDecoder();
+
+            const readStream = () => {
+              reader.read().then(({ done, value }) => {
+                if (done) return;
+
+                const text = decoder.decode(value);
+                const lines = text.split('\n');
+
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    try {
+                      const data = JSON.parse(line.substring(6));
+
+                      if (data.type === 'progress') {
+                        // Update execution status with current step
+                        setExecutionStatus(data.message || `Step ${data.step}: ${data.status}`);
+
+                        // Update progress step
+                        const stepIndex = data.step - 1;
+                        if (stepIndex >= 0 && stepIndex < steps.length) {
+                          steps[stepIndex].status = data.status;
+                          steps[stepIndex].label = data.message;
+                          if (data.detail) {
+                            steps[stepIndex].detail = data.detail;
+                          }
+                          // Handle substeps for AI progress
+                          if (data.substeps) {
+                            steps[stepIndex].substeps = data.substeps;
+                          }
+                          setExecutionProgress([...steps]);
                         }
-                        // Handle substeps for AI progress
-                        if (data.substeps) {
-                          steps[stepIndex].substeps = data.substeps;
-                        }
-                        setExecutionProgress([...steps]);
+                      } else if (data.type === 'result') {
+                        // Execution complete - got final result
+                        console.log('✅ Execution result received');
+                        setExecutionStatus('Execution completed successfully');
+                        resolve(data.data);
+                        return;
+                      } else if (data.type === 'error') {
+                        setExecutionStatus(`Error: ${data.message}`);
+                        reject(new Error(data.message));
+                        return;
                       }
-                    } else if (data.type === 'result') {
-                      // Execution complete - got final result
-                      console.log('✅ Execution result received');
-                      setExecutionStatus('Execution completed successfully');
-                      resolve(data.data);
-                      return;
-                    } else if (data.type === 'error') {
-                      setExecutionStatus(`Error: ${data.message}`);
-                      reject(new Error(data.message));
-                      return;
+                    } catch (parseErr) {
+                      console.error('Failed to parse SSE data:', parseErr);
                     }
-                  } catch (parseErr) {
-                    console.error('Failed to parse SSE data:', parseErr);
                   }
                 }
-              }
-              
-              readStream();
-            }).catch((err) => {
-              setExecutionStatus('Stream reading failed');
-              reject(err);
-            });
-          };
-          
-          readStream();
-        })
-        .catch((err) => {
-          setExecutionStatus('Connection error');
-          reject(err);
-        });
-        
+
+                readStream();
+              }).catch((err) => {
+                setExecutionStatus('Stream reading failed');
+                reject(err);
+              });
+            };
+
+            readStream();
+          })
+          .catch((err) => {
+            setExecutionStatus('Connection error');
+            reject(err);
+          });
+
       });
 
       // Process response (same as before)
       setExecutionStatus('Processing response...');
       const usedToolIds = new Set<string>();
       const toolNodes = nodes.filter(n => n.type === 'tool');
-      
+
       if (toolNodes.length > 0 && response.intermediate_steps && response.intermediate_steps.length > 0) {
         setExecutionStatus('Identifying used tools...');
         const usedTools = new Set<string>();
@@ -728,7 +748,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               },
             }))
           );
-          
+
           setEdges((eds) =>
             eds.map((edge) => ({
               ...edge,
@@ -739,7 +759,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               },
             }))
           );
-          
+
           await new Promise((resolve) => setTimeout(resolve, 400));
         }
       }
@@ -750,7 +770,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
 
       setResult(response);
       setResultSaved(false); // New result is not saved
-      
+
       // Extract SQL query from intermediate steps
       setExecutionStatus('Extracting executed query...');
       if (response.intermediate_steps && response.intermediate_steps.length > 0) {
@@ -769,7 +789,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
           }
         });
       }
-      
+
       setExecutionStatus('Finalizing...');
       await new Promise((resolve) => setTimeout(resolve, 300));
       resetNodeHighlights();
@@ -778,7 +798,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       const message = err instanceof Error ? err.message : 'Failed to execute agent';
       setError(message);
       setExecutionStatus(`Error: ${message}`);
-      
+
       // Mark current in-progress step as error
       const currentStep = steps.findIndex(s => s.status === 'in_progress');
       if (currentStep !== -1) {
@@ -786,7 +806,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
         steps[currentStep].detail = message;
         setExecutionProgress([...steps]);
       }
-      
+
       resetNodeHighlights();
     }
     finally {
@@ -865,189 +885,191 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               <span className="ml-2">{showPlayground ? 'Close' : 'Playground'}</span>
             </button>
           )}
-          
+
           {/* Playground content */}
           {(viewMode === 'playground-only' || showPlayground) && (
             <div className={viewMode === 'playground-only' ? 'h-full flex flex-col overflow-hidden bg-gradient-to-br from-indigo-50 to-blue-50' : 'absolute top-16 right-4 w-96 bg-white rounded-xl z-10 max-h-[calc(100vh-10rem)] overflow-y-auto p-8 border border-gray-100'}>
               {/* Input Form */}
               <div className="flex-shrink-0 p-6">
-              <div className="flex justify-between items-center mb-6">
-                <SavedResultsManager
-                          agentId={agentId}
-                          currentResult={result}
-                          resultSaved={resultSaved}
-                          onSaveResult={handleSaveResult}
-                          onLoadResult={handleLoadResult}
-                          handleDownloadPDF={handleDownloadPDF}
-                        />               
-                <button
-                  onClick={() => setShowInputForm(!showInputForm)}
-                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-2 font-medium"
-                >
-                  {showInputForm ? 'Hide' : 'Show'} Playground
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showInputForm ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
-                  </svg>
-                </button>
-              </div>
-              {showInputForm && (
-              <div className='shadow-xl rounded-xl p-6'>
-              {workflowConfig.trigger_type === 'text_query' ? (
-                
-                <form onSubmit={handleExecute} className="space-y-6">
-                   
-                  <div>
-                   
-                    <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
-                      Your Query
-                    </label>
-                    <textarea
-                      id="query"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Ask the agent to perform a task..."
-                      disabled={executing}
-                    />
-                  </div>
-
-                  {/* Visualization Preferences (Optional) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Visualization Types <span className="text-gray-400 text-xs">(Optional, max 4)</span>
-                    </label>
-                    <div className="grid grid-cols-2 gap-3 p-3 border border-gray-300 rounded-xl bg-gray-50">
-                      {[
-                        { value: 'pie', label: 'Pie Chart', icon: '🥧' },
-                        { value: 'bar', label: 'Bar Chart', icon: '📊' },
-                        { value: 'line', label: 'Line Chart', icon: '📈' },
-                        { value: 'area', label: 'Area Chart', icon: '📉' },
-                        { value: 'scatter', label: 'Scatter Plot', icon: '🔍' },
-                        { value: 'radar', label: 'Radar Chart', icon: '🕸️' },
-                        { value: 'radialbar', label: 'Radial Bar', icon: '⭕' },
-                        { value: 'treemap', label: 'Treemap', icon: '🗺️' }
-                      ].map((chart) => (
-                        <label
-                          key={chart.value}
-                          className={`flex items-center space-x-2 p-2 rounded-lg cursor-pointer transition-all ${
-                            selectedChartTypes.includes(chart.value)
-                              ? 'bg-blue-100 border-2 border-blue-500'
-                              : 'bg-white border-2 border-transparent hover:bg-gray-100'
-                          } ${executing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedChartTypes.includes(chart.value)}
-                            onChange={(e) => {
-                              if (executing) return;
-                              if (e.target.checked) {
-                                if (selectedChartTypes.length < 4) {
-                                  setSelectedChartTypes([...selectedChartTypes, chart.value]);
-                                }
-                              } else {
-                                setSelectedChartTypes(selectedChartTypes.filter(t => t !== chart.value));
-                              }
-                            }}
-                            disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <span className="text-sm font-medium text-gray-700">
-                            <span className="mr-1">{chart.icon}</span>
-                            {chart.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                    {selectedChartTypes.length > 0 && (
-                      <p className="mt-2 text-xs text-blue-600">
-                        Selected: {selectedChartTypes.join(', ')} ({selectedChartTypes.length}/4)
-                      </p>
-                    )}
-                    <p className="mt-2 text-xs text-gray-500">
-                      Select up to 4 chart types. Leave empty for auto-generated visualizations.
-                    </p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={executing || !query.trim()}
-                    className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium"
-                  >
-                    {executing ? 'Executing...' : 'Execute'}
-                  </button>
-                </form>
-              ) : (
-                <div className="space-y-4">
-                  <DynamicPlayground
-                    triggerType={workflowConfig.trigger_type}
-                    inputFields={workflowConfig.input_fields}
-                    onExecute={handleDynamicExecute}
-                    loading={executing}
+                <div className="flex justify-between items-center mb-6">
+                  <SavedResultsManager
+                    agentId={agentId}
+                    currentResult={result}
+                    resultSaved={resultSaved}
+                    onSaveResult={handleSaveResult}
+                    onLoadResult={handleLoadResult}
+                    handleDownloadPDF={handleDownloadPDF}
                   />
-                  
-                  {/* Visualization Preferences for Dynamic Playground */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Visualization Types <span className="text-gray-400 text-xs">(Optional, max 4)</span>
-                    </label>
-                    <div className="grid grid-cols-2 gap-3 p-3 border border-gray-300 rounded-xl bg-gray-50">
-                      {[
-                        { value: 'pie', label: 'Pie Chart', icon: '🥧' },
-                        { value: 'bar', label: 'Bar Chart', icon: '📊' },
-                        { value: 'line', label: 'Line Chart', icon: '📈' },
-                        { value: 'area', label: 'Area Chart', icon: '📉' },
-                        { value: 'scatter', label: 'Scatter Plot', icon: '🔍' },
-                        { value: 'radar', label: 'Radar Chart', icon: '🕸️' },
-                        { value: 'radialbar', label: 'Radial Bar', icon: '⭕' },
-                        { value: 'treemap', label: 'Treemap', icon: '🗺️' }
-                      ].map((chart) => (
-                        <label
-                          key={chart.value}
-                          className={`flex items-center space-x-2 p-2 rounded-lg cursor-pointer transition-all ${
-                            selectedChartTypes.includes(chart.value)
-                              ? 'bg-blue-100 border-2 border-blue-500'
-                              : 'bg-white border-2 border-transparent hover:bg-gray-100'
-                          } ${executing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedChartTypes.includes(chart.value)}
-                            onChange={(e) => {
-                              if (executing) return;
-                              if (e.target.checked) {
-                                if (selectedChartTypes.length < 4) {
-                                  setSelectedChartTypes([...selectedChartTypes, chart.value]);
-                                }
-                              } else {
-                                setSelectedChartTypes(selectedChartTypes.filter(t => t !== chart.value));
-                              }
-                            }}
-                            disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <span className="text-sm font-medium text-gray-700">
-                            <span className="mr-1">{chart.icon}</span>
-                            {chart.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                    {selectedChartTypes.length > 0 && (
-                      <p className="mt-2 text-xs text-blue-600">
-                        Selected: {selectedChartTypes.join(', ')} ({selectedChartTypes.length}/4)
-                      </p>
-                    )}
-                    <p className="mt-2 text-xs text-gray-500">
-                      Select up to 4 chart types. Leave empty for auto-generated visualizations.
-                    </p>
-                  </div>
+                  <button
+                    onClick={() => setShowInputForm(!showInputForm)}
+                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-2 font-medium"
+                  >
+                    {showInputForm ? 'Hide' : 'Show'} Playground
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showInputForm ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                    </svg>
+                  </button>
                 </div>
-              )}
+                {showInputForm && (
+                  <div className='shadow-xl rounded-xl p-6'>
+                    {workflowConfig.trigger_type === 'text_query' ? (
+
+                      <form onSubmit={handleExecute} className="space-y-6">
+
+                        <div>
+
+                          <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
+                            Your Query
+                          </label>
+                          <textarea
+                            id="query"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            rows={4}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Ask the agent to perform a task..."
+                            disabled={executing}
+                          />
+                        </div>
+
+                        {/* Visualization Preferences (Optional) */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Visualization Types <span className="text-gray-400 text-xs">(Optional, max 4)</span>
+                          </label>
+                          {/* Unified Multi-Select Dropdown */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setChartDropdownOpen(!chartDropdownOpen)}
+                              disabled={executing}
+                              className="w-full text-left px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex justify-between items-center"
+                            >
+                              <span className={selectedChartTypes.length === 0 ? "text-gray-500" : "text-gray-900"}>
+                                {selectedChartTypes.length === 0
+                                  ? "Select visualization types..."
+                                  : `${selectedChartTypes.length} selected (${selectedChartTypes.join(', ')})`}
+                              </span>
+                              <svg className={`w-5 h-5 text-gray-400 transition-transform ${chartDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
+                            {chartDropdownOpen && (
+                              <div className="absolute z-10 w-full bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                <div className="p-2 space-y-1">
+                                  {chartOptions.map((chart) => (
+                                    <label key={chart.value} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        checked={selectedChartTypes.includes(chart.value)}
+                                        onChange={(e) => {
+                                          if (executing) return;
+                                          if (e.target.checked) {
+                                            if (selectedChartTypes.length < 4) setSelectedChartTypes([...selectedChartTypes, chart.value]);
+                                          } else {
+                                            setSelectedChartTypes(selectedChartTypes.filter(t => t !== chart.value));
+                                          }
+                                        }}
+                                        disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
+                                      />
+                                      <span className="ml-3 text-sm text-gray-700 flex items-center gap-2">
+                                        <span>{chart.icon}</span>
+                                        {chart.label}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                                <div className="p-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                                  <p className="text-xs text-gray-500 text-center">Max 4 selections allowed</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          {chartDropdownOpen && <div className="fixed inset-0 z-0" onClick={() => setChartDropdownOpen(false)}></div>}
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={executing || !query.trim()}
+                          className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium"
+                        >
+                          {executing ? 'Executing...' : 'Execute'}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="space-y-4">
+                        <DynamicPlayground
+                          triggerType={workflowConfig.trigger_type}
+                          inputFields={workflowConfig.input_fields}
+                          onExecute={handleDynamicExecute}
+                          loading={executing}
+                        />
+
+                        {/* Visualization Preferences for Dynamic Playground */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Visualization Types <span className="text-gray-400 text-xs">(Optional, max 4)</span>
+                          </label>
+                          {/* Unified Multi-Select Dropdown (Dynamic Playground) */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setChartDropdownOpen(!chartDropdownOpen)}
+                              disabled={executing}
+                              className="w-full text-left px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex justify-between items-center"
+                            >
+                              <span className={selectedChartTypes.length === 0 ? "text-gray-500" : "text-gray-900"}>
+                                {selectedChartTypes.length === 0
+                                  ? "Select visualization types..."
+                                  : `${selectedChartTypes.length} selected (${selectedChartTypes.join(', ')})`}
+                              </span>
+                              <svg className={`w-5 h-5 text-gray-400 transition-transform ${chartDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
+                            {chartDropdownOpen && (
+                              <div className="absolute z-10 w-full bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                <div className="p-2 space-y-1">
+                                  {chartOptions.map((chart) => (
+                                    <label key={chart.value} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        checked={selectedChartTypes.includes(chart.value)}
+                                        onChange={(e) => {
+                                          if (executing) return;
+                                          if (e.target.checked) {
+                                            if (selectedChartTypes.length < 4) setSelectedChartTypes([...selectedChartTypes, chart.value]);
+                                          } else {
+                                            setSelectedChartTypes(selectedChartTypes.filter(t => t !== chart.value));
+                                          }
+                                        }}
+                                        disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
+                                      />
+                                      <span className="ml-3 text-sm text-gray-700 flex items-center gap-2">
+                                        <span>{chart.icon}</span>
+                                        {chart.label}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                                <div className="p-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                                  <p className="text-xs text-gray-500 text-center">Max 4 selections allowed</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          {chartDropdownOpen && <div className="fixed inset-0 z-0" onClick={() => setChartDropdownOpen(false)}></div>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
-              )}
-               
-              </div>              
 
               {/* Error Display */}
               {error && (
@@ -1059,75 +1081,75 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               {/* Results Section with Scroll */}
               <div className="flex-1 overflow-y-auto mt-2 bg-indigo-50 rounded-xl">
                 {executionProgress.length > 0 && (
-                <div className="my-4 px-6">
-                  <ProgressPanel
-                    title={executionStatus}
-                    steps={executionProgress}
-                  />
-                </div>
-              )}
-              {result && (
-                <div className="space-y-4 bg-indigo-50">
-                  <div className="px-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h4 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Execution Results</h4>
-                   
+                  <div className="my-4 px-6">
+                    <ProgressPanel
+                      title={executionStatus}
+                      steps={executionProgress}
+                    />
                   </div>
-                  </div>
-                  <div ref={resultRef}>
-                  {result.success ? (
-                    <div className="space-y-4">
-                      {/* Success indicator */}
-                      <div className="space-y-8 p-6">
-                      
-                      
-                      {/* Text output */}
-                      {result.output && (
-                        <div className="bg-gradient-to-br from-white to-indigo-50 border-1 border-indigo-100 rounded-xl p-8">
-                          <div className="mb-6">
-                            <h4 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Output</h4>
-                            <p className="text-sm text-gray-600 mt-1">Agent response and analysis</p>
+                )}
+                {result && (
+                  <div className="space-y-4 bg-indigo-50">
+                    <div className="px-6">
+                      <div className="flex justify-between items-center mb-6">
+                        <h4 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Execution Results</h4>
+
+                      </div>
+                    </div>
+                    <div ref={resultRef}>
+                      {result.success ? (
+                        <div className="space-y-4">
+                          {/* Success indicator */}
+                          <div className="space-y-8 p-6">
+
+
+                            {/* Text output */}
+                            {result.output && (
+                              <div className="bg-gradient-to-br from-white to-indigo-50 border-1 border-indigo-100 rounded-xl p-8">
+                                <div className="mb-6">
+                                  <h4 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Output</h4>
+                                  <p className="text-sm text-gray-600 mt-1">Agent response and analysis</p>
+                                </div>
+                                <MarkdownRenderer content={result.output} />
+                              </div>
+                            )}
                           </div>
-                          <MarkdownRenderer content={result.output} />
+                          {/* Data Visualization */}
+                          <div>
+                            <ResultDataVisualization data={result} />
+                          </div>
+
+                          {/* Approve & Cache Query Button */}
+                          {executedQuery && !(result as unknown as Record<string, unknown>).cached_execution && workflowConfig.trigger_type !== 'text_query' && (
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-1 border-blue-200 rounded-xl p-6">
+                              <div className="mb-4">
+                                <h4 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Save Query Template</h4>
+                                <p className="text-sm text-blue-600 mt-1">
+                                  💡 Would you like to save this query for instant future execution?
+                                </p>
+                              </div>
+                              <button
+                                onClick={handleApproveAndCacheQuery}
+                                disabled={cachingQuery}
+                                className="bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium"
+                              >
+                                {cachingQuery ? '⏳ Loading...' : '✅ Approve'}
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      </div>
-                      {/* Data Visualization */}
-                      <div>
-                        <ResultDataVisualization data={result} />
-                      </div>
-                      
-                      {/* Approve & Cache Query Button */}
-                      {executedQuery && !(result as unknown as Record<string, unknown>).cached_execution && workflowConfig.trigger_type !== 'text_query' && (
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-1 border-blue-200 rounded-xl p-6">
-                          <div className="mb-4">
-                            <h4 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Save Query Template</h4>
-                            <p className="text-sm text-blue-600 mt-1">
-                              💡 Would you like to save this query for instant future execution?
-                            </p>
+                      ) : (
+                        <div className="bg-gradient-to-br from-red-50 to-pink-50 border-1 border-red-200 rounded-xl p-6">
+                          <div className="flex items-start gap-3 mb-3">
+                            <span className="text-red-600 text-xl">✗</span>
+                            <span className="text-sm font-medium text-red-700">Execution Failed</span>
                           </div>
-                          <button
-                            onClick={handleApproveAndCacheQuery}
-                            disabled={cachingQuery}
-                            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium"
-                          >
-                            {cachingQuery ? '⏳ Loading...' : '✅ Approve'}
-                          </button>
+                          <div className="text-red-700">{result.error || 'Execution failed'}</div>
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="bg-gradient-to-br from-red-50 to-pink-50 border-1 border-red-200 rounded-xl p-6">
-                      <div className="flex items-start gap-3 mb-3">
-                        <span className="text-red-600 text-xl">✗</span>
-                        <span className="text-sm font-medium text-red-700">Execution Failed</span>
-                      </div>
-                      <div className="text-red-700">{result.error || 'Execution failed'}</div>
-                    </div>
-                  )}
                   </div>
-                </div>
-              )}
+                )}
               </div>
             </div>
           )}

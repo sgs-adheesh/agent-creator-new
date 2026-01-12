@@ -268,54 +268,139 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
     const lineData: typeof barData = [];
     const areaData: typeof barData = [];
     const scatterData: typeof barData = [];
+    const waterfallData: typeof barData = [];
+    const candleData: typeof barData = [];
+
+    const stackedData: typeof barData = [];
+    const radarData: typeof barData = [];
+    const treemapData: typeof barData = [];
+    const funnelData: typeof barData = [];
+    const radialData: typeof barData = [];
+    const composedData: typeof barData = [];
+    // Sankey needs special handling (single object usually)
+    let sankeyData: { nodes: any[], links: any[] } | undefined = undefined;
 
     visualization_config!.charts!.forEach((chart, index) => {
       // PRIORITY 1: Use LLM-generated data if available
-      if (chart.data && Array.isArray(chart.data) && chart.data.length > 0) {
-        console.log(`📊 Using LLM-generated data for ${chart.type} chart (${chart.data.length} items)`);
+      if (chart.data && (Array.isArray(chart.data) || typeof chart.data === 'object')) {
+        const rawData = Array.isArray(chart.data) ? chart.data : [chart.data];
+        if (rawData.length > 0) {
+          console.log(`📊 Processing LLM-generated data for Chart ${index + 1}: ${chart.type} (${chart.title || 'Untitled'})`);
+        }
 
         // Convert LLM data to our format
-        const processedData = chart.data.map((item: Record<string, unknown>) => {
-          const baseItem: typeof barData[0] = {
-            name: String(item.name || item[Object.keys(item)[0]] || 'Unknown'),
-            details: [] // LLM data doesn't include details, but that's okay
+        const processedData = rawData.map((item: Record<string, unknown>) => {
+          // 1. Identify Name/Category
+          const name = String(item.name || item[Object.keys(item)[0]] || 'Unknown');
+
+          // 2. Base Item
+          const baseItem: any = { // Use 'any' to allow flexible property assignment
+            name,
+            details: [] // LLM data implies summarized data, so no drill-down details usually
           };
 
-          // Copy all other properties
-          Object.keys(item).forEach(key => {
+          // 3. Copy ALL properties (Preserve open, close, x, y, z, value, total, etc.)
+          Object.entries(item).forEach(([key, val]) => {
             if (key !== 'name' && key !== 'details') {
-              const value = item[key];
-              if (typeof value === 'string' || typeof value === 'number' || value === null || value === undefined) {
-                (baseItem as Record<string, unknown>)[key] = value;
-              }
+              baseItem[key] = val;
             }
           });
 
-          // Ensure 'value' exists for pie/radialbar/treemap
-          if (!baseItem.value && typeof item.value === 'number') {
+          // 4. Ensure 'value' exists for charts that strictly need it (Pie/Treemap), if not present
+          if (baseItem.value === undefined && typeof item.value === 'number') {
             baseItem.value = item.value;
           }
+
+          // 5. Auto-convert specific numeric-looking strings to numbers (fixes "y": "4" issues)
+          ['y', 'value', 'total', 'count', 'score', 'amount'].forEach(numKey => {
+            if (typeof baseItem[numKey] === 'string' && !isNaN(Number(baseItem[numKey]))) {
+              baseItem[numKey] = Number(baseItem[numKey]);
+            }
+          });
 
           return baseItem;
         });
 
-        // Assign to appropriate array based on chart type
-        if (chart.type === 'pie') {
-          pieData.push(...processedData as typeof pieData);
-        } else if (chart.type === 'line') {
+        // 5. Assign STRICTLY to the correct dataset based on chart type
+        const cType = chart.type.toLowerCase();
+
+        if (cType.includes('pie')) {
+          pieData.push(...processedData);
+        } else if (cType.includes('line')) {
           lineData.push(...processedData);
-        } else if (chart.type === 'area') {
+        } else if (cType.includes('area')) {
           areaData.push(...processedData);
-        } else if (chart.type === 'scatter') {
+        } else if (cType.includes('scatter') || cType.includes('bubble') || cType.includes('heatmap')) {
           scatterData.push(...processedData);
-          // For scatter, also add to barData as fallback for numericFields extraction
+        } else if (cType.includes('candle')) {
+          candleData.push(...processedData);
+        } else if (cType.includes('waterfall')) {
+          // Waterfall Logic: Handle tuples vs deltas
+          let accum = 0;
+          const finalWaterfallData = processedData.map((item: any) => {
+            // If value is already a tuple [start, end], use it directly
+            if (Array.isArray(item.value) && item.value.length === 2) {
+              return item;
+            }
+            // Otherwise, assume it's a delta and calculate running total
+            const val = Number(item.value || 0);
+            const start = accum;
+            accum += val;
+            return { ...item, value: [start, accum] };
+          });
+          waterfallData.push(...finalWaterfallData);
+        } else if (cType.includes('stacked')) {
+          stackedData.push(...processedData);
+        } else if (cType.includes('radar')) {
+          radarData.push(...processedData);
+        } else if (cType.includes('tree')) { // treemap
+          treemapData.push(...processedData);
+        } else if (cType.includes('funnel')) {
+          funnelData.push(...processedData);
+        } else if (cType.includes('radial')) { // radialbar, radial_bar
+          radialData.push(...processedData);
+        } else if (cType.includes('composed') || cType.includes('mixed')) {
+          composedData.push(...processedData);
+        } else if (cType.includes('sankey')) {
+          // Special case: Sankey data is usually a single object { nodes, links }
+          const cData = chart.data as any;
+          if (cData && !Array.isArray(cData) && cData.nodes && cData.links) {
+            let nodes = [...cData.nodes];
+            let links = [...cData.links];
+
+            // Fix Self-Loops (Source == Target) which crash Recharts/Sankey
+            // Determine if indices or names are used (Recharts uses indices)
+            // Assuming indices for now based on LLM output pattern
+            const hasSelfLoop = links.some(l => l.source === l.target);
+
+            if (hasSelfLoop) {
+              console.log('🔧 Fixing Sankey Self-Loops: creating bipartite graph flow');
+              const initialNodeCount = nodes.length;
+              // Create duplicate target nodes
+              const targetNodes = nodes.map(n => ({ ...n, name: n.name + ' ' }));
+              nodes = [...nodes, ...targetNodes];
+
+              // Remap links to point to the new target nodes
+              links = links.map(l => ({
+                ...l,
+                target: typeof l.target === 'number' ? l.target + initialNodeCount : l.target
+              }));
+            }
+
+            sankeyData = { nodes, links };
+          } else {
+            console.warn(`⚠️ Sankey chart data is not in expected { nodes, links } format. Skipping.`);
+          }
+        } else if (cType.includes('bar')) {
+          // ONLY for explicit bar charts
           barData.push(...processedData);
         } else {
-          // bar, radialbar, treemap, radar, etc.
+          // Fallback for unknown types
+          console.warn(`⚠️ Unknown chart type "${cType}", defaulting to Bar`);
           barData.push(...processedData);
         }
 
-        return; // Skip processing data_source if data is already provided
+        return; // Done processing this chart, move to the next
       }
 
       // PRIORITY 2: Fall back to processing data_source (legacy support)
@@ -374,6 +459,26 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
           });
         });
         return; // Skip standard processing for this chart
+      }
+
+      // Determine target array based on chart type for DATA_SOURCE fallback
+      let targetArray: typeof barData;
+      if (type === 'line') targetArray = lineData;
+      else if (type === 'area') targetArray = areaData;
+      else if (type === 'scatter' || type === 'bubble') targetArray = scatterData;
+      else if (type === 'candlestick') targetArray = candleData;
+      else if (type === 'waterfall') targetArray = waterfallData;
+      else if (type === 'stacked_bar') targetArray = stackedData;
+      else if (type === 'radar') targetArray = radarData;
+      else if (type === 'treemap') targetArray = treemapData;
+      else if (type === 'funnel') targetArray = funnelData;
+      else if (type === 'radialbar' || type === 'radial_bar' || type === 'radial') targetArray = radialData;
+      else if (type === 'composed' || type === 'mixed') targetArray = composedData;
+      else targetArray = barData;
+
+      if (data_source.group_by || data_source.aggregate) {
+        // ... (existing aggregation logic) ...
+        // IMPORTANT: Update standard logic to use 'targetArray' instead of determining it inside logic
       }
       // ---------------------------------------------
 
@@ -474,7 +579,7 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
 
         // Handle bar/line/area/scatter/etc with group_by + aggregate
       } else if (
-        ['bar', 'line', 'area', 'scatter', 'radar', 'radial', 'radialbar', 'radial_bar', 'funnel', 'treemap', 'composed'].includes(type) &&
+        ['bar', 'line', 'area', 'scatter', 'radar', 'radial', 'radialbar', 'radial_bar', 'funnel', 'treemap', 'composed', 'bubble', 'waterfall', 'candlestick', 'stacked_bar', 'heatmap', 'sankey'].includes(type) &&
         data_source.group_by &&
         data_source.aggregate
       ) {
@@ -554,25 +659,41 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
           aggregated[category].rows.push(row);
         });
 
+        // Initialize accumulator for waterfall charts
+        let waterfallAccumulator = 0;
+
         Object.entries(aggregated).forEach(([name, data]) => {
-          const value = aggregateFunc === 'avg' ? data.total / data.rows.length : data.total;
+          const rawValue = aggregateFunc === 'avg' ? data.total / data.rows.length : data.total;
+          let finalValue: number | [number, number] = rawValue;
+
+          if (type === 'waterfall') {
+            const prev = waterfallAccumulator;
+            waterfallAccumulator += rawValue;
+            finalValue = [prev, waterfallAccumulator];
+            console.log(`💧 Waterfall step for ${name}: [${prev}, ${waterfallAccumulator}]`);
+          }
 
           // Determine target array based on chart type
           let targetArray: typeof barData;
-          if (type === 'line') {
-            targetArray = lineData;
-          } else if (type === 'area') {
-            targetArray = areaData;
-          } else if (type === 'scatter') {
-            targetArray = scatterData;
-          } else {
-            targetArray = barData;
+          if (type === 'line') targetArray = lineData;
+          else if (type === 'area') targetArray = areaData;
+          else if (type === 'scatter' || type === 'bubble') targetArray = scatterData;
+          else if (type === 'candlestick') targetArray = candleData;
+          else if (type === 'waterfall') targetArray = waterfallData;
+          else if (type === 'stacked_bar') {
+            targetArray = stackedData;
           }
+          else if (type === 'radar') targetArray = radarData;
+          else if (type === 'treemap') targetArray = treemapData;
+          else if (type === 'funnel') targetArray = funnelData;
+          else if (type === 'radial' || type === 'radialbar') targetArray = radialData;
+          else if (type === 'composed') targetArray = composedData;
+          else targetArray = barData;
 
           // Create data point with proper structure
           const dataPoint: typeof barData[0] = {
             name,
-            value,  // Keep 'value' for compatibility
+            value: finalValue as any,  // Cast to any to satisfy the complex type union
             details: data.rows,
             _categoryField: groupByField,
             _valueField: aggregateField
@@ -580,14 +701,17 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
 
           // Add field name as key dynamically
           if (aggregateField) {
-            (dataPoint as Record<string, unknown>)[aggregateField] = value;
+            (dataPoint as Record<string, unknown>)[aggregateField] = finalValue;
           }
 
           targetArray.push(dataPoint);
-          console.log(`✅ Added ${type} chart data point:`, { name, value, field: aggregateField });
+          if (type === 'stacked_bar') {
+            // separated, no push to barData
+          }
+          console.log(`✅ Added ${type} chart data point:`, { name, value: finalValue, field: aggregateField });
         });
       } else if (
-        ['bar', 'line', 'area', 'scatter', 'radar', 'radial', 'radialbar', 'radial_bar', 'funnel', 'treemap', 'composed'].includes(type) &&
+        ['bar', 'line', 'area', 'scatter', 'radar', 'radial', 'radialbar', 'radial_bar', 'funnel', 'treemap', 'composed', 'bubble', 'waterfall', 'candlestick', 'stacked_bar', 'heatmap'].includes(type) &&
         data_source.x_axis &&
         data_source.y_axis
       ) {
@@ -651,15 +775,20 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
         Object.entries(aggregated).forEach(([name, data]) => {
           // Determine target array based on chart type
           let targetArray: typeof barData;
-          if (type === 'line') {
-            targetArray = lineData;
-          } else if (type === 'area') {
-            targetArray = areaData;
-          } else if (type === 'scatter') {
-            targetArray = scatterData;
-          } else {
-            targetArray = barData;
+          if (type === 'line') targetArray = lineData;
+          else if (type === 'area') targetArray = areaData;
+          else if (type === 'scatter' || type === 'bubble' || type === 'heatmap') targetArray = scatterData;
+          else if (type === 'candlestick') targetArray = candleData;
+          else if (type === 'waterfall') targetArray = waterfallData;
+          else if (type === 'stacked_bar') {
+            targetArray = stackedData;
           }
+          else if (type === 'radar') targetArray = radarData;
+          else if (type === 'treemap') targetArray = treemapData;
+          else if (type === 'funnel') targetArray = funnelData;
+          else if (type === 'radial' || type === 'radialbar') targetArray = radialData;
+          else if (type === 'composed') targetArray = composedData;
+          else targetArray = barData;
 
           // For scatter charts, both x and y should be numeric
           // For other charts, parse name as number if it looks like one
@@ -692,6 +821,9 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
           } as typeof barData[0];
 
           targetArray.push(dataPoint);
+          if (type === 'stacked_bar') {
+            // separated
+          }
           console.log(`✅ Added ${type} chart data point (x/y axes):`, {
             name,
             xAxisField,
@@ -735,6 +867,11 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
     const uniqueLineData = deduplicateData(lineData);
     const uniqueAreaData = deduplicateData(areaData);
     const uniqueScatterData = deduplicateData(scatterData);
+    const uniqueRadarData = deduplicateData(radarData);
+    const uniqueTreemapData = deduplicateData(treemapData);
+    const uniqueFunnelData = deduplicateData(funnelData);
+    const uniqueRadialData = deduplicateData(radialData);
+    const uniqueComposedData = deduplicateData(composedData);
 
     console.log('✅ Generated chart data from config:', {
       pieDataCount: pieData.length,
@@ -751,7 +888,16 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
       barData: uniqueBarData,
       lineData: uniqueLineData,
       areaData: uniqueAreaData,
-      scatterData: uniqueScatterData
+      scatterData: uniqueScatterData,
+      waterfallData,
+      candleData,
+      stackedData,
+      radarData: uniqueRadarData,
+      treemapData: uniqueTreemapData,
+      funnelData: uniqueFunnelData,
+      radialData: uniqueRadialData,
+      composedData: uniqueComposedData,
+      sankeyData
     };
   }, [useConfigVisualization, analysis, visualization_config]);
 
@@ -772,7 +918,10 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
       ...(configChartData.pieData || []),
       ...(configChartData.lineData || []),
       ...(configChartData.areaData || []),
-      ...(configChartData.scatterData || [])
+      ...(configChartData.scatterData || []),
+      ...(configChartData.stackedData || []),
+      ...(configChartData.waterfallData || []),
+      ...(configChartData.candleData || [])
     ];
 
     if (allDataArrays.length === 0) return [];
@@ -780,9 +929,10 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
     // Get all unique numeric field names from all data items
     const numericFieldsSet = new Set<string>();
     allDataArrays.forEach(item => {
-      Object.keys(item).forEach(k => {
+      const row = item as Record<string, unknown>;
+      Object.keys(row).forEach(k => {
         if (k !== 'name' && k !== 'details' && !k.startsWith('_')) {
-          const val = item[k];
+          const val = row[k];
           if (typeof val === 'number') {
             numericFieldsSet.add(k);
           }
@@ -1069,17 +1219,29 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
         lineData={useConfigVisualization && configChartData ? configChartData.lineData : []}
         areaData={useConfigVisualization && configChartData ? configChartData.areaData : []}
         scatterData={useConfigVisualization && configChartData ? configChartData.scatterData : []}
+        candleData={useConfigVisualization && configChartData ? configChartData.candleData : []}
+        waterfallData={configChartData ? configChartData.waterfallData : undefined}
+        stackedData={configChartData ? configChartData.stackedData : undefined}
+        radarData={configChartData ? configChartData.radarData : undefined}
+        treemapData={configChartData ? configChartData.treemapData : undefined}
+        funnelData={configChartData ? configChartData.funnelData : undefined}
+        radialData={configChartData ? configChartData.radialData : undefined}
+        composedData={configChartData ? configChartData.composedData : undefined}
+        sankeyData={configChartData ? configChartData.sankeyData : undefined}
         categoricalFields={categoricalFields}
         numericFields={useConfigVisualization && configNumericFields.length > 0 ? configNumericFields : numericFields}
         rowCount={rowCount}
-        requestedChartTypes={useConfigVisualization ? requestedChartTypes : []}
+        requestedChartTypes={useConfigVisualization && visualization_config?.charts
+          ? visualization_config.charts.map(c => c.type)
+          : requestedChartTypes}
         chartMetadata={useConfigVisualization && visualization_config?.charts
           ? visualization_config.charts.map(c => ({
             id: c.id,
             type: c.type,
             title: c.title,
             description: c.description,
-            data_source: c.data_source
+            data_source: c.data_source,
+            config: c.config
           }))
           : []}
       />

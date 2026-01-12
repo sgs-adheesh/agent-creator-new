@@ -604,16 +604,22 @@ class AgentService:
                 supported_types = {
                     "pie": "pie",
                     "bar": "bar",
+                    "stacked_bar": "stacked_bar",
                     "line": "line",
                     "area": "area",
                     "scatter": "scatter",
+                    "bubble": "bubble", # Bubble is distinct (scatter + size)
                     "radar": "radar",
                     "radialbar": "radialbar",
-                    "radial": "radialbar",  # alias
+                    "radial": "radialbar",
                     "composed": "composed",
-                    "mixed": "composed",  # alias
+                    "mixed": "composed",
                     "funnel": "funnel",
                     "treemap": "treemap",
+                    "sankey": "sankey",
+                    "heatmap": "heatmap",
+                    "waterfall": "waterfall",
+                    "candlestick": "candlestick",
                     "table": "table"
                 }
                 
@@ -789,14 +795,19 @@ REQUIRED JSON STRUCTURE:
   "charts": [
     {{
       "id": "chart_1",
-      "type": "pie|bar|line|area|scatter|radar|radialbar|composed|funnel|treemap|table",
+      "type": "pie|bar|stacked_bar|line|area|scatter|bubble|radar|radialbar|composed|funnel|treemap|sankey|heatmap|waterfall|candlestick|table",
       "title": "Descriptive title aligned with agent purpose",
       "description": "What this chart shows (purpose-specific)",
       "data": [
         // ⚠️ CRITICAL: You MUST include the actual processed data array here
         // Process the QUERY RESULT DATA above to build this array
-        // For pie: [{{"name": "Category1", "value": 100}}, {{"name": "Category2", "value": 200}}]
-        // For bar/line/area: [{{"name": "X1", "field_name": 100}}, {{"name": "X2", "field_name": 200}}]
+        // For pie: [{{ "name": "Category1", "value": 100 }}, {{ "name": "Category2", "value": 200 }}]
+        // For bar/line/area: [{{ "name": "X1", "field_name": 100 }}, {{ "name": "X2", "field_name": 200 }}]
+        // For scatter/bubble: [{{ "name": "Point1", "x": 10, "y": 20, "z": 5 }}, ...] (z is size for bubble)
+        // For heatmap: [{{ "x": "CategoryA", "y": "Monday", "value": 50 }}, ...]
+        // For waterfall: [{{ "name": "Start", "value": [0, 100] }}, {{ "name": "Change", "value": [100, 150] }}] (value is [start, end] range)
+        // For candlestick: [{{ "name": "2023-01-01", "open": 100, "close": 110, "high": 115, "low": 95 }}]
+        // For sankey: {{ "nodes": [{{ "name": "Input" }}, {{ "name": "Process" }}], "links": [{{ "source": 0, "target": 1, "value": 100 }}] }} NOTE: Sankey data is an OBJECT with nodes/links arrays
         // For scatter: [{{"name": "Point1", "x_field": 10, "y_field": 20}}, ...]
         // For radar: [{{"name": "Category1", "metric1": 10, "metric2": 20}}, ...]
       ],
@@ -987,6 +998,10 @@ Visualization Configuration JSON:"""
                     visualization_config['insights'] = "Data visualization generated successfully."
                 if not recommended_view:
                     visualization_config['recommended_view'] = "dashboard"
+
+                print(f"\n📊 FINAL VISUALIZATION CONFIG ({len(charts)} charts):")
+                print(json.dumps(visualization_config, indent=2))
+                print("-" * 50)
 
                 # ✅ Guarantee ALL user-requested chart types are present
                 existing_types = {str(c.get('type', '')).lower() for c in charts}

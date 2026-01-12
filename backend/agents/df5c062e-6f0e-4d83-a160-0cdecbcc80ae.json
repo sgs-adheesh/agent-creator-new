@@ -1,5 +1,5 @@
 {
-  "id": "c8446593-c3ac-4a7b-b8fa-8e53fe356f19",
+  "id": "df5c062e-6f0e-4d83-a160-0cdecbcc80ae",
   "name": "Invoice Duplicate Detector",
   "description": "Detects duplicate invoices based on invoice number, vendor, and amount to prevent payment errors",
   "category": "Finance & Accounting",
@@ -13,9 +13,9 @@
   "workflow_config": {
     "trigger_type": "scheduled",
     "input_fields": [],
-    "output_format": "text"
+    "output_format": "table"
   },
-  "created_at": "2026-01-09T12:44:38.540267",
+  "created_at": "2026-01-12T18:00:42.424872",
   "use_cases": [
     "Prevent duplicate payments",
     "Audit invoice records",
@@ -23,41 +23,27 @@
   ],
   "execution_guidance": {
     "query_template": {
-      "base_query": "select \n    count(*) as duplicate_count,\n    invoice.invoice_number->>'value' as invoice_number,\n    vendor.name as vendor_name,\n    vendor.company as vendor_company,\n    invoice.invoice_date->>'value' as invoice_date,\n    invoice.due_date->>'value' as due_date,\n    NULLIF(invoice.total->>'value', '')::numeric as total_amount,\n    invoice.other_charges->>'value' as other_charges,\n    invoice.credit_and_returns->>'value' as credit_and_returns\nfrom \n    icap_invoice invoice\n    inner join icap_document d on invoice.document_id = d.id\n    left join icap_vendor vendor on NULLIF(invoice.vendor_id::text, '') IS NOT NULL AND invoice.vendor_id = vendor.id\ngroup by \n    invoice.invoice_number->>'value', \n    vendor.name, \n    vendor.company, \n    invoice.invoice_date->>'value', \n    invoice.due_date->>'value', \n    total_amount,\n    invoice.other_charges->>'value',\n    invoice.credit_and_returns->>'value'\nhaving \n    count(*) > 1\norder by \n    invoice_number;",
+      "base_query": "SELECT\n  STRING_AGG(d.batch_name, ', ') AS batch_names,\n  (i.invoice_number->>'value')::text AS invoice_number,\n  (i.total->>'value')::text AS total,\n  v.name AS vendor_name,\n  COUNT(*) AS duplicate_count\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nINNER JOIN icap_document d ON i.document_id = d.id\nWHERE (i.total->>'value') IS NOT NULL AND (i.total->>'value') <> ''\nGROUP BY d.batch_name, invoice_number, total, vendor_name\nHAVING COUNT(*) > 1\nORDER BY duplicate_count DESC;",
       "where_clause": "",
       "parameters": [],
-      "param_instructions": "",
-      "full_template": "select \n    count(*) as duplicate_count,\n    invoice.invoice_number->>'value' as invoice_number,\n    vendor.name as vendor_name,\n    vendor.company as vendor_company,\n    invoice.invoice_date->>'value' as invoice_date,\n    invoice.due_date->>'value' as due_date,\n    NULLIF(invoice.total->>'value', '')::numeric as total_amount,\n    invoice.other_charges->>'value' as other_charges,\n    invoice.credit_and_returns->>'value' as credit_and_returns\nfrom \n    icap_invoice invoice\n    inner join icap_document d on invoice.document_id = d.id\n    left join icap_vendor vendor on NULLIF(invoice.vendor_id::text, '') IS NOT NULL AND invoice.vendor_id = vendor.id\ngroup by \n    invoice.invoice_number->>'value', \n    vendor.name, \n    vendor.company, \n    invoice.invoice_date->>'value', \n    invoice.due_date->>'value', \n    total_amount,\n    invoice.other_charges->>'value',\n    invoice.credit_and_returns->>'value'\nhaving \n    count(*) > 1\norder by \n    invoice_number;",
-      "correction_history": [
-        {
-          "original_query": "select \n    count(*) as duplicate_count,\n    invoice.invoice_number->>'value' as invoice_number,\n    vendor.name as vendor_name,\n    vendor.company as vendor_company,\n    invoice.invoice_date->>'value' as invoice_date,\n    invoice.due_date->>'value' as due_date,\n    NULLIF(invoice.total->>'value', '')::numeric as total_amount,\n    invoice.other_charges->>'value' as other_charges,\n    invoice.credit_and_returns->>'value' as credit_and_returns\nfrom \n    icap_invoice invoice\n    inner join icap_document d on invoice.document_id = d.id\n    left join icap_vendor vendor on NULLIF(invoice.vendor_id::text, '') IS NOT NULL AND invoice.vendor_id = vendor.id\ngroup by \n    invoice.invoice_number->>'value', \n    vendor.name, \n    vendor.company, \n    invoice.invoice_date->>'value', \n    invoice.due_date->>'value', \n    total_amount\nhaving \n    count(*) > 1\norder by \n    invoice_number;",
-          "corrected_query": "select \n    count(*) as duplicate_count,\n    invoice.invoice_number->>'value' as invoice_number,\n    vendor.name as vendor_name,\n    vendor.company as vendor_company,\n    invoice.invoice_date->>'value' as invoice_date,\n    invoice.due_date->>'value' as due_date,\n    NULLIF(invoice.total->>'value', '')::numeric as total_amount,\n    invoice.other_charges->>'value' as other_charges,\n    invoice.credit_and_returns->>'value' as credit_and_returns\nfrom \n    icap_invoice invoice\n    inner join icap_document d on invoice.document_id = d.id\n    left join icap_vendor vendor on NULLIF(invoice.vendor_id::text, '') IS NOT NULL AND invoice.vendor_id = vendor.id\ngroup by \n    invoice.invoice_number->>'value', \n    vendor.name, \n    vendor.company, \n    invoice.invoice_date->>'value', \n    invoice.due_date->>'value', \n    total_amount,\n    invoice.other_charges->>'value',\n    invoice.credit_and_returns->>'value'\nhaving \n    count(*) > 1\norder by \n    invoice_number;",
-          "corrected_template": "select \n    count(*) as duplicate_count,\n    invoice.invoice_number->>'value' as invoice_number,\n    vendor.name as vendor_name,\n    vendor.company as vendor_company,\n    invoice.invoice_date->>'value' as invoice_date,\n    invoice.due_date->>'value' as due_date,\n    NULLIF(invoice.total->>'value', '')::numeric as total_amount,\n    invoice.other_charges->>'value' as other_charges,\n    invoice.credit_and_returns->>'value' as credit_and_returns\nfrom \n    icap_invoice invoice\n    inner join icap_document d on invoice.document_id = d.id\n    left join icap_vendor vendor on NULLIF(invoice.vendor_id::text, '') IS NOT NULL AND invoice.vendor_id = vendor.id\ngroup by \n    invoice.invoice_number->>'value', \n    vendor.name, \n    vendor.company, \n    invoice.invoice_date->>'value', \n    invoice.due_date->>'value', \n    total_amount,\n    invoice.other_charges->>'value',\n    invoice.credit_and_returns->>'value'\nhaving \n    count(*) > 1\norder by \n    invoice_number;",
-          "attempt_number": 2,
-          "corrected_at": "2026-01-12T17:12:01.602753",
-          "trigger_type": "scheduled"
-        }
-      ]
+      "param_instructions": "No parameters required - scans all invoices.",
+      "full_template": "SELECT\n  STRING_AGG(d.batch_name, ', ') AS batch_names,\n  (i.invoice_number->>'value')::text AS invoice_number,\n  (i.total->>'value')::text AS total,\n  v.name AS vendor_name,\n  COUNT(*) AS duplicate_count\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nINNER JOIN icap_document d ON i.document_id = d.id\nWHERE (i.total->>'value') IS NOT NULL AND (i.total->>'value') <> ''\nGROUP BY invoice_number, total, vendor_name\nHAVING COUNT(*) > 1\nORDER BY duplicate_count DESC;"
     },
     "execution_plan": {
       "step_1": "Load pre-built query template from execution_guidance",
-      "step_2": "",
-      "step_3": "No parameters needed - use query as-is",
-      "step_4": "Execute filled query using postgres_query tool",
-      "step_5": "Generate human-readable markdown summary from results",
-      "step_6": "Include: executive summary, key findings, detailed analysis",
-      "step_7": "Format with proper sections and insights for decision-making"
+      "step_2": "No parameters required - scans all invoices.",
+      "step_3": "Execute query directly using postgres_query tool",
+      "step_4": "Structure results as table_data with columns and rows arrays",
+      "step_5": "Include row_count and column metadata",
+      "step_6": "Return formatted table for interactive display"
     },
-    "schema_context": "The database has been pre-inspected for your task. Key tables and columns:\n\n**Table: icap_invoice**\n- Total columns: 22\n\n- **UUID columns** (3): id, document_id, vendor_id\n- **JSONB columns** (17): other_charges, credit_and_returns, invoice_number, invoice_date, due_date, tax, freight_charges, discount ... and 9 more\n  ⚠️ These MUST use ->>'value' extraction: (other_charges->>'value')::text\n- **Text columns** (1): external_bill_id\n- **payment_status_enum columns** (1): status\n\n- **Key columns with types**:\n  • id: UUID (NOT NULL)\n  • document_id: UUID (NOT NULL)\n  • vendor_id: UUID (NULL)\n  • other_charges: JSONB (NULL) → Use (other_charges->>'value')::text\n  • credit_and_returns: JSONB (NULL) → Use (credit_and_returns->>'value')::text\n  • invoice_number: JSONB (NULL) → Use (invoice_number->>'value')::text\n  • invoice_date: JSONB (NULL) → Use (invoice_date->>'value')::text\n  • due_date: JSONB (NULL) → Use (due_date->>'value')::text\n  • tax: JSONB (NULL) → Use (tax->>'value')::text\n  • freight_charges: JSONB (NULL) → Use (freight_charges->>'value')::text\n  ... and 12 more columns\n\n- **Foreign Key Relationships**:\n  • document_id → icap_document.id\n  • vendor_id → icap_vendor.id\n  • document_id → icap_document.id\n  • vendor_id → icap_vendor.id\n- Related tables: Related detail tables: icap_bill_staging\n- Sample fields: id, document_id, vendor_id, other_charges, credit_and_returns\n\n**Table: icap_invoice_detail**\n- Total columns: 13\n\n- **UUID columns** (2): id, document_id\n- **JSONB columns** (11): uom, pack, size_numeric, size_unit, item_code, description, quantity, unit_price ... and 3 more\n  ⚠️ These MUST use ->>'value' extraction: (uom->>'value')::text\n\n- **Key columns with types**:\n  • id: UUID (NOT NULL)\n  • document_id: UUID (NOT NULL)\n  • uom: JSONB (NULL) → Use (uom->>'value')::text\n  • pack: JSONB (NULL) → Use (pack->>'value')::text\n  • size_numeric: JSONB (NULL) → Use (size_numeric->>'value')::text\n  • size_unit: JSONB (NULL) → Use (size_unit->>'value')::text\n  • item_code: JSONB (NULL) → Use (item_code->>'value')::text\n  • description: JSONB (NULL) → Use (description->>'value')::text\n  • quantity: JSONB (NULL) → Use (quantity->>'value')::text\n  • unit_price: JSONB (NULL) → Use (unit_price->>'value')::text\n  ... and 3 more columns\n\n- **Foreign Key Relationships**:\n  • document_id → icap_document.id\n  • document_id → icap_document.id\n- Sample fields: id, document_id, uom, pack, size_numeric\n\n**Table: icap_vendor**\n- Total columns: 11\n\n- **UUID columns** (4): id, tenant_id, created_by, modified_by\n- **Text columns** (4): name, company, address, external_vendor_id\n- **bool columns** (1): active\n- **timestamp columns** (2): created_on, modified_on\n\n- **Key columns with types**:\n  • id: UUID (NOT NULL)\n  • tenant_id: UUID (NOT NULL)\n  • name: VARCHAR (NOT NULL)\n  • company: VARCHAR (NULL)\n  • address: VARCHAR (NULL)\n  • active: BOOL (NOT NULL)\n  • created_by: UUID (NOT NULL)\n  • modified_by: UUID (NOT NULL)\n  • created_on: TIMESTAMP (NOT NULL)\n  • modified_on: TIMESTAMP (NOT NULL)\n  ... and 1 more columns\n- Related tables: Related detail tables: icap_product_master, icap_invoice\n- Sample fields: id, tenant_id, name, company, address\n\n⚠️ IMPORTANT: This is just a preview. You must still call postgres_inspect_schema() for each table before writing queries to get complete column lists and relationships.",
-    "generated_at": "2026-01-12T17:11:34.173705",
+    "schema_context": "The database has been pre-inspected for your task. Key tables and columns:\n\n**Table: icap_invoice**\n- Columns (22): id, document_id, vendor_id, other_charges, credit_and_returns, invoice_number, invoice_date, due_date, tax, freight_charges, discount, total, sub_total, street, zip, city, country, state, payment_date, balance_amount, created_at, updated_at\n- JSONB columns (require ->> operator): other_charges, credit_and_returns, invoice_number, invoice_date, due_date, tax, freight_charges, discount, total, sub_total, street, zip, city, country, state, payment_date, balance_amount\n- Joins with: document_id → icap_document, vendor_id → icap_vendor\n- Related detail tables: icap_invoice_detail\n\n**Table: icap_vendor**\n- Columns (11): id, tenant_id, name, company, address, email, active, created_by, modified_by, created_on, modified_on\n- Related detail tables: icap_invoice, icap_product_master\n\n⚠️ IMPORTANT: This is just a preview. You must still call postgres_inspect_schema() for each table before writing queries to get complete column lists and relationships.",
+    "generated_at": "2026-01-02T18:45:00.000000",
     "configuration": {
       "trigger_type": "scheduled",
       "output_format": "text",
       "prompt": "You are an invoice duplicate detection specialist. Find duplicate invoices in the database by grouping invoices that have the same invoice number, vendor, and total amount. Show the count of duplicates and list all instances with invoice details, vendor information, dates, and amounts. Use postgres_inspect_schema first to understand the schema."
-    },
-    "last_correction": "2026-01-12T17:12:01.602753"
+    }
   },
-  "visualization_preferences": "line chart i want for invoice number and its duplicate count",
-  "tool_configs": {},
-  "updated_at": "2026-01-12T17:12:01.603750"
+  "visualization_preferences": "pie chart showing duplicate count distribution by vendor, bar chart comparing duplicate counts"
 }

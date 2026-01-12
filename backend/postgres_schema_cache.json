@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-09T18:35:32.855128",
+  "timestamp": "2026-01-12T16:27:37.872464",
   "schema": {
     "admin_event_entity": [
       {
@@ -1789,6 +1789,11 @@
       {
         "name": "modified_on",
         "type": "timestamp",
+        "nullable": false
+      },
+      {
+        "name": "validity",
+        "type": "int8",
         "nullable": false
       }
     ],

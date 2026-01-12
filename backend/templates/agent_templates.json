@@ -7,7 +7,7 @@
     "icon": "🔍",
     "template": {
       "prompt": "You are an invoice duplicate detection specialist. Find duplicate invoices in the database by grouping invoices that have the same invoice number, vendor, and total amount. Show the count of duplicates and list all instances with invoice details, vendor information, dates, and amounts. Use postgres_inspect_schema first to understand the schema.",
-      "trigger_type": "text_query",
+      "trigger_type": "scheduled",
       "input_fields": [],
       "tools": [
         "postgres_query",
@@ -33,7 +33,7 @@
         "schema_context": "The database has been pre-inspected for your task. Key tables and columns:\n\n**Table: icap_invoice**\n- Columns (22): id, document_id, vendor_id, other_charges, credit_and_returns, invoice_number, invoice_date, due_date, tax, freight_charges, discount, total, sub_total, street, zip, city, country, state, payment_date, balance_amount, created_at, updated_at\n- JSONB columns (require ->> operator): other_charges, credit_and_returns, invoice_number, invoice_date, due_date, tax, freight_charges, discount, total, sub_total, street, zip, city, country, state, payment_date, balance_amount\n- Joins with: document_id → icap_document, vendor_id → icap_vendor\n- Related detail tables: icap_invoice_detail\n\n**Table: icap_vendor**\n- Columns (11): id, tenant_id, name, company, address, email, active, created_by, modified_by, created_on, modified_on\n- Related detail tables: icap_invoice, icap_product_master\n\n⚠️ IMPORTANT: This is just a preview. You must still call postgres_inspect_schema() for each table before writing queries to get complete column lists and relationships.",
         "generated_at": "2026-01-02T18:45:00.000000",
         "configuration": {
-          "trigger_type": "text_query",
+          "trigger_type": "scheduled",
           "output_format": "text",
           "prompt": "You are an invoice duplicate detection specialist. Find duplicate invoices in the database by grouping invoices that have the same invoice number, vendor, and total amount. Show the count of duplicates and list all instances with invoice details, vendor information, dates, and amounts. Use postgres_inspect_schema first to understand the schema."
         }

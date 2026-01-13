@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-12T16:27:37.872464",
+  "timestamp": "2026-01-13T18:15:22.995041",
   "schema": {
     "admin_event_entity": [
       {
@@ -2206,6 +2206,23 @@
         "nullable": false
       }
     ],
+    "icap_error_configs": [
+      {
+        "name": "config_key",
+        "type": "varchar",
+        "nullable": false
+      },
+      {
+        "name": "config_value",
+        "type": "varchar",
+        "nullable": false
+      },
+      {
+        "name": "created_on",
+        "type": "timestamp",
+        "nullable": true
+      }
+    ],
     "icap_error_groups": [
       {
         "name": "id",
@@ -2888,6 +2905,28 @@
         "name": "is_component",
         "type": "bool",
         "nullable": false
+      }
+    ],
+    "icap_monitored_services": [
+      {
+        "name": "service_name",
+        "type": "varchar",
+        "nullable": false
+      },
+      {
+        "name": "service_url",
+        "type": "text",
+        "nullable": false
+      },
+      {
+        "name": "is_active",
+        "type": "bool",
+        "nullable": true
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp",
+        "nullable": true
       }
     ],
     "icap_n8n_workflow_config": [
@@ -6477,6 +6516,17 @@
     "document_types": [
       "icap_document_types"
     ],
+    "configs": [
+      "icap_error_configs"
+    ],
+    "error_configs": [
+      "icap_error_configs"
+    ],
+    "error": [
+      "icap_error_configs",
+      "icap_error_groups",
+      "icap_error_logs"
+    ],
     "groups": [
       "icap_error_groups",
       "icap_menu_groups",
@@ -6484,10 +6534,6 @@
     ],
     "error_groups": [
       "icap_error_groups"
-    ],
-    "error": [
-      "icap_error_groups",
-      "icap_error_logs"
     ],
     "logs": [
       "icap_error_logs"
@@ -6542,6 +6588,15 @@
     ],
     "menus": [
       "icap_menus"
+    ],
+    "services": [
+      "icap_monitored_services"
+    ],
+    "monitored_services": [
+      "icap_monitored_services"
+    ],
+    "monitored": [
+      "icap_monitored_services"
     ],
     "workflow_config": [
       "icap_n8n_workflow_config"
@@ -10781,6 +10836,10 @@
       "outgoing": [],
       "incoming": []
     },
+    "icap_error_configs": {
+      "outgoing": [],
+      "incoming": []
+    },
     "icap_extraction_config": {
       "outgoing": [],
       "incoming": []
@@ -10879,6 +10938,10 @@
       "incoming": []
     },
     "icap_menus": {
+      "outgoing": [],
+      "incoming": []
+    },
+    "icap_monitored_services": {
       "outgoing": [],
       "incoming": []
     },

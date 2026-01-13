@@ -232,6 +232,8 @@ class AgentService:
                     )
                     
                     if visualization_config:
+                        # 🐍 Python data formation step to ensure robustness
+                        visualization_config = self._form_visualization_data(table_data, visualization_config)
                         base_response["visualization_config"] = visualization_config
                         print(f"  ✅ Visualization config generated and added to response")
                     else:
@@ -490,6 +492,226 @@ class AgentService:
         else:
             return base_response
     
+    def _form_visualization_data(self, table_data: Dict[str, Any], visualization_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Form structured data for visualization charts using Python aggregation
+        
+        Args:
+            table_data: Raw query result data with rows and columns
+            visualization_config: The visualization configuration from LLM
+            
+        Returns:
+            Updated visualization configuration with populated data
+        """
+        if not table_data or not table_data.get('rows') or not visualization_config or not visualization_config.get('charts'):
+            return visualization_config
+            
+        rows = table_data.get('rows', [])
+        print(f"  📊 Python Data Formation: Processing {len(rows)} rows for {len(visualization_config.get('charts', []))} charts")
+        
+        for chart in visualization_config.get('charts', []):
+            try:
+                data_source = chart.get('data_source', {})
+                chart_type = chart.get('type')
+                
+                # Settle on a label for the chart
+                # Grouping Logic (for Pie, Bar, Treemap, etc.)
+                if 'group_by' in data_source and 'aggregate' in data_source:
+                    group_field = data_source['group_by']
+                    agg_config = data_source['aggregate'] # {field, function}
+                    
+                    if isinstance(agg_config, dict):
+                        agg_field = agg_config.get('field')
+                        agg_func = agg_config.get('function', 'sum').lower()
+                    else:
+                        # Handle case where aggregate might be just a string
+                        agg_field = str(agg_config)
+                        agg_func = 'sum'
+                    
+                    if not group_field or not agg_field:
+                        continue
+                        
+                    # Perform aggregation
+                    groups = {}
+                    for row in rows:
+                        # Get group key
+                        key = row.get(group_field, 'Unknown')
+                        if key is None: key = 'Unknown'
+                        if isinstance(key, dict): key = str(key)
+                        
+                        # Get value
+                        val = row.get(agg_field, 0)
+                        try:
+                            val = float(val) if val is not None else 0
+                        except (ValueError, TypeError):
+                            val = 0
+                            
+                        if key not in groups:
+                            groups[key] = []
+                        groups[key].append(val)
+                    
+                    # Compute final values
+                    chart_data = []
+                    for key, values in groups.items():
+                        if agg_func == 'sum':
+                            result_val = sum(values)
+                        elif agg_func in ['avg', 'mean', 'average']:
+                            result_val = sum(values) / len(values) if values else 0
+                        elif agg_func == 'count':
+                            result_val = len(values)
+                        elif agg_func == 'min':
+                            result_val = min(values) if values else 0
+                        elif agg_func == 'max':
+                            result_val = max(values) if values else 0
+                        else:
+                            result_val = sum(values) 
+                            
+                        chart_data.append({
+                            "name": str(key),
+                            "value": result_val,
+                            agg_field: result_val # Include original field name too
+                        })
+                    
+                    # Sort by value desc for better viz
+                    chart_data.sort(key=lambda x: x['value'], reverse=True)
+                    
+                    # Limit to top 20 for readability
+                    if len(chart_data) > 20:
+                        chart_data = chart_data[:20]
+                        
+                    chart['data'] = chart_data
+                    print(f"    ✓ Formed data for chart {chart.get('id')} ({chart_type}): {len(chart_data)} points")
+
+                # XY Logic (for Scatter, Line over time)
+                elif 'x_axis' in data_source and 'y_axis' in data_source:
+                    x_field = data_source['x_axis']
+                    y_field = data_source['y_axis']
+                    
+                    chart_data = []
+                    for row in rows:
+                        # Only include rows that have the fields
+                        if x_field in row or y_field in row:
+                            x_val = row.get(x_field, '')
+                            y_val = row.get(y_field, 0)
+                            
+                            # Clean Y value
+                            try:
+                                y_val = float(y_val) if y_val is not None else 0
+                            except:
+                                y_val = 0
+                            
+                            # 🏷️ Smart Naming Logic: prioritize Batch Name > Invoice Number > Vendor Name
+                            display_name = str(x_val) # Default to X value
+                            
+                            # Check for specific identifier fields
+                            if row.get('batch_name'):
+                                display_name = str(row['batch_name'])
+                            elif row.get('invoice_number'):
+                                display_name = str(row['invoice_number'])
+                            elif row.get('inv_num'):
+                                display_name = str(row['inv_num'])
+                            elif row.get('vendor_name') and chart_type == 'scatter':
+                                # For scatter plots, vendor name is often a good label if no invoice/batch info
+                                display_name = str(row['vendor_name'])
+                                
+                            item = {
+                                "name": display_name,
+                                x_field: x_val,
+                                y_field: y_val,
+                                "value": y_val # Fallback
+                            }
+                            # Copy other fields for tooltip context (careful not to copy huge objects)
+                            for k, v in row.items():
+                                if k not in item and isinstance(v, (str, int, float, bool, type(None))):
+                                    item[k] = v
+                                    
+                            chart_data.append(item)
+                            
+                    # Sort line/area charts by X axis if possible (dates)
+                    if chart_type in ['line', 'area', 'candlestick']:
+                        try:
+                            # Try to sort, assuming comparable types
+                            chart_data.sort(key=lambda x: x.get(x_field) or '')
+                        except:
+                            pass
+                            
+                    chart['data'] = chart_data
+                    print(f"    ✓ Formed data for chart {chart.get('id')} ({chart_type}): {len(chart_data)} points")
+                    
+                 # Radar/Radial Logic (Group by + Metrics)
+                elif 'group_by' in data_source and 'metrics' in data_source:
+                    group_field = data_source['group_by']
+                    metrics = data_source['metrics']
+                    
+                    if not isinstance(metrics, list):
+                        metrics = [metrics]
+                    
+                    chart_data = []
+                    # For Radar, take top 12 items
+                    for row in rows[:12]: 
+                        # Use group field, but can fallback to friendly names if group field is just an ID?
+                        # For now, stick to group_field as that's what the chart expects for axes
+                        item = {"name": str(row.get(group_field, 'Unknown'))}
+                        
+                        for m in metrics:
+                            val = row.get(m, 0)
+                            try: val = float(val) 
+                            except: val = 0
+                            item[m] = val
+                            
+                        # Pass through other numeric fields for flexibility
+                        for k, v in row.items():
+                            if k not in item and isinstance(v, (int, float)):
+                                item[k] = v
+                                
+                        chart_data.append(item)
+                        
+                    chart['data'] = chart_data
+                    print(f"    ✓ Formed data for chart {chart.get('id')} ({chart_type}) with metrics: {len(chart_data)} points")
+                
+                # Fallback: if data is missing, just populate strictly from rows (dumb copy)
+                elif 'data' not in chart or not chart['data']:
+                    print(f"    ℹ️ No specific data_source for chart {chart.get('id')}, copying raw rows")
+                    # Smart copy: limit rows and simplify
+                    simple_rows = []
+                    for r in rows[:50]:
+                        new_r = {}
+                        for k, v in r.items():
+                            if isinstance(v, (str, int, float, bool, type(None))): 
+                                new_r[k] = v
+                                # heuristic for 'value' if not present
+                                if isinstance(v, (int, float)) and 'value' not in new_r:
+                                     new_r['value'] = v
+                        
+                        # 🏷️ Smart Naming Logic for Fallback
+                        if 'name' not in new_r:
+                            if new_r.get('batch_name'):
+                                new_r['name'] = str(new_r['batch_name'])
+                            elif new_r.get('invoice_number'):
+                                new_r['name'] = str(new_r['invoice_number'])
+                            elif new_r.get('inv_num'):
+                                new_r['name'] = str(new_r['inv_num'])
+                            elif new_r.get('vendor_name'):
+                                new_r['name'] = str(new_r['vendor_name'])
+                            else:
+                                # Pick first string field
+                                for k, v in new_r.items():
+                                    if isinstance(v, str):
+                                        new_r['name'] = v
+                                        break
+                                if 'name' not in new_r:
+                                    new_r['name'] = f"Item {len(simple_rows)+1}"
+                        
+                        simple_rows.append(new_r)
+                    chart['data'] = simple_rows
+
+            except Exception as e:
+                print(f"    ⚠️ Error forming data for chart {chart.get('id')}: {e}")
+                import traceback
+                traceback.print_exc()
+                
+        return visualization_config
+
     def _generate_visualization_config(self, query_result: Dict[str, Any], agent_purpose: str, user_preferences: str = None, streaming_callback = None) -> Dict[str, Any]:
         """
         Generate visualization configuration using LLM based on agent purpose and data structure

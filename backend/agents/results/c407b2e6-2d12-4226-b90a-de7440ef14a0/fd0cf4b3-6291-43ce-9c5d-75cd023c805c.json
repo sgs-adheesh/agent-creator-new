@@ -1,0 +1,1022 @@
+{
+  "id": "fd0cf4b3-6291-43ce-9c5d-75cd023c805c",
+  "name": "Result - 13/01/2026, 18:25:52",
+  "timestamp": "2026-01-13T18:25:53.742290",
+  "data": {
+    "success": true,
+    "output": "## Analysis of Invoice Data\n\nIn the analysis of the provided invoice data, it is evident that several records meet the criteria for **auto-approval** based on **confidence levels**. \n\n### Highest Confidence Invoice\n- The highest confidence invoice, **XC-179B1357** from **Spread Commissary**, boasts an overall confidence of **99.94231**, with all critical fields (invoice number, invoice date, due date) exceeding the **95.0** threshold. \n\n### Invoices Falling Short\nConversely, invoices such as **1502744-IN** from **La Colombe Coffee** and **1354035** from **Down East Seafood, Inc.** fall short in some confidence metrics, particularly in invoice numbers (**99.796364** and **99.94189** respectively), which do not meet the required threshold. \n\n### Notable Invoice\nNotably, invoice **INV-3337**, linked to **DEMO - Sliced Invoices**, consistently shows high confidence scores across various fields but lacks complete date information, preventing its approval. \n\n> This comprehensive review highlights the necessity of ensuring all fields are fully validated for invoice processing to streamline the approval workflow.",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": null,
+          "log": null
+        },
+        "result": {
+          "success": true,
+          "columns": [
+            "batch_name",
+            "accuracy",
+            "invoice_number",
+            "inv_num_conf",
+            "invoice_date",
+            "inv_date_conf",
+            "due_date",
+            "due_date_conf",
+            "vendor_name",
+            "line_count",
+            "min_desc_conf",
+            "min_qty_conf",
+            "min_price_conf",
+            "overall_min_confidence",
+            "status"
+          ],
+          "rows": [
+            {
+              "batch_name": "Batch-20251223142306000",
+              "accuracy": 98.33,
+              "invoice_number": "XC-179B1357",
+              "inv_num_conf": 99.94231,
+              "invoice_date": "09/08/2024",
+              "inv_date_conf": 99.993416,
+              "due_date": "10/08/2024",
+              "due_date_conf": 99.96473,
+              "vendor_name": "Spread Commissary",
+              "line_count": 1,
+              "min_desc_conf": 99.99224,
+              "min_qty_conf": 99.99964,
+              "min_price_conf": 99.99838,
+              "overall_min_confidence": 99.94231,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20260107064638780",
+              "accuracy": 99.21,
+              "invoice_number": "INV-3337",
+              "inv_num_conf": 99.90671,
+              "invoice_date": "",
+              "inv_date_conf": 99.971275,
+              "due_date": "",
+              "due_date_conf": 99.97482,
+              "vendor_name": "DEMO - Sliced Invoices",
+              "line_count": 1,
+              "min_desc_conf": 99.962975,
+              "min_qty_conf": 99.9798,
+              "min_price_conf": 99.98962,
+              "overall_min_confidence": 99.90671,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251230062253061",
+              "accuracy": 99.21,
+              "invoice_number": "INV-3337",
+              "inv_num_conf": 99.90671,
+              "invoice_date": "",
+              "inv_date_conf": 99.971275,
+              "due_date": "",
+              "due_date_conf": 99.97482,
+              "vendor_name": "DEMO - Sliced Invoices",
+              "line_count": 1,
+              "min_desc_conf": 99.962975,
+              "min_qty_conf": 99.9798,
+              "min_price_conf": 99.98962,
+              "overall_min_confidence": 99.90671,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251230063512115",
+              "accuracy": 99.21,
+              "invoice_number": "INV-3337",
+              "inv_num_conf": 99.90671,
+              "invoice_date": "",
+              "inv_date_conf": 99.971275,
+              "due_date": "",
+              "due_date_conf": 99.97482,
+              "vendor_name": "DEMO - Sliced Invoices",
+              "line_count": 1,
+              "min_desc_conf": 99.962975,
+              "min_qty_conf": 99.9798,
+              "min_price_conf": 99.98962,
+              "overall_min_confidence": 99.90671,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251223125153382",
+              "accuracy": 99.35,
+              "invoice_number": "1502744-IN",
+              "inv_num_conf": 99.796364,
+              "invoice_date": "06/08/2024",
+              "inv_date_conf": 99.772194,
+              "due_date": "08/26/2024",
+              "due_date_conf": 99.89372,
+              "vendor_name": "La Colombe Coffee",
+              "line_count": 2,
+              "min_desc_conf": 99.87985,
+              "min_qty_conf": 99.76386,
+              "min_price_conf": 99.97956,
+              "overall_min_confidence": 99.76386,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251223125336206",
+              "accuracy": 99.11,
+              "invoice_number": "1502751-IN",
+              "inv_num_conf": 99.68445,
+              "invoice_date": "06/08/2024",
+              "inv_date_conf": 99.75789,
+              "due_date": "08/26/2024",
+              "due_date_conf": 99.895515,
+              "vendor_name": "La Colombe Coffee",
+              "line_count": 2,
+              "min_desc_conf": 99.73344,
+              "min_qty_conf": 99.705574,
+              "min_price_conf": 99.97081,
+              "overall_min_confidence": 99.68445,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251223121427412",
+              "accuracy": 99.92,
+              "invoice_number": "1354035",
+              "inv_num_conf": 99.94189,
+              "invoice_date": "",
+              "inv_date_conf": 99.975204,
+              "due_date": "",
+              "due_date_conf": 99.88783,
+              "vendor_name": "Down East Seafood, Inc.",
+              "line_count": 4,
+              "min_desc_conf": 99.41042,
+              "min_qty_conf": 99.72255,
+              "min_price_conf": 99.93055,
+              "overall_min_confidence": 99.41042,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251231060410686",
+              "accuracy": 99.92,
+              "invoice_number": "1354035",
+              "inv_num_conf": 99.94189,
+              "invoice_date": "",
+              "inv_date_conf": 99.975204,
+              "due_date": "",
+              "due_date_conf": 99.88783,
+              "vendor_name": "Down East Seafood, Inc.",
+              "line_count": 4,
+              "min_desc_conf": 99.41042,
+              "min_qty_conf": 99.72255,
+              "min_price_conf": 99.93055,
+              "overall_min_confidence": 99.41042,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251223123723784",
+              "accuracy": 95.97,
+              "invoice_number": "330247",
+              "inv_num_conf": 99.02054,
+              "invoice_date": "12/14/2023",
+              "inv_date_conf": 99.40468,
+              "due_date": "12/28/2023",
+              "due_date_conf": 99.96525,
+              "vendor_name": "Fidelity Burglar & Fire Alarm Co. HIC:",
+              "line_count": 1,
+              "min_desc_conf": 99.96935,
+              "min_qty_conf": 99.969955,
+              "min_price_conf": 99.997185,
+              "overall_min_confidence": 99.02054,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251223142306416",
+              "accuracy": 96.49,
+              "invoice_number": "XC-ECBF2F90",
+              "inv_num_conf": 99.91095,
+              "invoice_date": "09/08/2024",
+              "inv_date_conf": 99.9852,
+              "due_date": "09/08/2024",
+              "due_date_conf": 99.96921,
+              "vendor_name": "Spread Commissary",
+              "line_count": 6,
+              "min_desc_conf": 98.43294,
+              "min_qty_conf": 99.97755,
+              "min_price_conf": 99.99277,
+              "overall_min_confidence": 98.43294,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251223134745641",
+              "accuracy": 97.97,
+              "invoice_number": "EOEC55AA-0041",
+              "inv_num_conf": 99.94633,
+              "invoice_date": "",
+              "inv_date_conf": 99.82988,
+              "due_date": "",
+              "due_date_conf": 99.939766,
+              "vendor_name": "YepChat",
+              "line_count": 1,
+              "min_desc_conf": 98.0557,
+              "min_qty_conf": 99.999405,
+              "min_price_conf": 99.99854,
+              "overall_min_confidence": 98.0557,
+              "status": 2
+            }
+          ],
+          "row_count": 11,
+          "has_more": false,
+          "note": null,
+          "schema_info": null
+        }
+      }
+    ],
+    "output_format": "table",
+    "summary": {
+      "total_records": 11,
+      "columns": [
+        "batch_name",
+        "accuracy",
+        "invoice_number",
+        "inv_num_conf",
+        "invoice_date",
+        "inv_date_conf",
+        "due_date",
+        "due_date_conf",
+        "vendor_name",
+        "line_count",
+        "min_desc_conf",
+        "min_qty_conf",
+        "min_price_conf",
+        "overall_min_confidence",
+        "status"
+      ],
+      "description": "Query returned 11 record(s) with 15 column(s).",
+      "invoice_breakdown": {
+        "330247": {
+          "invoice_number": "330247",
+          "line_items": 1,
+          "date": "12/14/2023",
+          "vendor": "Fidelity Burglar & Fire Alarm Co. HIC:"
+        },
+        "1354035": {
+          "invoice_number": "1354035",
+          "line_items": 2,
+          "date": "",
+          "vendor": "Down East Seafood, Inc."
+        },
+        "XC-179B1357": {
+          "invoice_number": "XC-179B1357",
+          "line_items": 1,
+          "date": "09/08/2024",
+          "vendor": "Spread Commissary"
+        },
+        "INV-3337": {
+          "invoice_number": "INV-3337",
+          "line_items": 3,
+          "date": "",
+          "vendor": "DEMO - Sliced Invoices"
+        },
+        "1502744-IN": {
+          "invoice_number": "1502744-IN",
+          "line_items": 1,
+          "date": "06/08/2024",
+          "vendor": "La Colombe Coffee"
+        },
+        "1502751-IN": {
+          "invoice_number": "1502751-IN",
+          "line_items": 1,
+          "date": "06/08/2024",
+          "vendor": "La Colombe Coffee"
+        },
+        "XC-ECBF2F90": {
+          "invoice_number": "XC-ECBF2F90",
+          "line_items": 1,
+          "date": "09/08/2024",
+          "vendor": "Spread Commissary"
+        },
+        "EOEC55AA-0041": {
+          "invoice_number": "EOEC55AA-0041",
+          "line_items": 1,
+          "date": "",
+          "vendor": "YepChat"
+        }
+      },
+      "invoice_summary_text": "**1354035** | Vendor: Down East Seafood, Inc. | Line Items: 2\n**1502744-IN** | Vendor: La Colombe Coffee | Date: 06/08/2024 | Line Items: 1\n**1502751-IN** | Vendor: La Colombe Coffee | Date: 06/08/2024 | Line Items: 1\n**330247** | Vendor: Fidelity Burglar & Fire Alarm Co. HIC: | Date: 12/14/2023 | Line Items: 1\n**EOEC55AA-0041** | Vendor: YepChat | Line Items: 1\n**INV-3337** | Vendor: DEMO - Sliced Invoices | Line Items: 3\n**XC-179B1357** | Vendor: Spread Commissary | Date: 09/08/2024 | Line Items: 1\n**XC-ECBF2F90** | Vendor: Spread Commissary | Date: 09/08/2024 | Line Items: 1",
+      "numeric_analysis": {
+        "line_count": {
+          "sum": 24,
+          "average": 2.18,
+          "min": 1,
+          "max": 6,
+          "count": 11,
+          "is_quantity": true,
+          "description": "**line_count**: Total = 24, Average = 2.2, Range = 1 - 6"
+        },
+        "min_price_conf": {
+          "sum": 1099.77,
+          "average": 99.98,
+          "min": 99.93,
+          "max": 100,
+          "count": 11,
+          "is_currency": true,
+          "description": "**min_price_conf**: Total = $1,099.77, Average = $99.98, Range = $99.93 - $100.00"
+        }
+      },
+      "numeric_summary_text": "**line_count**: Total = 24, Average = 2.2, Range = 1 - 6\n**min_price_conf**: Total = $1,099.77, Average = $99.98, Range = $99.93 - $100.00",
+      "date_analysis": {
+        "invoice_date": {
+          "from": "06/08/2024",
+          "to": "12/14/2023",
+          "count": 5,
+          "unique_count": 3,
+          "description": "**invoice_date**: From *06/08/2024* to *12/14/2023* (5 entries, 3 unique dates)"
+        },
+        "inv_date_conf": {
+          "from": "99.40468",
+          "to": "99.993416",
+          "count": 11,
+          "unique_count": 8,
+          "description": "**inv_date_conf**: From *99.40468* to *99.993416* (11 entries, 8 unique dates)"
+        },
+        "due_date": {
+          "from": "08/26/2024",
+          "to": "12/28/2023",
+          "count": 5,
+          "unique_count": 4,
+          "description": "**due_date**: From *08/26/2024* to *12/28/2023* (5 entries, 4 unique dates)"
+        },
+        "due_date_conf": {
+          "from": "99.88783",
+          "to": "99.97482",
+          "count": 11,
+          "unique_count": 8,
+          "description": "**due_date_conf**: From *99.88783* to *99.97482* (11 entries, 8 unique dates)"
+        }
+      },
+      "date_summary_text": "**invoice_date**: From *06/08/2024* to *12/14/2023* (5 entries, 3 unique dates)\n**inv_date_conf**: From *99.40468* to *99.993416* (11 entries, 8 unique dates)\n**due_date**: From *08/26/2024* to *12/28/2023* (5 entries, 4 unique dates)\n**due_date_conf**: From *99.88783* to *99.97482* (11 entries, 8 unique dates)",
+      "categorical_analysis": {
+        "batch_name": {
+          "unique_count": 11,
+          "total_entries": 11,
+          "description": "**batch_name**: 11 unique value(s) across 11 entries",
+          "top_values": [
+            {
+              "value": "Batch-20251223142306000",
+              "count": 1
+            },
+            {
+              "value": "Batch-20260107064638780",
+              "count": 1
+            },
+            {
+              "value": "Batch-20251230062253061",
+              "count": 1
+            },
+            {
+              "value": "Batch-20251230063512115",
+              "count": 1
+            },
+            {
+              "value": "Batch-20251223125153382",
+              "count": 1
+            }
+          ]
+        },
+        "accuracy": {
+          "unique_count": 8,
+          "total_entries": 11,
+          "description": "**accuracy**: 8 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.21",
+              "count": 3
+            },
+            {
+              "value": "99.92",
+              "count": 2
+            },
+            {
+              "value": "98.33",
+              "count": 1
+            },
+            {
+              "value": "99.35",
+              "count": 1
+            },
+            {
+              "value": "99.11",
+              "count": 1
+            }
+          ]
+        },
+        "invoice_number": {
+          "unique_count": 8,
+          "total_entries": 11,
+          "description": "**invoice_number**: 8 unique value(s) across 11 entries",
+          "top_values": [
+            {
+              "value": "INV-3337",
+              "count": 3
+            },
+            {
+              "value": "1354035",
+              "count": 2
+            },
+            {
+              "value": "XC-179B1357",
+              "count": 1
+            },
+            {
+              "value": "1502744-IN",
+              "count": 1
+            },
+            {
+              "value": "1502751-IN",
+              "count": 1
+            }
+          ]
+        },
+        "inv_num_conf": {
+          "unique_count": 8,
+          "total_entries": 11,
+          "description": "**inv_num_conf**: 8 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.90671",
+              "count": 3
+            },
+            {
+              "value": "99.94189",
+              "count": 2
+            },
+            {
+              "value": "99.94231",
+              "count": 1
+            },
+            {
+              "value": "99.796364",
+              "count": 1
+            },
+            {
+              "value": "99.68445",
+              "count": 1
+            }
+          ]
+        },
+        "vendor_name": {
+          "unique_count": 6,
+          "total_entries": 11,
+          "description": "**vendor_name**: 6 unique value(s) across 11 entries",
+          "top_values": [
+            {
+              "value": "DEMO - Sliced Invoices",
+              "count": 3
+            },
+            {
+              "value": "Spread Commissary",
+              "count": 2
+            },
+            {
+              "value": "La Colombe Coffee",
+              "count": 2
+            },
+            {
+              "value": "Down East Seafood, Inc.",
+              "count": 2
+            },
+            {
+              "value": "Fidelity Burglar & Fire Alarm Co. HIC:",
+              "count": 1
+            }
+          ]
+        },
+        "min_desc_conf": {
+          "unique_count": 10,
+          "total_entries": 11,
+          "description": "**min_desc_conf**: 10 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.962975000000000136424205265939235687255859375",
+              "count": 2
+            },
+            {
+              "value": "99.9922399999999953479346004314720630645751953125",
+              "count": 1
+            },
+            {
+              "value": "99.962975",
+              "count": 1
+            },
+            {
+              "value": "99.879850000000004683897714130580425262451171875",
+              "count": 1
+            },
+            {
+              "value": "99.733440000000001646185410209000110626220703125",
+              "count": 1
+            }
+          ]
+        },
+        "min_qty_conf": {
+          "unique_count": 10,
+          "total_entries": 11,
+          "description": "**min_qty_conf**: 10 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.9797999999999973397279973141849040985107421875",
+              "count": 2
+            },
+            {
+              "value": "99.999639999999999417923390865325927734375",
+              "count": 1
+            },
+            {
+              "value": "99.9798",
+              "count": 1
+            },
+            {
+              "value": "99.763859999999993988240021280944347381591796875",
+              "count": 1
+            },
+            {
+              "value": "99.7055739999999985911927069537341594696044921875",
+              "count": 1
+            }
+          ]
+        },
+        "overall_min_confidence": {
+          "unique_count": 9,
+          "total_entries": 11,
+          "description": "**overall_min_confidence**: 9 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.90671",
+              "count": 3
+            },
+            {
+              "value": "99.94231",
+              "count": 1
+            },
+            {
+              "value": "99.763859999999993988240021280944347381591796875",
+              "count": 1
+            },
+            {
+              "value": "99.68445",
+              "count": 1
+            },
+            {
+              "value": "99.4104200000000020054358174093067646026611328125",
+              "count": 1
+            }
+          ]
+        },
+        "status": {
+          "unique_count": 1,
+          "total_entries": 11,
+          "description": "**status**: 1 unique value(s) across 11 entries",
+          "top_values": [
+            {
+              "value": "2",
+              "count": 11
+            }
+          ]
+        }
+      },
+      "categorical_summary_text": "**batch_name**: 11 unique value(s) across 11 entries\n**accuracy**: 8 unique value(s)\n**invoice_number**: 8 unique value(s) across 11 entries\n**inv_num_conf**: 8 unique value(s)\n**vendor_name**: 6 unique value(s) across 11 entries\n**min_desc_conf**: 10 unique value(s)\n**min_qty_conf**: 10 unique value(s)\n**overall_min_confidence**: 9 unique value(s)\n**status**: 1 unique value(s) across 11 entries",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Invoice Analysis for Auto-Approval Workflow\n\n### Key Findings\n- **Total Records Analyzed**: 11 invoices\n- **Top Vendors**:\n  - **DEMO - Sliced Invoices**: 3 invoices\n  - **Spread Commissary**: 2 invoices\n  - **La Colombe Coffee**: 2 invoices\n- **Invoice Numbers**: \n  - **INV-3337** is the most recurring with 3 entries.\n  - **1354035** appears 2 times, indicating potential duplicates.\n\n### Statistical Insights\n- **Line Count**:\n  - Total of **24 items** across all invoices, averaging **2.2 items per invoice**.\n  - Range varies from **1 to 6 items**, suggesting most invoices are simple but some could require more scrutiny.\n  \n- **Min Price Confidence**:\n  - Aggregate amount is **$1,099.77**, with an average of **$99.98**.\n  - Confident pricing indicated by a narrow range ($99.93 to $100.00).\n\n### Date Fields Analysis\n- **Invoice Dates**: Range from **12/14/2023 to 06/08/2024**.\n- **Due Dates**: Span from **12/28/2023 to 08/26/2024**.\n- The combination of close invoice and due dates suggests urgency in payment processing.\n\n### Confidence Scores\n- **Overall Minimum Confidence**:\n  - Highest confidence recorded at **99.94231** for several entries, indicating strong assurance in invoice accuracy.\n  - Notably, all critical fields have confidence scores above the threshold for auto-approval, aligning well with the agent's purpose.\n\n### Business Impact\n> ⚠️ High confidence levels in invoice data suggest that most entries are suitable for automated approval, minimizing manual verification efforts.\n\n### Recommendations\n1. **Prioritize Auto-Approval** for invoices with high confidence scores, particularly those from top vendors like **DEMO - Sliced Invoices** and **Spread Commissary**.\n2. **Monitor Recurring Invoices**: Investigate invoice **INV-3337** for potential duplicates to avoid payment discrepancies.\n3. **Enhance Payment Timeliness**: With due dates approaching, ensure that the invoices are processed rapidly to maintain vendor relationships and avoid late fees.\n\nThis analysis provides a comprehensive view of the invoice data, enabling effective decision-making regarding the auto-approval workflow.\n\n---\n\n# 📊 Query Results Summary\n\n**11** records found with **15** columns\n\n## 📎 Invoices\n\n**330247** - Fidelity Burglar & Fire Alarm Co. HIC: (12/14/2023)\n  └ 1 items, 0 units\n\n**XC-179B1357** - Spread Commissary (09/08/2024)\n  └ 1 items, 0 units\n\n**XC-ECBF2F90** - Spread Commissary (09/08/2024)\n  └ 1 items, 0 units\n\n**1502744-IN** - La Colombe Coffee (06/08/2024)\n  └ 1 items, 0 units\n\n**1502751-IN** - La Colombe Coffee (06/08/2024)\n  └ 1 items, 0 units\n\n**INV-3337** - DEMO - Sliced Invoices ()\n  └ 3 items, 0 units\n\n**1354035** - Down East Seafood, Inc. ()\n  └ 2 items, 0 units\n\n**EOEC55AA-0041** - YepChat ()\n  └ 1 items, 0 units\n\n## 💰 Numbers\n\n**line_count:** 24 total, 2.2 avg (1 - 6)\n**min_price_conf:** $1,099.77 total, $99.98 avg\n\n## 📅 Dates\n\n**invoice_date:** 3 unique dates from 06/08/2024 to 12/14/2023\n**inv_date_conf:** 8 unique dates from 99.40468 to 99.993416\n**due_date:** 4 unique dates from 08/26/2024 to 12/28/2023\n**due_date_conf:** 8 unique dates from 99.88783 to 99.97482\n\n## 🏷️ Categories\n\n**batch_name:** Batch-20251223142306000 (1), Batch-20260107064638780 (1), Batch-20251230062253061 (1)\n**accuracy:** 99.21 (3), 99.92 (2), 98.33 (1)\n**invoice_number:** INV-3337 (3), 1354035 (2), XC-179B1357 (1)\n**inv_num_conf:** 99.90671 (3), 99.94189 (2), 99.94231 (1)\n**vendor_name:** DEMO - Sliced Invoices (3), Spread Commissary (2), La Colombe Coffee (2)\n**min_desc_conf:** 99.962975000000000136424205265939235687255859375 (2), 99.9922399999999953479346004314720630645751953125 (1), 99.962975 (1)\n**min_qty_conf:** 99.9797999999999973397279973141849040985107421875 (2), 99.999639999999999417923390865325927734375 (1), 99.9798 (1)\n**overall_min_confidence:** 99.90671 (3), 99.94231 (1), 99.763859999999993988240021280944347381591796875 (1)\n**status:** 2 (11)\n",
+      "ai_summary": "## Invoice Analysis for Auto-Approval Workflow\n\n### Key Findings\n- **Total Records Analyzed**: 11 invoices\n- **Top Vendors**:\n  - **DEMO - Sliced Invoices**: 3 invoices\n  - **Spread Commissary**: 2 invoices\n  - **La Colombe Coffee**: 2 invoices\n- **Invoice Numbers**: \n  - **INV-3337** is the most recurring with 3 entries.\n  - **1354035** appears 2 times, indicating potential duplicates.\n\n### Statistical Insights\n- **Line Count**:\n  - Total of **24 items** across all invoices, averaging **2.2 items per invoice**.\n  - Range varies from **1 to 6 items**, suggesting most invoices are simple but some could require more scrutiny.\n  \n- **Min Price Confidence**:\n  - Aggregate amount is **$1,099.77**, with an average of **$99.98**.\n  - Confident pricing indicated by a narrow range ($99.93 to $100.00).\n\n### Date Fields Analysis\n- **Invoice Dates**: Range from **12/14/2023 to 06/08/2024**.\n- **Due Dates**: Span from **12/28/2023 to 08/26/2024**.\n- The combination of close invoice and due dates suggests urgency in payment processing.\n\n### Confidence Scores\n- **Overall Minimum Confidence**:\n  - Highest confidence recorded at **99.94231** for several entries, indicating strong assurance in invoice accuracy.\n  - Notably, all critical fields have confidence scores above the threshold for auto-approval, aligning well with the agent's purpose.\n\n### Business Impact\n> ⚠️ High confidence levels in invoice data suggest that most entries are suitable for automated approval, minimizing manual verification efforts.\n\n### Recommendations\n1. **Prioritize Auto-Approval** for invoices with high confidence scores, particularly those from top vendors like **DEMO - Sliced Invoices** and **Spread Commissary**.\n2. **Monitor Recurring Invoices**: Investigate invoice **INV-3337** for potential duplicates to avoid payment discrepancies.\n3. **Enhance Payment Timeliness**: With due dates approaching, ensure that the invoices are processed rapidly to maintain vendor relationships and avoid late fees.\n\nThis analysis provides a comprehensive view of the invoice data, enabling effective decision-making regarding the auto-approval workflow."
+    },
+    "table_data": {
+      "columns": [
+        "batch_name",
+        "accuracy",
+        "invoice_number",
+        "inv_num_conf",
+        "invoice_date",
+        "inv_date_conf",
+        "due_date",
+        "due_date_conf",
+        "vendor_name",
+        "line_count",
+        "min_desc_conf",
+        "min_qty_conf",
+        "min_price_conf",
+        "overall_min_confidence",
+        "status"
+      ],
+      "rows": [
+        {
+          "batch_name": "Batch-20251223142306000",
+          "accuracy": 98.33,
+          "invoice_number": "XC-179B1357",
+          "inv_num_conf": 99.94231,
+          "invoice_date": "09/08/2024",
+          "inv_date_conf": 99.993416,
+          "due_date": "10/08/2024",
+          "due_date_conf": 99.96473,
+          "vendor_name": "Spread Commissary",
+          "line_count": 1,
+          "min_desc_conf": 99.99224,
+          "min_qty_conf": 99.99964,
+          "min_price_conf": 99.99838,
+          "overall_min_confidence": 99.94231,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20260107064638780",
+          "accuracy": 99.21,
+          "invoice_number": "INV-3337",
+          "inv_num_conf": 99.90671,
+          "invoice_date": "",
+          "inv_date_conf": 99.971275,
+          "due_date": "",
+          "due_date_conf": 99.97482,
+          "vendor_name": "DEMO - Sliced Invoices",
+          "line_count": 1,
+          "min_desc_conf": 99.962975,
+          "min_qty_conf": 99.9798,
+          "min_price_conf": 99.98962,
+          "overall_min_confidence": 99.90671,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251230062253061",
+          "accuracy": 99.21,
+          "invoice_number": "INV-3337",
+          "inv_num_conf": 99.90671,
+          "invoice_date": "",
+          "inv_date_conf": 99.971275,
+          "due_date": "",
+          "due_date_conf": 99.97482,
+          "vendor_name": "DEMO - Sliced Invoices",
+          "line_count": 1,
+          "min_desc_conf": 99.962975,
+          "min_qty_conf": 99.9798,
+          "min_price_conf": 99.98962,
+          "overall_min_confidence": 99.90671,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251230063512115",
+          "accuracy": 99.21,
+          "invoice_number": "INV-3337",
+          "inv_num_conf": 99.90671,
+          "invoice_date": "",
+          "inv_date_conf": 99.971275,
+          "due_date": "",
+          "due_date_conf": 99.97482,
+          "vendor_name": "DEMO - Sliced Invoices",
+          "line_count": 1,
+          "min_desc_conf": 99.962975,
+          "min_qty_conf": 99.9798,
+          "min_price_conf": 99.98962,
+          "overall_min_confidence": 99.90671,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251223125153382",
+          "accuracy": 99.35,
+          "invoice_number": "1502744-IN",
+          "inv_num_conf": 99.796364,
+          "invoice_date": "06/08/2024",
+          "inv_date_conf": 99.772194,
+          "due_date": "08/26/2024",
+          "due_date_conf": 99.89372,
+          "vendor_name": "La Colombe Coffee",
+          "line_count": 2,
+          "min_desc_conf": 99.87985,
+          "min_qty_conf": 99.76386,
+          "min_price_conf": 99.97956,
+          "overall_min_confidence": 99.76386,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251223125336206",
+          "accuracy": 99.11,
+          "invoice_number": "1502751-IN",
+          "inv_num_conf": 99.68445,
+          "invoice_date": "06/08/2024",
+          "inv_date_conf": 99.75789,
+          "due_date": "08/26/2024",
+          "due_date_conf": 99.895515,
+          "vendor_name": "La Colombe Coffee",
+          "line_count": 2,
+          "min_desc_conf": 99.73344,
+          "min_qty_conf": 99.705574,
+          "min_price_conf": 99.97081,
+          "overall_min_confidence": 99.68445,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251223121427412",
+          "accuracy": 99.92,
+          "invoice_number": "1354035",
+          "inv_num_conf": 99.94189,
+          "invoice_date": "",
+          "inv_date_conf": 99.975204,
+          "due_date": "",
+          "due_date_conf": 99.88783,
+          "vendor_name": "Down East Seafood, Inc.",
+          "line_count": 4,
+          "min_desc_conf": 99.41042,
+          "min_qty_conf": 99.72255,
+          "min_price_conf": 99.93055,
+          "overall_min_confidence": 99.41042,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251231060410686",
+          "accuracy": 99.92,
+          "invoice_number": "1354035",
+          "inv_num_conf": 99.94189,
+          "invoice_date": "",
+          "inv_date_conf": 99.975204,
+          "due_date": "",
+          "due_date_conf": 99.88783,
+          "vendor_name": "Down East Seafood, Inc.",
+          "line_count": 4,
+          "min_desc_conf": 99.41042,
+          "min_qty_conf": 99.72255,
+          "min_price_conf": 99.93055,
+          "overall_min_confidence": 99.41042,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251223123723784",
+          "accuracy": 95.97,
+          "invoice_number": "330247",
+          "inv_num_conf": 99.02054,
+          "invoice_date": "12/14/2023",
+          "inv_date_conf": 99.40468,
+          "due_date": "12/28/2023",
+          "due_date_conf": 99.96525,
+          "vendor_name": "Fidelity Burglar & Fire Alarm Co. HIC:",
+          "line_count": 1,
+          "min_desc_conf": 99.96935,
+          "min_qty_conf": 99.969955,
+          "min_price_conf": 99.997185,
+          "overall_min_confidence": 99.02054,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251223142306416",
+          "accuracy": 96.49,
+          "invoice_number": "XC-ECBF2F90",
+          "inv_num_conf": 99.91095,
+          "invoice_date": "09/08/2024",
+          "inv_date_conf": 99.9852,
+          "due_date": "09/08/2024",
+          "due_date_conf": 99.96921,
+          "vendor_name": "Spread Commissary",
+          "line_count": 6,
+          "min_desc_conf": 98.43294,
+          "min_qty_conf": 99.97755,
+          "min_price_conf": 99.99277,
+          "overall_min_confidence": 98.43294,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251223134745641",
+          "accuracy": 97.97,
+          "invoice_number": "EOEC55AA-0041",
+          "inv_num_conf": 99.94633,
+          "invoice_date": "",
+          "inv_date_conf": 99.82988,
+          "due_date": "",
+          "due_date_conf": 99.939766,
+          "vendor_name": "YepChat",
+          "line_count": 1,
+          "min_desc_conf": 98.0557,
+          "min_qty_conf": 99.999405,
+          "min_price_conf": 99.99854,
+          "overall_min_confidence": 98.0557,
+          "status": 2
+        }
+      ],
+      "row_count": 11
+    },
+    "visualization_config": {
+      "charts": [
+        {
+          "id": "chart_1",
+          "type": "radar",
+          "title": "Invoice Confidence Metrics by Vendor",
+          "description": "This radar chart displays the confidence metrics of invoices grouped by vendor, highlighting the minimum confidence levels for invoice number, date, and due date.",
+          "data": [
+            {
+              "name": "Spread Commissary",
+              "inv_num_conf": 99.94231,
+              "inv_date_conf": 99.993416,
+              "due_date_conf": 99.96473,
+              "min_desc_conf": 99.99224,
+              "min_qty_conf": 99.99964,
+              "min_price_conf": 99.99838
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "inv_num_conf": 99.90671,
+              "inv_date_conf": 99.971275,
+              "due_date_conf": 99.97482,
+              "min_desc_conf": 99.962975,
+              "min_qty_conf": 99.9798,
+              "min_price_conf": 99.98962
+            },
+            {
+              "name": "La Colombe Coffee",
+              "inv_num_conf": 99.796364,
+              "inv_date_conf": 99.772194,
+              "due_date_conf": 99.89372,
+              "min_desc_conf": 99.87985,
+              "min_qty_conf": 99.76386,
+              "min_price_conf": 99.97956
+            },
+            {
+              "name": "Down East Seafood, Inc.",
+              "inv_num_conf": 99.94189,
+              "inv_date_conf": 99.975204,
+              "due_date_conf": 99.88783,
+              "min_desc_conf": 99.41042,
+              "min_qty_conf": 99.72255,
+              "min_price_conf": 99.93055
+            },
+            {
+              "name": "Fidelity Burglar & Fire Alarm Co. HIC:",
+              "inv_num_conf": 99.02054,
+              "inv_date_conf": 99.40468,
+              "due_date_conf": 99.96525,
+              "min_desc_conf": 99.96935,
+              "min_qty_conf": 99.969955,
+              "min_price_conf": 99.997185
+            },
+            {
+              "name": "YepChat",
+              "inv_num_conf": 99.94633,
+              "inv_date_conf": 99.82988,
+              "due_date_conf": 99.939766,
+              "min_desc_conf": 98.0557,
+              "min_qty_conf": 99.999405,
+              "min_price_conf": 99.99854
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "metrics": [
+              "inv_num_conf",
+              "inv_date_conf",
+              "due_date_conf",
+              "min_desc_conf",
+              "min_qty_conf",
+              "min_price_conf"
+            ]
+          },
+          "config": {
+            "colors": [
+              "#4CAF50",
+              "#2196F3"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_2",
+          "type": "radialbar",
+          "title": "Overall Invoice Confidence by Vendor",
+          "description": "This radial bar chart shows the overall minimum confidence for invoices by vendor, providing insights into which vendors have the highest confidence levels.",
+          "data": [
+            {
+              "name": "Spread Commissary",
+              "value": 99.94231
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "value": 99.90671
+            },
+            {
+              "name": "La Colombe Coffee",
+              "value": 99.796364
+            },
+            {
+              "name": "Down East Seafood, Inc.",
+              "value": 99.94189
+            },
+            {
+              "name": "Fidelity Burglar & Fire Alarm Co. HIC:",
+              "value": 99.02054
+            },
+            {
+              "name": "YepChat",
+              "value": 99.94633
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "overall_min_confidence",
+              "function": "max"
+            }
+          },
+          "config": {
+            "colors": [
+              "#FF9800",
+              "#F44336"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_3",
+          "type": "treemap",
+          "title": "Invoice Accuracy by Vendor",
+          "description": "This treemap visualizes the accuracy of invoices for each vendor, allowing quick identification of vendors with high accuracy levels.",
+          "data": [
+            {
+              "name": "Spread Commissary",
+              "value": 98.33
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "value": 99.21
+            },
+            {
+              "name": "La Colombe Coffee",
+              "value": 99.35
+            },
+            {
+              "name": "Down East Seafood, Inc.",
+              "value": 99.92
+            },
+            {
+              "name": "Fidelity Burglar & Fire Alarm Co. HIC:",
+              "value": 95.97
+            },
+            {
+              "name": "YepChat",
+              "value": 97.97
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "accuracy",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#8BC34A",
+              "#FFC107"
+            ]
+          }
+        },
+        {
+          "id": "chart_4",
+          "type": "stacked_bar",
+          "title": "Number of Line Items per Vendor",
+          "description": "This stacked bar chart shows the number of line items on invoices for each vendor, revealing which vendors have the most detailed invoices.",
+          "data": [
+            {
+              "name": "Spread Commissary",
+              "line_count": 1
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "line_count": 1
+            },
+            {
+              "name": "La Colombe Coffee",
+              "line_count": 2
+            },
+            {
+              "name": "Down East Seafood, Inc.",
+              "line_count": 4
+            },
+            {
+              "name": "Fidelity Burglar & Fire Alarm Co. HIC:",
+              "line_count": 1
+            },
+            {
+              "name": "YepChat",
+              "line_count": 1
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "line_count",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#3F51B5",
+              "#E91E63"
+            ]
+          }
+        }
+      ],
+      "insights": "The visualizations reveal that most vendors maintain high confidence levels in their invoice processing, particularly Spread Commissary and Down East Seafood, Inc. The accuracy of invoices is also notably high across the board, indicating effective vendor management. The number of line items suggests that La Colombe Coffee and Down East Seafood, Inc. provide more detailed invoices compared to others.",
+      "recommended_view": "dashboard"
+    },
+    "used_guidance": true,
+    "execution_time": "Fast (pre-built template, attempt 1)",
+    "query_attempts": 1
+  }
+}

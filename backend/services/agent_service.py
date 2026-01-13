@@ -2357,6 +2357,7 @@ Return ONLY the markdown-formatted version:"""
             
             query_template = execution_guidance.get('query_template', {})
             execution_plan = execution_guidance.get('execution_plan', {})
+            write_query_template = execution_guidance.get('write_query_template', '')
             workflow_config = agent_data.get('workflow_config', {})
             
             # Step 1: Extract parameters from input_data or user_query
@@ -2417,6 +2418,134 @@ Return ONLY the markdown-formatted version:"""
                 print("  ✅ Query was proactively fixed before execution")
                 current_query = validated_query
                 query_was_corrected = True  # Mark that we made changes
+            
+            # 🔒 CONFIRMATION CHECK & WRITE DELEGATION
+            import re
+            # Check for common write keywords at the start of the query
+            # Check for common write keywords at the start of the query
+            write_pattern = re.compile(r'^\s*(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|REPLACE|MERGE)', re.IGNORECASE)
+            
+            # Remove comments to avoid false positives (simple check)
+            clean_query = re.sub(r'--.*', '', current_query)
+            clean_query = re.sub(r'/\*.*?\*/', '', clean_query, flags=re.DOTALL)
+            clean_query = clean_query.strip()
+            
+            match = write_pattern.match(clean_query)
+            is_write_op = bool(match)
+            
+            print(f"  🔍 Query Operation Check:")
+            if write_query_template:
+                 print(f"  📝 Write Query Template Available: {write_query_template[:50]}...")
+            print(f"  - Clean start: '{clean_query[:50]}...'")
+            print(f"  - Detected Operation: {'WRITE (' + match.group(1).upper() + ')' if match else 'READ/OTHER'}")
+            print(f"  - Is Write Op: {is_write_op}")
+
+            
+            if is_write_op:
+                print("  🔒 Write operation detected - Delegating to PostgresWriter")
+                try:
+                    from tools.postgres_writer import PostgresWriter
+                    writer = PostgresWriter()
+                    
+                    # Check for confirmation
+                    is_confirmed = False
+                    if input_data and isinstance(input_data, dict):
+                         val = input_data.get('confirmation_approved')
+                         if val is True or str(val).lower() == 'true':
+                             is_confirmed = True
+                    
+                    if not is_confirmed:
+                        # Run DRY RUN to check safety and preview
+                        print("  🔒 executing dry run for safety...")
+                        dry_run_result = writer.execute(query=current_query, dry_run=True)
+                        
+                        if not dry_run_result.get('success'):
+                             # Safety check failed or error
+                             print(f"  ❌ Dry run failed: {dry_run_result.get('error')}")
+                             return dry_run_result # Return error directly
+                        
+                        # Return confirmation request with preview details
+                        affected = dry_run_result.get('affected_rows', 0)
+                        msg = f"This action involves a write operation that will affect approximately {affected} row(s)."
+                        if dry_run_result.get('preview_data'):
+                            msg += f"\nPreview: {str(dry_run_result['preview_data'])}"
+                            
+                        return {
+                             "success": True, 
+                             "requires_confirmation": True,
+                             "confirmation_message": msg,
+                             "pending_action": current_query,
+                             "preview_data": dry_run_result.get('preview_data', [])
+                         }
+                    
+                    else:
+                        # Execute REAL WRITE
+                        print("  🚀 executing confirmed write operation...")
+                        result = writer.execute(query=current_query, dry_run=False)
+                        
+                        if result.get('success'):
+                             # Standardize result format for the next steps
+                             # Writer returns {success, affected_rows, message, ...}
+                             # We need to reshape it to look like a query result (rows/columns)
+                             # Writes usually don't return rows unless RETURNING is used
+                             result['row_count'] = result.get('affected_rows', 0)
+                             result['rows'] = [] 
+                             result['columns'] = []
+                             
+                             print(f"  ✅ Write executed successfully: {result.get('message')}")
+                             if progress_callback:
+                                progress_callback(2, 'completed', 'Running tools', result.get('message'))
+                             
+                             # We skip the standard read loop by breaking or wrapping? 
+                             # The code below triggers output formatting. Let's return the result now 
+                             # formatted as if it came from the connector, so downstream logic works?
+                             # Downstream expects 'result' to be defined in the loop. 
+                             # Since we are outside the loop, we must adapt.
+                             
+                             # Actually, we should just continue to output formatting using this result.
+                             # But the loop below handles READs. We need to prevent the read loop from running.
+                             # Create intermediate steps in DICTIONARY format
+                             intermediate_steps = [{
+                                 "action": {
+                                     "tool": "postgres_writer",
+                                     "tool_input": {"query": current_query, "dry_run": False},
+                                     "log": result.get('message')
+                                 },
+                                 "result": str(result)
+                             }]
+                             
+                             output_format = workflow_config.get('output_format', 'text')
+                             
+                             # Generate simple output message
+                             output_msg = result.get('message')
+                             
+                             # Use _format_output to handle standardization
+                             formatted_result = self._format_output(output_msg, output_format, intermediate_steps, agent_data=agent_data, visualization_preferences=visualization_preferences)
+                             formatted_result['success'] = True
+                             
+                             return formatted_result
+ 
+                        else:
+                             return result # Return failure
+
+                except ImportError:
+                    print("  ⚠️ PostgresWriter tool not found - failing safely")
+                    return {"success": False, "error": "PostgresWriter tool required for write operations is missing"}
+            
+            # Executing Loop (Read or Fallback)
+            if not is_write_op or (is_write_op and not result.get('success')): # Only if not already successful
+                # If we just executed a write successfully, we should NOT enter this loop unless we need to?
+                # Actually, the logic below is structured as:
+                # for attempt... result = ...
+                # We need to restructure slightly to handle the "already executed" case.
+                pass 
+                
+            # RESTRUCTURED FLOW:
+            # If write and confirmed -> result is already set.
+            # If read -> result needs to be fetched in loop.
+            
+            # If we successfully executed a write, we will return from inside the write block.
+            # Otherwise, we proceed to this generic retry loop.
             
             for attempt in range(1, max_retries + 1):
                 print(f"\n  🔄 Attempt {attempt}/{max_retries}: Executing query...")

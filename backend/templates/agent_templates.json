@@ -52,7 +52,7 @@
     "category": "Workflow Management",
     "icon": "✅",
     "template": {
-      "prompt": "You are an AI-driven invoice auto-approval agent.\n\nValidation Criteria:\n1. From icap_invoice (3 fields): invoice_number, invoice_date, due_date\n2. From icap_invoice_detail (3 fields): description, quantity, unit_price\n3. vendor_id is UUID (NO confidence check - skip it)\n4. ALL 6 JSONB fields must have confidence >= threshold\n5. Check BOTH header and ALL line items\n\nQuery Logic:\n- Join icap_invoice with icap_invoice_detail on document_id\n- Extract confidence: (column->>'confidence')::numeric\n- Filter: ALL 6 fields >= threshold\n- Update icap_document.status='3' (Approved) for qualifying invoices\n- Use dry-run workflow\n\nDefault threshold: 95.0",
+      "prompt": "You are an AI-driven invoice auto-approval agent.\n\nValidation Criteria:\n1. From icap_invoice (3 fields): invoice_number, invoice_date, due_date\n2. From icap_invoice_detail (3 fields): description, quantity, unit_price\n3. vendor_id is UUID (NO confidence check - skip it)\n4. ALL 6 JSONB fields must have confidence >= threshold\n5. Check BOTH header and ALL line items\n\nQuery Logic:\n- Join icap_invoice with icap_invoice_detail on document_id\n- Extract confidence: (column->>'confidence')::numeric\n- Filter: ALL 6 fields >= threshold\n- Update icap_document.status = (SELECT id FROM icap_workflow_status WHERE status_code = 'Bill_Export_In_Progress') for qualifying invoices\n- Use dry-run workflow\n\nDefault threshold: 95.0",
       "trigger_type": "conditions",
       "input_fields": [
         {
@@ -86,12 +86,13 @@
           "step_3": "Join invoice header with aggregated line item confidence",
           "step_4": "Filter: status='2' AND sub_status='15' (icap_document) AND all 6 fields (3 header + 3 detail) >= threshold",
           "step_5": "SKIP vendor_id validation (it's UUID, no confidence attribute)",
-          "step_6": "For EACH qualifying invoice: UPDATE icap_document SET status='3' WHERE id='{document_id}'",
-          "step_7": "Execute postgres_write with dry_run=True first",
+          "step_6": "For EACH qualifying invoice: UPDATE using subquery for status ID lookup",
+          "step_7": "Execute postgres_write with dry_run=True first using the write_query_template",
           "step_8": "If OK, execute postgres_write with dry_run=False",
           "step_9": "Report: invoice_number, vendor, line_count, confidence scores, status",
           "step_10": "Return formatted table with approved invoices"
         },
+        "write_query_template": "UPDATE icap_document SET status = (SELECT id FROM icap_workflow_status WHERE step_name = 'Approved' OR status_code = 'Bill_Export_In_Progress' LIMIT 1) WHERE id = '{document_id}'",
         "schema_context": "**Critical Fields Validation:**\n\n**icap_invoice (Header - 3 JSONB fields):**\n- invoice_number (JSONB) - has confidence\n- invoice_date (JSONB) - has confidence\n- due_date (JSONB) - has confidence\n- vendor_id (UUID) - NO confidence attribute, skip validation\n\n**icap_invoice_detail (Line Items - 3 JSONB fields):**\n- description (JSONB) - has confidence\n- quantity (JSONB) - has confidence\n- unit_price (JSONB) - has confidence\n\n**Validation Logic:**\n- Check ALL 6 JSONB fields >= threshold\n- Use MIN() across all line items (strictest validation)\n- INNER JOIN ensures invoices have line items\n- status ENUM (icap_document): '0'=New, '2'=Needs Review, '3'=Approved\n\n**JSONB Structure:** {\"value\": \"data\", \"confidence\": 98.5, \"pageNo\": 1}",
         "generated_at": "2026-01-05T12:35:00.000000",
         "configuration": {
@@ -256,13 +257,14 @@
           "step_1": "Load pre-built query template from execution_guidance",
           "step_2": "No parameters required",
           "step_3": "Execute query directly using postgres_query tool to find invoices with missing data",
-          "step_4": "For EACH invoice found with missing data, prepare UPDATE query: UPDATE icap_document SET status='2' WHERE id=(SELECT document_id FROM icap_invoice WHERE id={invoice_id})",
+          "step_4": "For EACH invoice found with missing data, prepare UPDATE query using the write_query_template (status ID subquery)",
           "step_5": "Execute postgres_write with dry_run=True first to preview status updates",
-          "step_6": "If preview looks good, execute postgres_write with dry_run=False to flag invoices with status='2' (Needs Review)",
+          "step_6": "If preview looks good, execute postgres_write with dry_run=False to flag invoices with status='Needs Review' (via ID lookup)",
           "step_7": "Structure results showing flagged invoices with data quality issues and vendor contact info",
           "step_8": "Include row_count and affected_rows metadata",
           "step_9": "Return formatted table with flagged invoices and follow-up recommendations"
         },
+        "write_query_template": "UPDATE icap_document SET status = (SELECT id FROM icap_workflow_status WHERE status_code = 'Bill_Export_In_Progress' LIMIT 1) WHERE id = (SELECT document_id FROM icap_invoice WHERE id = '{invoice_id}')",
         "schema_context": "The database has been pre-inspected for your task. Key tables and columns:\n\n**Table: icap_invoice**\n- Columns (22): id, document_id, vendor_id, other_charges, credit_and_returns, invoice_number, invoice_date, due_date, tax, freight_charges, discount, total, sub_total, street, zip, city, country, state, payment_date, balance_amount, created_at, updated_at\n- JSONB columns (require ->> operator): other_charges, credit_and_returns, invoice_number, invoice_date, due_date, tax, freight_charges, discount, total, sub_total, street, zip, city, country, state, payment_date, balance_amount\n- Joins with: document_id → icap_document, vendor_id → icap_vendor\n- Related detail tables: icap_invoice_detail\n\n**Table: icap_invoice_detail**\n- Columns (13): id, document_id, uom, pack, size_numeric, size_unit, item_code, description, quantity, unit_price, total_price, category_id, product_id\n- JSONB columns (require ->> operator): uom, pack, size_numeric, size_unit, item_code, description, quantity, unit_price, total_price, category_id, product_id\n- Joins with: document_id → icap_document\n\n**Table: icap_vendor**\n- Columns (11): id, tenant_id, name, company, address, email, active, created_by, modified_by, created_on, modified_on\n- Related detail tables: icap_invoice, icap_product_master\n\n**Table: icap_product_master**\n- Columns (8): id, product_code, name, created_on, tenant_id, product_code_id, vendor_id, external_product_id\n- Joins with: vendor_id → icap_vendor\n\n⚠️ IMPORTANT: This is just a preview. You must still call postgres_inspect_schema() for each table before writing queries to get complete column lists and relationships.",
         "generated_at": "2026-01-02T18:48:34.480954",
         "configuration": {

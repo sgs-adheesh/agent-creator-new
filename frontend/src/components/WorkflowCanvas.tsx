@@ -198,6 +198,8 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   const [visualizationPreferences, setVisualizationPreferences] = useState<string>('');
   const [selectedChartTypes, setSelectedChartTypes] = useState<string[]>([]);
   const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] = useState<{ message: string; action: string; preview_data?: any[] } | null>(null);
+  const [lastInputData, setLastInputData] = useState<any>(null);
 
   const chartOptions = [
     { value: 'pie', label: 'Pie Chart', icon: '🥧' },
@@ -622,10 +624,12 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   };
 
   const executeAgent = async (inputData: Record<string, string | number | boolean>) => {
+    setLastInputData(inputData); // Save for retry/confirmation
     setExecutionStatus('Initializing execution...');
     setExecuting(true);
     setError(null);
     setResult(null);
+    setPendingConfirmation(null);
 
     // Initialize progress steps
     const steps: ProgressStep[] = [
@@ -712,6 +716,20 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                       } else if (data.type === 'result') {
                         // Execution complete - got final result
                         console.log('✅ Execution result received');
+
+                        // CHECK FOR CONFIRMATION
+                        if (data.data && data.data.requires_confirmation) {
+                          setPendingConfirmation({
+                            message: data.data.confirmation_message,
+                            action: data.data.pending_action,
+                            preview_data: data.data.preview_data
+                          });
+                          setExecutionStatus('Waiting for user confirmation...');
+                          setExecuting(false);
+                          resolve(data.data);
+                          return;
+                        }
+
                         setExecutionStatus('Execution completed successfully');
                         resolve(data.data);
                         return;
@@ -1216,8 +1234,94 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
               />
             </div>
           </div>
-        )
-      }
+        )}
+
+      {/* CONFIRMATION MODAL */}
+      {pendingConfirmation && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-100 transition-all">
+            {/* Header */}
+            <div className="bg-amber-50 border-b border-amber-100 px-6 py-4 flex items-start gap-4">
+              <div className="p-2 bg-amber-100 rounded-full text-amber-600">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-amber-900">Confirmation Required</h3>
+                <p className="text-sm text-amber-800/80 mt-1">Safety check for sensitive operation</p>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-gray-700 font-medium mb-4">{pendingConfirmation.message}</p>
+
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 mb-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Pending Action</p>
+                <pre className="text-xs font-mono text-gray-800 whitespace-pre-wrap break-all">{pendingConfirmation.action}</pre>
+              </div>
+
+              {/* Preview Data Table */}
+              {pendingConfirmation.preview_data && pendingConfirmation.preview_data.length > 0 && (
+                <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Preview (First {pendingConfirmation.preview_data.length} rows)</p>
+                  </div>
+                  <div className="overflow-x-auto max-h-48">
+                    <table className="min-w-full text-xs text-left">
+                      <thead className="bg-gray-50 font-medium text-gray-500">
+                        <tr>
+                          {Object.keys(pendingConfirmation.preview_data[0]).map((key) => (
+                            <th key={key} className="px-3 py-2 border-b border-gray-200 truncate max-w-xs">{key}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {pendingConfirmation.preview_data.map((row, idx) => (
+                          <tr key={idx} className="bg-white hover:bg-gray-50">
+                            {Object.values(row).map((val: any, vIdx) => (
+                              <td key={vIdx} className="px-3 py-2 text-gray-700 whitespace-nowrap max-w-xs truncate">
+                                {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+              <button
+                onClick={() => {
+                  setPendingConfirmation(null);
+                  setExecutionStatus('Action cancelled by user');
+                }}
+                className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Confirm action
+                  setPendingConfirmation(null);
+                  if (lastInputData) {
+                    const updatedInput = { ...lastInputData, confirmation_approved: true };
+                    executeAgent(updatedInput);
+                  }
+                }}
+                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-bold shadow-sm transition-colors"
+              >
+                Approve & Execute
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 }

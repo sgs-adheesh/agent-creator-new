@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Handle, Position } from 'reactflow';
+import { IconRenderer } from './IconRenderer';
 
 // --- Types ---
 interface NodeData {
@@ -48,7 +49,7 @@ const BaseNode = ({
       `}
     >
       {/* Container holding Header + Body */}
-      <div className="rounded-xl overflow-hidden bg-white border border-gray-200/60 transition-colors">
+      <div className={`rounded-xl overflow-hidden bg-white border-2 ${config.headerBorder} transition-colors`}>
 
         {/* COLORED HEADER */}
         <div className={`
@@ -63,7 +64,7 @@ const BaseNode = ({
             flex items-center justify-center 
             text-lg shadow-inner
           ">
-            {config.icon}
+            <IconRenderer iconName={config.icon} size={20} />
           </div>
 
           {/* Title & Type */}
@@ -148,7 +149,7 @@ export function InputNode({ data }: CustomNodeProps) {
 
   // Default: Blue
   let config: NodeConfig = {
-    icon: '📥',
+    icon: 'Inbox',
     headerColor: 'bg-blue-600',
     headerBorder: 'border-blue-700',
     handleColor: 'bg-blue-600'
@@ -157,7 +158,7 @@ export function InputNode({ data }: CustomNodeProps) {
   if (label.includes('date')) {
     config = {
       ...config,
-      icon: '📅', // Cyan/Teal
+      icon: 'Calendar', // Cyan/Teal
       headerColor: 'bg-cyan-600',
       headerBorder: 'border-cyan-700',
       handleColor: 'bg-cyan-600'
@@ -165,7 +166,7 @@ export function InputNode({ data }: CustomNodeProps) {
   } else if (label.includes('month')) {
     config = {
       ...config,
-      icon: '🗓️', // Indigo
+      icon: 'CalendarRange', // Indigo
       headerColor: 'bg-indigo-600',
       headerBorder: 'border-indigo-700',
       handleColor: 'bg-indigo-600'
@@ -178,7 +179,7 @@ export function InputNode({ data }: CustomNodeProps) {
 export function AgentNode({ data }: CustomNodeProps) {
   // Purple/Violet for AI
   const config: NodeConfig = {
-    icon: '🤖',
+    icon: 'Bot',
     headerColor: 'bg-violet-600',
     headerBorder: 'border-violet-700',
     handleColor: 'bg-violet-600'
@@ -214,20 +215,20 @@ export function ToolNode({ data }: CustomNodeProps) {
     return mappings[originalName] || data.label;
   };
 
-  let icon = '🔧';
+  let icon = 'Wrench';
   // Default: Emerald (Green)
   let headerColor = 'bg-emerald-600';
   let headerBorder = 'border-emerald-700';
   let handleColor = 'bg-emerald-600';
 
   if (name.includes('qdrant')) {
-    icon = '🔍';
+    icon = 'Search';
     // Orange for Search/Vector
     headerColor = 'bg-orange-600';
     headerBorder = 'border-orange-700';
     handleColor = 'bg-orange-600';
   } else if (name.includes('postgres')) {
-    icon = '🗄️';
+    icon = 'Database';
     // Slate/BlueGray for DB
     headerColor = 'bg-slate-600';
     headerBorder = 'border-slate-700';
@@ -258,7 +259,7 @@ export function ToolNode({ data }: CustomNodeProps) {
 export function DecisionNode({ data }: CustomNodeProps) {
   // Amber/Yellow for Logic
   const config: NodeConfig = {
-    icon: '🔀',
+    icon: 'GitMerge',
     headerColor: 'bg-amber-500',
     headerBorder: 'border-amber-600',
     handleColor: 'bg-amber-500'
@@ -270,14 +271,14 @@ export function DecisionNode({ data }: CustomNodeProps) {
 export function OutputNode({ data }: CustomNodeProps) {
   const desc = data.description?.toLowerCase() || '';
 
-  let icon = '📤';
+  let icon = 'Upload';
   // Rose/Pink for Output
   let headerColor = 'bg-rose-600';
   let headerBorder = 'border-rose-700';
   let handleColor = 'bg-rose-600';
 
   if (desc.includes('csv')) {
-    icon = '📊';
+    icon = 'FileSpreadsheet';
     // Green for Data/Excel
     headerColor = 'bg-green-600';
     headerBorder = 'border-green-700';

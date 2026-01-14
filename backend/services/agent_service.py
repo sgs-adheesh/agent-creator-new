@@ -28,6 +28,13 @@ except ImportError:
     ToolAnalyzer = None
     TOOL_ANALYZER_AVAILABLE = False
 
+try:
+    from services.semantic_service import SemanticService
+    SEMANTIC_SERVICE_AVAILABLE = True
+except ImportError:
+    SemanticService = None
+    SEMANTIC_SERVICE_AVAILABLE = False
+
 
 class AgentService:
     """Service for creating and executing agents"""
@@ -55,6 +62,16 @@ class AgentService:
         
         # Load all available tools dynamically
         self.tools = self._load_all_tools()
+        
+        # Initialize semantic service
+        if SEMANTIC_SERVICE_AVAILABLE:
+            try:
+                self.semantic_service = SemanticService()
+            except Exception as e:
+                logger.warning(f"Failed to initialize SemanticService: {e}")
+                self.semantic_service = None
+        else:
+            self.semantic_service = None
     
     def _load_all_tools(self) -> List:
         """
@@ -113,6 +130,52 @@ class AgentService:
         
         print(f"\nTotal tools loaded: {len(tools)}\n")
         return tools
+
+    def _get_agent_templates_summary(self) -> str:
+        """
+        Load and summarize existing agent templates to use as reference for the LLM
+        """
+        try:
+            # Path relative to backend/services/agent_service.py -> backend/templates/agent_templates.json
+            templates_file = Path(__file__).parent.parent / "templates" / "agent_templates.json"
+            
+            if not templates_file.exists():
+                logger.warning(f"Templates file not found at {templates_file}")
+                return ""
+            
+            with open(templates_file, 'r', encoding='utf-8') as f:
+                templates = json.load(f)
+            
+            summary_parts = []
+            for t in templates:
+                template_data = t.get("template", {})
+                summary = (
+                    f"Template Name: {t.get('name')}\n"
+                    f"Description: {t.get('description')}\n"
+                    f"Prompt: {template_data.get('prompt')}\n"
+                    f"Tools: {', '.join(template_data.get('tools', []))}\n"
+                )
+                summary_parts.append(summary)
+            
+            return "\n---\n".join(summary_parts)
+        except Exception as e:
+            logger.error(f"Error loading agent templates summary: {e}")
+            return ""
+
+    def _get_agent_templates(self) -> List[Dict[str, Any]]:
+        """
+        Load raw agent templates list
+        """
+        try:
+            templates_file = Path(__file__).parent.parent / "templates" / "agent_templates.json"
+            if not templates_file.exists():
+                return []
+            
+            with open(templates_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading agent templates: {e}")
+            return []
     
     def reload_tools(self):
         """Reload all tools from directory (useful after generating new tools)"""
@@ -5004,7 +5067,7 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
             "name": agent_name,
             "description": description or prompt[:100],  # Default to first 100 chars of prompt
             "category": category or "General",
-            "icon": icon or "🤖",
+            "icon": icon or "Bot",
             "prompt": prompt,
             "system_prompt": system_prompt,
             "selected_tools": selected_tools or [t.name for t in self.tools],
@@ -5048,6 +5111,62 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                     "input_fields": [],
                     "output_format": "text"
                 }
+
+            # 🧠 SMART TEMPLATE MATCHING
+            # Check if this request matches an existing template
+            found_exact_match = False
+            matched_template = None
+            
+            if self.semantic_service:
+                try:
+                    templates = self._get_agent_templates()
+                    matches = self.semantic_service.find_similar_templates(prompt, templates, threshold=0.75, top_k=1)
+                    
+                    if matches:
+                        matched_template, score = matches[0]
+                        
+                        # Case 1: High Similarity (>0.9) - Adopt Template
+                        if score >= 0.9:
+                            yield {
+                                "type": "progress",
+                                "step": 1,
+                                "status": "in_progress",
+                                "message": f"Found matching template: {matched_template.get('name')}",
+                                "detail": "Adopting template configuration..."
+                            }
+                            
+                            found_exact_match = True
+                            t_data = matched_template.get("template", {})
+                            
+                            # Adopt prompt if not too specific? No, user prompt is user prompt.
+                            # Adopt tools if not specified
+                            if selected_tools is None:
+                                selected_tools = t_data.get("tools", [])
+                            
+                            # Adopt workflow config if not specified (or default)
+                            if workflow_config.get("trigger_type") == "text_query" and not workflow_config.get("input_fields"):
+                                workflow_config["trigger_type"] = t_data.get("trigger_type", "text_query")
+                                workflow_config["input_fields"] = t_data.get("input_fields", [])
+                                workflow_config["output_format"] = t_data.get("output_format", "text")
+                            
+                            # Adopt metadata if missing
+                            if not description: description = matched_template.get("description")
+                            if not category: category = matched_template.get("category")
+                            if not icon: icon = matched_template.get("icon")
+                            if not use_cases: use_cases = matched_template.get("use_cases")
+                            if not name: name = f"Copy of {matched_template.get('name')}" 
+                            
+                        # Case 2: Moderate Similarity (>0.75) - Use as Reference
+                        else:
+                            yield {
+                                "type": "progress",
+                                "step": 1,
+                                "status": "in_progress",
+                                "message": "Found similar reference template",
+                                "detail": f"Using '{matched_template.get('name')}' as a guide"
+                            }
+                except Exception as e:
+                    logger.warning(f"Template matching failed: {e}")
             
             # Auto-add postgres_inspect_schema
             if selected_tools is not None and 'postgres_query' in selected_tools:
@@ -5088,7 +5207,39 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
             # Build AI reasoning prompt
             tool_descriptions = "\n".join([f"- {tool.name}: {tool.description}" for tool in agent_tools])
             
+            # Get templates summary
+            templates_summary = self._get_agent_templates_summary()
+            
+            # 🧠 Template Context Injection
+            template_instruction = ""
+            if matched_template:
+                t_name = matched_template.get('name')
+                t_desc = matched_template.get('description')
+                t_prompt = matched_template.get('template', {}).get('prompt')
+                
+                if found_exact_match:
+                    template_instruction = f"""
+✅ **EXACT TEMPLATE MATCH FOUND: "{t_name}"**
+The user's request is nearly identical to this template. 
+**CRITICAL INSTRUCTION:** You MUST create an agent that mimics this template exactly.
+- Use the same tools.
+- Use the same logic.
+- Adapt the system prompt: "{t_prompt}"
+- Only change details if the user explicitly asked for something different (e.g., different trigger).
+"""
+                else:
+                    template_instruction = f"""
+💡 **SIMILAR TEMPLATE FOUND: "{t_name}"**
+The user's request is similar to this template: "{t_desc}".
+Use this template as your PRIMARY FOUNDATION. Adapt its prompt ("{t_prompt}") to fit the user's specific request.
+"""
+
             reasoning_prompt = f"""You are an AI assistant helping to create an intelligent agent.
+
+**Reference Agent Templates (Good Examples):**
+Here are some examples of high-quality agents. Use these as a reference.
+{templates_summary}
+{template_instruction}
 
 **Agent Purpose:**
 {prompt}
@@ -5103,8 +5254,12 @@ Think step-by-step and explain your reasoning as you design this agent.
 2. Identify which tools are required and why
 3. Describe the key challenges this agent will face
 4. Outline the main instructions the agent needs
+5. Compare with the reference templates to ensure high quality
+6. Finally, write a REFINED PROMPT that will be used as the agent's instructions.
 
-Start by explaining your understanding and reasoning:"""
+Start by explaining your understanding and reasoning.
+Ensure you end your response with:
+FINAL PROMPT: [The detailed, refined prompt text here]"""
             
             messages = [
                 {"role": "user", "content": reasoning_prompt}
@@ -5115,9 +5270,21 @@ Start by explaining your understanding and reasoning:"""
             for token in self._stream_ai_response(messages):
                 ai_reasoning.append(token)
             
+            # Parse refined prompt from AI output
+            full_reasoning = "".join(ai_reasoning)
+            refined_prompt = prompt # Default to original
+            if "FINAL PROMPT:" in full_reasoning:
+                try:
+                    parts = full_reasoning.split("FINAL PROMPT:")
+                    if len(parts) > 1:
+                        refined_prompt = parts[1].strip()
+                        print(f"✨ AI Refined Prompt: {refined_prompt[:100]}...")
+                except Exception as e:
+                    print(f"⚠️ Failed to parse refined prompt: {e}")
+            
             # Now generate actual system prompt (non-streaming for simplicity)
             selected_tool_names = selected_tools if selected_tools is not None else [t.name for t in self.tools]
-            system_prompt = self._generate_system_prompt(prompt, agent_tools, selected_tool_names)
+            system_prompt = self._generate_system_prompt(refined_prompt, agent_tools, selected_tool_names)
             
             # Mark AI substep complete
             yield {
@@ -6118,6 +6285,40 @@ Start by explaining your understanding and reasoning:"""
                 "output_format": "text"
             })
         
+        # 🚀 OPTIMIZATION: Check if this is a metadata-only update (name change only)
+        original_prompt = existing_agent.get("prompt", "")
+        # Note: existing_agent might not have workflow_config set if old data
+        original_config = existing_agent.get("workflow_config", {})
+        original_tools = existing_agent.get("selected_tools", [])
+        
+        prompt_has_changed = prompt != original_prompt
+        # Note: workflow_config is defaulted above, so we compare that
+        # We need to handle case where original_config defaults might differ from standard defaults if data is old,
+        # but here we rely on value equality.
+        config_has_changed = workflow_config != existing_agent.get("workflow_config")
+        
+        tools_have_changed = False
+        if selected_tools is not None:
+             tools_have_changed = set(selected_tools) != set(original_tools)
+             
+        is_metadata_update_only = (not prompt_has_changed) and (not config_has_changed) and (not tools_have_changed)
+        
+        if is_metadata_update_only:
+             print("ℹ️ Metadata-only update detected. Skipping AI regeneration.")
+             updated_data = {
+                 "name": agent_name,
+                 "prompt": original_prompt,
+                 "system_prompt": existing_agent.get("system_prompt"),
+                 "selected_tools": original_tools,
+                 "workflow_config": workflow_config, # Use the one we resolved (defaults included)
+                 "execution_guidance": existing_agent.get("execution_guidance"),
+                 "cached_query": existing_agent.get("cached_query"), # Preserve cache!
+                 "tool_configs": tool_configs if tool_configs is not None else existing_agent.get("tool_configs", {})
+             }
+             
+             self.storage.update_agent(agent_id, updated_data)
+             return self.storage.get_agent(agent_id)
+
         # Determine which tools to use
         if selected_tools is not None:
             # Use explicitly provided tools (from UI)
@@ -6292,6 +6493,52 @@ Start by explaining your understanding and reasoning:"""
                 "detail": f"Editing agent: {agent_name}"
             }
             
+            # 🚀 OPTIMIZATION: Check for metadata-only updates
+            original_prompt = existing_agent.get("prompt", "")
+            original_config = existing_agent.get("workflow_config", {})
+            original_tools = existing_agent.get("selected_tools", [])
+            
+            prompt_changed = prompt != original_prompt
+            config_changed = workflow_config != existing_agent.get("workflow_config")
+            
+            tools_changed = False
+            if selected_tools is not None:
+                tools_changed = set(selected_tools) != set(original_tools)
+                
+            is_metadata_only = not (prompt_changed or config_changed or tools_changed)
+            
+            if is_metadata_only:
+                print("ℹ️ Metadata-only update detected. Skipping AI regeneration.")
+                
+                # Skip Steps 2, 3, 4
+                yield {"type": "progress", "step": 2, "status": "completed", "message": "Tool analysis skipped (no changes)"}
+                yield {"type": "progress", "step": 3, "status": "completed", "message": "Agent update skipped (no changes)"}
+                yield {"type": "progress", "step": 4, "status": "completed", "message": "Optimization skipped (no changes)"}
+                
+                # Step 5: Save
+                yield {"type": "progress", "step": 5, "status": "in_progress", "message": "Saving changes..."}
+                
+                updated_data = {
+                    "name": agent_name,
+                    "prompt": original_prompt,
+                    "system_prompt": existing_agent.get("system_prompt"),
+                    "selected_tools": original_tools,
+                    "workflow_config": workflow_config,
+                    "execution_guidance": existing_agent.get("execution_guidance"),
+                    "cached_query": existing_agent.get("cached_query"), # Preserve cache
+                    "tool_configs": tool_configs if tool_configs else existing_agent.get("tool_configs", {})
+                }
+                
+                self.storage.update_agent(agent_id, updated_data)
+                
+                yield {"type": "progress", "step": 5, "status": "completed", "message": "Changes saved"}
+                
+                yield {
+                    "type": "result",
+                    "data": self.storage.get_agent(agent_id)
+                }
+                return
+            
             # Step 2: Tool analysis
             yield {
                 "type": "progress",
@@ -6360,7 +6607,14 @@ Start by explaining your understanding and reasoning:"""
             
             changes_text = ", ".join(changes) if changes else "configuration"
             
+            # Get templates summary
+            templates_summary = self._get_agent_templates_summary()
+            
             reasoning_prompt = f"""You are updating an existing agent. Here's what changed:
+
+**Reference Agent Templates (Good Examples):**
+Here are some examples of high-quality agents. Use these as a reference to maintain quality during the update.
+{templates_summary}
 
 **Original Agent:**
 - Name: {existing_agent.get('name')}
@@ -6380,8 +6634,12 @@ Explain what changed and how you're adapting the agent's instructions.
 2. Explain if any new tools are needed or if existing ones should be removed
 3. Describe key adjustments to the agent's behavior
 4. Note any special considerations for the updated mission
+5. Ensure the updated agent meets the quality standards of the reference templates
+6. Finally, write a REFINED PROMPT that will be used as the agent's instructions.
 
-Start by explaining your analysis:"""
+Start by explaining your analysis.
+Ensure you end your response with:
+FINAL PROMPT: [The detailed, refined prompt text here]"""
             
             messages = [
                 {"role": "user", "content": reasoning_prompt}
@@ -6392,8 +6650,20 @@ Start by explaining your analysis:"""
             for token in self._stream_ai_response(messages):
                 ai_reasoning.append(token)
             
+            # Parse refined prompt from AI output
+            full_reasoning = "".join(ai_reasoning)
+            refined_prompt = prompt # Default to original
+            if "FINAL PROMPT:" in full_reasoning:
+                try:
+                    parts = full_reasoning.split("FINAL PROMPT:")
+                    if len(parts) > 1:
+                        refined_prompt = parts[1].strip()
+                        print(f"✨ AI Refined Prompt: {refined_prompt[:100]}...")
+                except Exception as e:
+                    print(f"⚠️ Failed to parse refined prompt: {e}")
+            
             # Generate actual system prompt (non-streaming)
-            system_prompt = self._generate_system_prompt(prompt, agent_tools, selected_tool_names)
+            system_prompt = self._generate_system_prompt(refined_prompt, agent_tools, selected_tool_names)
             
             # Mark AI substep complete
             yield {

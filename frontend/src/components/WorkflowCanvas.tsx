@@ -20,6 +20,7 @@ import remarkGfm from 'remark-gfm';
 import SavedResultsManager from './SavedResultsManager';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { IconRenderer } from './IconRenderer';
 
 
 function MarkdownRenderer({ content }: { content: string }) {
@@ -201,23 +202,24 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
   const [pendingConfirmation, setPendingConfirmation] = useState<{ message: string; action: string; preview_data?: any[] } | null>(null);
   const [lastInputData, setLastInputData] = useState<any>(null);
 
+  // Using Lucide icon names instead of emojis
   const chartOptions = [
-    { value: 'pie', label: 'Pie Chart', icon: '🥧' },
-    { value: 'bar', label: 'Bar Chart', icon: '📊' },
-    { value: 'line', label: 'Line Chart', icon: '📈' },
-    { value: 'area', label: 'Area Chart', icon: '📉' },
-    { value: 'scatter', label: 'Scatter Plot', icon: '🔍' },
-    { value: 'radar', label: 'Radar Chart', icon: '🕸️' },
-    { value: 'radialbar', label: 'Radial Bar', icon: '⭕' },
-    { value: 'treemap', label: 'Treemap', icon: '🗺️' },
-    { value: 'stacked_bar', label: 'Stacked Bar', icon: '📚' },
-    { value: 'waterfall', label: 'Waterfall', icon: '🌊' },
-    { value: 'candlestick', label: 'Candlestick', icon: '🕯️' },
-    { value: 'bubble', label: 'Bubble Chart', icon: '🫧' },
-    { value: 'heatmap', label: 'Heatmap', icon: '🔥' },
-    { value: 'sankey', label: 'Sankey', icon: '🔀' },
-    { value: 'funnel', label: 'Funnel', icon: '🌪️' },
-    { value: 'composed', label: 'Composed Chart', icon: '📈' }
+    { value: 'pie', label: 'Pie Chart', icon: 'PieChart' },
+    { value: 'bar', label: 'Bar Chart', icon: 'BarChart' },
+    { value: 'line', label: 'Line Chart', icon: 'LineChart' },
+    { value: 'area', label: 'Area Chart', icon: 'TrendingUp' },
+    { value: 'scatter', label: 'Scatter Plot', icon: 'Search' },
+    { value: 'radar', label: 'Radar Chart', icon: 'Radar' },
+    { value: 'radialbar', label: 'Radial Bar', icon: 'CircleDot' },
+    { value: 'treemap', label: 'Treemap', icon: 'LayoutGrid' },
+    { value: 'stacked_bar', label: 'Stacked Bar', icon: 'Layers' },
+    { value: 'waterfall', label: 'Waterfall', icon: 'TrendingDown' },
+    { value: 'candlestick', label: 'Candlestick', icon: 'BarChart2' },
+    { value: 'bubble', label: 'Bubble Chart', icon: 'Circle' },
+    { value: 'heatmap', label: 'Heatmap', icon: 'LayoutList' },
+    { value: 'sankey', label: 'Sankey', icon: 'GitBranch' },
+    { value: 'funnel', label: 'Funnel', icon: 'Filter' },
+    { value: 'composed', label: 'Composed Chart', icon: 'Activity' }
   ];
 
   // Convert selected chart types to string format for backend
@@ -846,6 +848,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
       await new Promise((resolve) => setTimeout(resolve, 300));
       resetNodeHighlights();
       setExecutionStatus('Execution complete');
+      setShowInputForm(false);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to execute agent';
       setError(message);
@@ -961,16 +964,17 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                     />
                     <button
                       onClick={() => setShowInputForm(!showInputForm)}
-                      className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1.5 font-semibold bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                      className={`group text-sm flex items-center gap-2 font-semibold transition-colors
+              text-blue-700`}
                     >
-                      {showInputForm ? 'Hide' : 'Show'} Input
+                      {showInputForm ? 'Hide' : 'Show'} Playground
                       <svg className={`w-3.5 h-3.5 transition-transform ${showInputForm ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
                   </div>
                   {showInputForm && (
-                    <div className='bg-white rounded-2xl p-1'>
+                    <div className='bg-white rounded-2xl p-6 shadow-inner border border-gray-100 mt-2 transition-all animate-in slide-in-from-top-4 duration-300'>
                       {workflowConfig.trigger_type === 'text_query' ? (
 
                         <form onSubmit={handleExecute} className="space-y-5">
@@ -992,7 +996,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
 
                           {/* Visualization Preferences (Optional) */}
                           <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">
+                            <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider mb-2 ml-1">
                               Visuals <span className="text-gray-300 font-normal normal-case">(Max 4)</span>
                             </label>
                             {/* Unified Multi-Select Dropdown */}
@@ -1001,9 +1005,9 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                                 type="button"
                                 onClick={() => setChartDropdownOpen(!chartDropdownOpen)}
                                 disabled={executing}
-                                className="w-full text-left px-4 py-3 bg-gray-50 border-0 rounded-xl hover:bg-gray-100 transition-colors flex justify-between items-center group"
+                                className="w-full text-left p-2.5 bg-white border border-gray-800 rounded-lg shadow-sm text-sm text-gray-900 focus:ring-blue-500 focus:border-blue-500 hover:bg-white flex justify-between items-center group transition-colors"
                               >
-                                <span className={`text-sm ${selectedChartTypes.length === 0 ? "text-gray-400" : "text-gray-800 font-medium"}`}>
+                                <span className={`text-sm ${selectedChartTypes.length === 0 ? "text-gray-400" : "text-gray-900 font-medium"}`}>
                                   {selectedChartTypes.length === 0
                                     ? "Select charts..."
                                     : `${selectedChartTypes.length} selected`}
@@ -1033,7 +1037,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                                           disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
                                         />
                                         <span className="ml-3 text-sm text-gray-700 flex items-center gap-2.5 font-medium">
-                                          <span className="text-base">{chart.icon}</span>
+                                          <span className="text-base"><IconRenderer iconName={chart.icon} size={16} /></span>
                                           {chart.label}
                                         </span>
                                       </label>
@@ -1084,7 +1088,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                                 type="button"
                                 onClick={() => setChartDropdownOpen(!chartDropdownOpen)}
                                 disabled={executing}
-                                className="w-full text-left px-4 py-3 bg-gray-50 border-0 rounded-xl hover:bg-gray-100 transition-colors flex justify-between items-center group"
+                                className="w-full text-left p-2.5 bg-gray-50 border border-gray-300 rounded-lg shadow-sm text-sm text-gray-900 focus:ring-blue-500 focus:border-blue-500 hover:bg-white flex justify-between items-center group transition-colors"
                               >
                                 <span className={`text-sm ${selectedChartTypes.length === 0 ? "text-gray-400" : "text-gray-800 font-medium"}`}>
                                   {selectedChartTypes.length === 0
@@ -1116,7 +1120,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                                           disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
                                         />
                                         <span className="ml-3 text-sm text-gray-700 flex items-center gap-2.5 font-medium">
-                                          <span className="text-base">{chart.icon}</span>
+                                          <span className="text-base"><IconRenderer iconName={chart.icon} size={16} /></span>
                                           {chart.label}
                                         </span>
                                       </label>

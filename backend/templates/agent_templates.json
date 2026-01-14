@@ -4,7 +4,7 @@
     "name": "Invoice Duplicate Detector",
     "description": "Detects duplicate invoices based on invoice number, vendor, and amount to prevent payment errors",
     "category": "Finance & Accounting",
-    "icon": "🔍",
+    "icon": "Search",
     "template": {
       "prompt": "You are an invoice duplicate detection specialist. Find duplicate invoices in the database by grouping invoices that have the same invoice number, vendor, and total amount. Show the count of duplicates and list all instances with invoice details, vendor information, dates, and amounts. Use postgres_inspect_schema first to understand the schema.",
       "trigger_type": "scheduled",
@@ -50,7 +50,7 @@
     "name": "Invoice Auto-Approver (Confidence-Based)",
     "description": "Auto-approves invoices where all critical field confidence scores >= threshold (invoice + line items)",
     "category": "Workflow Management",
-    "icon": "✅",
+    "icon": "CheckCircle",
     "template": {
       "prompt": "You are an AI-driven invoice auto-approval agent.\n\nValidation Criteria:\n1. From icap_invoice (3 fields): invoice_number, invoice_date, due_date\n2. From icap_invoice_detail (3 fields): description, quantity, unit_price\n3. vendor_id is UUID (NO confidence check - skip it)\n4. ALL 6 JSONB fields must have confidence >= threshold\n5. Check BOTH header and ALL line items\n\nQuery Logic:\n- Join icap_invoice with icap_invoice_detail on document_id\n- Extract confidence: (column->>'confidence')::numeric\n- Filter: ALL 6 fields >= threshold\n- Update icap_document.status = (SELECT id FROM icap_workflow_status WHERE status_code = 'Bill_Export_In_Progress') for qualifying invoices\n- Use dry-run workflow\n\nDefault threshold: 95.0",
       "trigger_type": "conditions",
@@ -113,7 +113,7 @@
     "name": "Vendor GL Breakdown Report",
     "description": "Generate GL breakdown reports for invoices from specific vendors with category mappings",
     "category": "Finance & Accounting",
-    "icon": "📑",
+    "icon": "FileText",
     "template": {
       "prompt": "You are a GL reporting specialist. Generate comprehensive GL breakdown reports for invoices from specific vendors. Include invoice details, line item descriptions, quantities, amounts, and GL category mappings for each line item. Use postgres_inspect_schema first to understand the schema structure and relationships.",
       "trigger_type": "conditions",
@@ -171,7 +171,7 @@
     "name": "Invoice Payment Status Auditor",
     "description": "Audit invoices within a date range to check for payment status and identify issues",
     "category": "Accounts Payable",
-    "icon": "🔎",
+    "icon": "Search",
     "template": {
       "prompt": "You are an invoice audit specialist. Audit all invoices within a specified date range to check payment status, identify unpaid invoices, overdue invoices, and payment delays. Include invoice details, vendor information, due dates, payment dates, and outstanding balances. Use postgres_inspect_schema first to understand the schema.",
       "trigger_type": "date_range",
@@ -233,7 +233,7 @@
     "name": "Invoice Missing Data Detector",
     "description": "Detects invoices missing critical details and flags them for review (status='2') with vendor contact info",
     "category": "Data Quality",
-    "icon": "⚠️",
+    "icon": "AlertTriangle",
     "template": {
       "prompt": "You are a data quality specialist. Scan all invoices to detect missing or incomplete critical details like invoice number, invoice date, due date, total amount, or vendor information. For invoices with issues, update icap_document.status to '2' (Needs Review) and provide vendor contact information for follow-up. Use postgres_inspect_schema first, then identify issues, update status using postgres_write. Note that status is not payment status",
       "trigger_type": "text_query",
@@ -287,7 +287,7 @@
     "name": "Monthly Expense Report",
     "description": "Generate comprehensive monthly expense reports with totals, breakdowns by category, and vendor analysis",
     "category": "Finance & Accounting",
-    "icon": "📊",
+    "icon": "BarChart3",
     "template": {
       "prompt": "You are a financial reporting specialist. Generate a detailed monthly expense report showing total expenses, breakdown by vendor, line item details with product descriptions, quantities, amounts, and GL categories for the specified month and year. Use postgres_inspect_schema first.",
       "trigger_type": "month_year",
@@ -364,7 +364,7 @@
     "name": "Vendor Spend Analyzer",
     "description": "Analyze spending patterns across vendors to identify top suppliers and optimize procurement",
     "category": "Procurement",
-    "icon": "💰",
+    "icon": "DollarSign",
     "template": {
       "prompt": "You are a procurement analyst. Analyze vendor spending patterns by calculating total spend per vendor, number of invoices, average invoice amount, payment status distribution, and identify top vendors with detailed product breakdowns. Use postgres_inspect_schema first.",
       "trigger_type": "date_range",
@@ -426,7 +426,7 @@
     "name": "Invoice Aging Report",
     "description": "Track unpaid invoices and identify overdue payments to improve cash flow management",
     "category": "Accounts Payable",
-    "icon": "⏰",
+    "icon": "Clock",
     "template": {
       "prompt": "You are an accounts payable specialist. Generate an aging report for unpaid invoices, categorizing them by age buckets (0-30 days, 31-60 days, 61-90 days, 90+ days). Include complete invoice details, vendor information, amounts, and days overdue. Use postgres_inspect_schema first.",
       "trigger_type": "text_query",
@@ -473,7 +473,7 @@
     "name": "Tax Calculation Validator",
     "description": "Validate tax calculations on invoices to ensure accuracy and compliance",
     "category": "Finance & Accounting",
-    "icon": "🧮",
+    "icon": "Calculator",
     "template": {
       "prompt": "You are a tax validation specialist. Review invoices and verify that tax amounts are correctly calculated based on subtotal. Flag any discrepancies where calculated tax doesn't match reported tax. Include invoice details, vendor info, and variance analysis. Use postgres_inspect_schema first.",
       "trigger_type": "month_year",
@@ -550,7 +550,7 @@
     "name": "Product Category Spend Analysis",
     "description": "Analyze spending by product categories with GL mappings and vendor breakdown",
     "category": "Analytics",
-    "icon": "📈",
+    "icon": "TrendingUp",
     "template": {
       "prompt": "You are a category spend analyst. Analyze spending patterns across product categories using GL category mappings. Show total spend per category, number of invoices, line items, vendors contributing to each category, and detailed product breakdowns. Use postgres_inspect_schema first.",
       "trigger_type": "date_range",

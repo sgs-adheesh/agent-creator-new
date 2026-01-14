@@ -31,7 +31,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   };
 
   const renderField = (field: InputField) => {
-    const commonClasses = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
+    const commonClasses = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 shadow-sm transition-colors";
 
     switch (field.type) {
       case 'text':
@@ -46,7 +46,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
             className={commonClasses}
           />
         );
-      
+
       case 'select':
         return (
           <select
@@ -62,7 +62,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
             ))}
           </select>
         );
-      
+
       case 'checkbox':
         return (
           <input
@@ -72,7 +72,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
         );
-      
+
       default:
         return (
           <input

@@ -21,7 +21,7 @@ export default function ExecuteAgent() {
         <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/', { state: { activeTab: 'my-agents' } })}
               className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-2 inline-flex items-center"
             >
               ← Back to Agents
@@ -45,15 +45,15 @@ export default function ExecuteAgent() {
         <Panel defaultSize={50} minSize={30} className="h-full">
           <WorkflowCanvas agentId={id} viewMode="workflow-only" />
         </Panel>
-          <>
-            {/* Resize Handle */}
-            <Separator className="w-1 bg-gray-300 hover:bg-blue-500 transition-colors cursor-col-resize" />
-            
-            {/* Right Panel: Playground & Results */}
-            <Panel defaultSize={50} minSize={30} className="h-full">
-              <WorkflowCanvas agentId={id} viewMode="playground-only" />
-            </Panel>
-          </>
+        <>
+          {/* Resize Handle */}
+          <Separator className="w-1 bg-gray-300 hover:bg-blue-500 transition-colors cursor-col-resize" />
+
+          {/* Right Panel: Playground & Results */}
+          <Panel defaultSize={50} minSize={30} className="h-full">
+            <WorkflowCanvas agentId={id} viewMode="playground-only" />
+          </Panel>
+        </>
       </Group>
     </div>
   );

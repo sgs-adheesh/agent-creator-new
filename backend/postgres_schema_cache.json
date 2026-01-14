@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-13T20:23:38.975977",
+  "timestamp": "2026-01-14T18:51:02.832615",
   "schema": {
     "admin_event_entity": [
       {
@@ -2204,23 +2204,6 @@
         "name": "created_on",
         "type": "timestamp",
         "nullable": false
-      }
-    ],
-    "icap_error_configs": [
-      {
-        "name": "config_key",
-        "type": "varchar",
-        "nullable": false
-      },
-      {
-        "name": "config_value",
-        "type": "varchar",
-        "nullable": false
-      },
-      {
-        "name": "created_on",
-        "type": "timestamp",
-        "nullable": true
       }
     ],
     "icap_error_groups": [
@@ -6516,17 +6499,6 @@
     "document_types": [
       "icap_document_types"
     ],
-    "configs": [
-      "icap_error_configs"
-    ],
-    "error_configs": [
-      "icap_error_configs"
-    ],
-    "error": [
-      "icap_error_configs",
-      "icap_error_groups",
-      "icap_error_logs"
-    ],
     "groups": [
       "icap_error_groups",
       "icap_menu_groups",
@@ -6534,6 +6506,10 @@
     ],
     "error_groups": [
       "icap_error_groups"
+    ],
+    "error": [
+      "icap_error_groups",
+      "icap_error_logs"
     ],
     "logs": [
       "icap_error_logs"
@@ -10833,10 +10809,6 @@
       "incoming": []
     },
     "icap_document_types": {
-      "outgoing": [],
-      "incoming": []
-    },
-    "icap_error_configs": {
       "outgoing": [],
       "incoming": []
     },

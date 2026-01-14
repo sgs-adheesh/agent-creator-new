@@ -1,0 +1,1983 @@
+{
+  "id": "382fe3e5-409b-43c4-ab43-97b7d209e465",
+  "name": "Result - 14/01/2026, 17:43:41",
+  "timestamp": "2026-01-14T17:43:42.810865",
+  "data": {
+    "success": true,
+    "output": "## Audit Summary of Invoices\n\nThe audit of the invoices reveals significant payment delays, with a total of **35 records** exhibiting issues related to payment status. Notably, all invoices are marked with a payment status of **0**, indicating they are unpaid, with a total outstanding balance of **1985.00** for each of the first ten entries associated with **Fab Dairy & Trading (I) Pvt. Ltd.**, leading to an alarming aggregate of unpaid invoices. \n\n### Payment Details\n- The due date for multiple invoices is **03/20/2025**, resulting in a staggering **300 days overdue** for these entries.\n- Additionally, one invoice from vendor **Logo L Name** has an outstanding amount of **10,821.63**, with an age bucket categorizing it as overdue by almost **two years**, suggesting severe compliance issues and necessitating immediate attention to manage these payables effectively.\n\n> **Important:** Immediate attention is required to address these payment delays and compliance issues.",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": null,
+          "log": null
+        },
+        "result": {
+          "success": true,
+          "columns": [
+            "invoice_number",
+            "invoice_date",
+            "due_date",
+            "other_charges",
+            "credit_and_returns",
+            "tax",
+            "freight_charges",
+            "vendor_name",
+            "vendor_company",
+            "vendor_address",
+            "batch_name",
+            "payment_status",
+            "payment_date",
+            "total_amount",
+            "paid_amount",
+            "outstanding_balance",
+            "days_overdue",
+            "age_bucket"
+          ],
+          "rows": [
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "other_charges": "100",
+              "credit_and_returns": "1000",
+              "tax": "",
+              "freight_charges": "100",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "",
+              "batch_name": "Batch-20260112121450658",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1985,
+              "paid_amount": 0,
+              "outstanding_balance": 1985,
+              "days_overdue": 300,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "other_charges": "100",
+              "credit_and_returns": "1000",
+              "tax": "",
+              "freight_charges": "100",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "",
+              "batch_name": "Batch-20260112121450658",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1985,
+              "paid_amount": 0,
+              "outstanding_balance": 1985,
+              "days_overdue": 300,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "other_charges": "100",
+              "credit_and_returns": "1000",
+              "tax": "",
+              "freight_charges": "100",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "",
+              "batch_name": "Batch-20260112121433086",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1985,
+              "paid_amount": 0,
+              "outstanding_balance": 1985,
+              "days_overdue": 300,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "other_charges": "100",
+              "credit_and_returns": "1000",
+              "tax": "",
+              "freight_charges": "100",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "",
+              "batch_name": "Batch-20260112121433086",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1985,
+              "paid_amount": 0,
+              "outstanding_balance": 1985,
+              "days_overdue": 300,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "other_charges": "100",
+              "credit_and_returns": "1000",
+              "tax": "",
+              "freight_charges": "100",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "",
+              "batch_name": "Batch-20260112121433086",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1985,
+              "paid_amount": 0,
+              "outstanding_balance": 1985,
+              "days_overdue": 300,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,,",
+              "batch_name": "Batch-20251222113410085",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1985,
+              "paid_amount": 0,
+              "outstanding_balance": 1985,
+              "days_overdue": 300,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,,",
+              "batch_name": "Batch-20251222113410085",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1985,
+              "paid_amount": 0,
+              "outstanding_balance": 1985,
+              "days_overdue": 300,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,,",
+              "batch_name": "Batch-20251222113410085",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1985,
+              "paid_amount": 0,
+              "outstanding_balance": 1985,
+              "days_overdue": 300,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "10409/2022-23",
+              "invoice_date": "02/20/2025",
+              "due_date": "03/20/2025",
+              "other_charges": "100",
+              "credit_and_returns": "1000",
+              "tax": "",
+              "freight_charges": "100",
+              "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "vendor_address": "",
+              "batch_name": "Batch-20260112121450658",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1985,
+              "paid_amount": 0,
+              "outstanding_balance": 1985,
+              "days_overdue": 300,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "1111",
+              "invoice_date": "12/02/2025",
+              "due_date": "",
+              "other_charges": "",
+              "credit_and_returns": "1000.00",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Logo\nL\nName",
+              "vendor_company": "Logo\nL\nName",
+              "vendor_address": ",,,",
+              "batch_name": "Batch-20260108073325656",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 10821.63,
+              "paid_amount": 0,
+              "outstanding_balance": 10821.63,
+              "days_overdue": 739995,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "1111",
+              "invoice_date": "12/02/2025",
+              "due_date": "",
+              "other_charges": "",
+              "credit_and_returns": "1000.00",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Logo\nL\nName",
+              "vendor_company": "Logo\nL\nName",
+              "vendor_address": ",,,",
+              "batch_name": "Batch-20260108073325656",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 10821.63,
+              "paid_amount": 0,
+              "outstanding_balance": 10821.63,
+              "days_overdue": 739995,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "1111",
+              "invoice_date": "12/02/2025",
+              "due_date": "",
+              "other_charges": "",
+              "credit_and_returns": "1000.00",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Logo\nL\nName",
+              "vendor_company": "Logo\nL\nName",
+              "vendor_address": ",,,",
+              "batch_name": "Batch-20260108073325656",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 10821.63,
+              "paid_amount": 0,
+              "outstanding_balance": 10821.63,
+              "days_overdue": 739995,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "1111",
+              "invoice_date": "12/02/2025",
+              "due_date": "",
+              "other_charges": "",
+              "credit_and_returns": "1000.00",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Logo\nL\nName",
+              "vendor_company": "Logo\nL\nName",
+              "vendor_address": ",,,",
+              "batch_name": "Batch-20260108073325656",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 10821.63,
+              "paid_amount": 0,
+              "outstanding_balance": 10821.63,
+              "days_overdue": 739995,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "1234567",
+              "invoice_date": "02/11/2025",
+              "due_date": "03/12/2025",
+              "other_charges": "100",
+              "credit_and_returns": "5000",
+              "tax": "",
+              "freight_charges": "1000",
+              "vendor_name": "meat Hub",
+              "vendor_company": "meat Hub",
+              "vendor_address": ",,,",
+              "batch_name": "Batch-20251224080152316",
+              "payment_status": "0",
+              "payment_date": "",
+              "total_amount": 0,
+              "paid_amount": 0,
+              "outstanding_balance": 0,
+              "days_overdue": 308,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "328",
+              "invoice_date": "02/03/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "meat Hub",
+              "vendor_company": "meat Hub",
+              "vendor_address": ",,,",
+              "batch_name": "Batch-20251224072419069",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1,
+              "paid_amount": 0,
+              "outstanding_balance": 1,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "328",
+              "invoice_date": "02/03/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "meat Hub",
+              "vendor_company": "meat Hub",
+              "vendor_address": ",,,",
+              "batch_name": "Batch-20251224071950021",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 1,
+              "paid_amount": 0,
+              "outstanding_balance": 1,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "5666",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/02/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "S.P. SOAP OIL",
+              "vendor_company": "S.P. SOAP OIL",
+              "vendor_address": "18, 7th Cross, Vinayaka Nagar, Adugodi Post, Bangalore-30,Bangalore-30,,",
+              "batch_name": "Batch-20251222113430256",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 150,
+              "paid_amount": 0,
+              "outstanding_balance": 150,
+              "days_overdue": 318,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "5666",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/02/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "S.P. SOAP OIL",
+              "vendor_company": "S.P. SOAP OIL",
+              "vendor_address": "18, 7th Cross, Vinayaka Nagar, Adugodi Post, Bangalore-30,Bangalore-30,,",
+              "batch_name": "Batch-20251224065936393",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 150,
+              "paid_amount": 0,
+              "outstanding_balance": 150,
+              "days_overdue": 318,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            },
+            {
+              "invoice_number": "SSA/5514/22-23",
+              "invoice_date": "02/02/2025",
+              "due_date": "03/03/2025",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "Sun Shine Agencies",
+              "vendor_company": "Sun Shine Agencies",
+              "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "batch_name": "Batch-20251222113410416",
+              "payment_status": "0",
+              "payment_date": null,
+              "total_amount": 21324,
+              "paid_amount": 0,
+              "outstanding_balance": 21324,
+              "days_overdue": 317,
+              "age_bucket": "90+ days"
+            }
+          ],
+          "row_count": 35,
+          "has_more": false,
+          "note": null,
+          "schema_info": null
+        }
+      }
+    ],
+    "output_format": "text",
+    "summary": {
+      "total_records": 35,
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "other_charges",
+        "credit_and_returns",
+        "tax",
+        "freight_charges",
+        "vendor_name",
+        "vendor_company",
+        "vendor_address",
+        "batch_name",
+        "payment_status",
+        "payment_date",
+        "total_amount",
+        "paid_amount",
+        "outstanding_balance",
+        "days_overdue",
+        "age_bucket"
+      ],
+      "description": "Query returned 35 record(s) with 18 column(s).",
+      "invoice_breakdown": {
+        "328": {
+          "invoice_number": "328",
+          "line_items": 2,
+          "date": "02/03/2025",
+          "vendor": "meat Hub"
+        },
+        "1111": {
+          "invoice_number": "1111",
+          "line_items": 4,
+          "date": "12/02/2025",
+          "vendor": "Logo\nL\nName"
+        },
+        "5666": {
+          "invoice_number": "5666",
+          "line_items": 2,
+          "date": "02/02/2025",
+          "vendor": "S.P. SOAP OIL"
+        },
+        "1234567": {
+          "invoice_number": "1234567",
+          "line_items": 1,
+          "date": "02/11/2025",
+          "vendor": "meat Hub"
+        },
+        "10409/2022-23": {
+          "invoice_number": "10409/2022-23",
+          "line_items": 9,
+          "date": "02/20/2025",
+          "vendor": "Fab Dairy & Trading (I) Pvt. Ltd."
+        },
+        "SSA/5514/22-23": {
+          "invoice_number": "SSA/5514/22-23",
+          "line_items": 17,
+          "date": "02/02/2025",
+          "vendor": "Sun Shine Agencies"
+        }
+      },
+      "invoice_summary_text": "**10409/2022-23** | Vendor: Fab Dairy & Trading (I) Pvt. Ltd. | Date: 02/20/2025 | Line Items: 9\n**1111** | Vendor: Logo\nL\nName | Date: 12/02/2025 | Line Items: 4\n**1234567** | Vendor: meat Hub | Date: 02/11/2025 | Line Items: 1\n**328** | Vendor: meat Hub | Date: 02/03/2025 | Line Items: 2\n**5666** | Vendor: S.P. SOAP OIL | Date: 02/02/2025 | Line Items: 2\n**SSA/5514/22-23** | Vendor: Sun Shine Agencies | Date: 02/02/2025 | Line Items: 17",
+      "numeric_analysis": {
+        "payment_status": {
+          "unique_values": [
+            0
+          ],
+          "unique_count": 1,
+          "total_entries": 35,
+          "min": 0,
+          "max": 0,
+          "is_header_field": true,
+          "description": "**payment_status** (Header Field): 1 unique values across 35 entries. Range: $0.00 - $0.00"
+        },
+        "total_amount": {
+          "unique_values": [
+            21324,
+            10821.63,
+            1985,
+            150,
+            1
+          ],
+          "unique_count": 5,
+          "total_entries": 34,
+          "min": 1,
+          "max": 21324,
+          "is_header_field": true,
+          "description": "**total_amount** (Header Field): 5 unique values across 34 entries. Range: $1.00 - $21,324.00"
+        },
+        "outstanding_balance": {
+          "unique_values": [
+            21324,
+            10821.63,
+            1985,
+            150,
+            1
+          ],
+          "unique_count": 5,
+          "total_entries": 34,
+          "min": 1,
+          "max": 21324,
+          "is_header_field": true,
+          "description": "**outstanding_balance** (Header Field): 5 unique values across 34 entries. Range: $1.00 - $21,324.00"
+        }
+      },
+      "numeric_summary_text": "**payment_status** (Header Field): 1 unique values across 35 entries. Range: $0.00 - $0.00\n**total_amount** (Header Field): 5 unique values across 34 entries. Range: $1.00 - $21,324.00\n**outstanding_balance** (Header Field): 5 unique values across 34 entries. Range: $1.00 - $21,324.00",
+      "date_analysis": {
+        "invoice_date": {
+          "from": "02/02/2025",
+          "to": "12/02/2025",
+          "count": 35,
+          "unique_count": 5,
+          "description": "**invoice_date**: From *02/02/2025* to *12/02/2025* (35 entries, 5 unique dates)"
+        },
+        "due_date": {
+          "from": "03/02/2025",
+          "to": "03/20/2025",
+          "count": 31,
+          "unique_count": 4,
+          "description": "**due_date**: From *03/02/2025* to *03/20/2025* (31 entries, 4 unique dates)"
+        }
+      },
+      "date_summary_text": "**invoice_date**: From *02/02/2025* to *12/02/2025* (35 entries, 5 unique dates)\n**due_date**: From *03/02/2025* to *03/20/2025* (31 entries, 4 unique dates)",
+      "categorical_analysis": {
+        "invoice_number": {
+          "unique_count": 6,
+          "total_entries": 35,
+          "description": "**invoice_number**: 6 unique value(s) across 35 entries",
+          "top_values": [
+            {
+              "value": "SSA/5514/22-23",
+              "count": 17
+            },
+            {
+              "value": "10409/2022-23",
+              "count": 9
+            },
+            {
+              "value": "1111",
+              "count": 4
+            },
+            {
+              "value": "328",
+              "count": 2
+            },
+            {
+              "value": "5666",
+              "count": 2
+            }
+          ]
+        },
+        "other_charges": {
+          "unique_count": 1,
+          "total_entries": 7,
+          "description": "**other_charges**: 1 unique value(s)",
+          "top_values": [
+            {
+              "value": "100",
+              "count": 7
+            }
+          ]
+        },
+        "credit_and_returns": {
+          "unique_count": 3,
+          "total_entries": 11,
+          "description": "**credit_and_returns**: 3 unique value(s)",
+          "top_values": [
+            {
+              "value": "1000",
+              "count": 6
+            },
+            {
+              "value": "1000.00",
+              "count": 4
+            },
+            {
+              "value": "5000",
+              "count": 1
+            }
+          ]
+        },
+        "freight_charges": {
+          "unique_count": 2,
+          "total_entries": 7,
+          "description": "**freight_charges**: 2 unique value(s)",
+          "top_values": [
+            {
+              "value": "100",
+              "count": 6
+            },
+            {
+              "value": "1000",
+              "count": 1
+            }
+          ]
+        },
+        "vendor_name": {
+          "unique_count": 5,
+          "total_entries": 35,
+          "description": "**vendor_name**: 5 unique value(s) across 35 entries",
+          "top_values": [
+            {
+              "value": "Sun Shine Agencies",
+              "count": 17
+            },
+            {
+              "value": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "count": 9
+            },
+            {
+              "value": "Logo\nL\nName",
+              "count": 4
+            },
+            {
+              "value": "meat Hub",
+              "count": 3
+            },
+            {
+              "value": "S.P. SOAP OIL",
+              "count": 2
+            }
+          ]
+        },
+        "vendor_company": {
+          "unique_count": 5,
+          "total_entries": 35,
+          "description": "**vendor_company**: 5 unique value(s)",
+          "top_values": [
+            {
+              "value": "Sun Shine Agencies",
+              "count": 17
+            },
+            {
+              "value": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "count": 9
+            },
+            {
+              "value": "Logo\nL\nName",
+              "count": 4
+            },
+            {
+              "value": "meat Hub",
+              "count": 3
+            },
+            {
+              "value": "S.P. SOAP OIL",
+              "count": 2
+            }
+          ]
+        },
+        "vendor_address": {
+          "unique_count": 4,
+          "total_entries": 29,
+          "description": "**vendor_address**: 4 unique value(s)",
+          "top_values": [
+            {
+              "value": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+              "count": 17
+            },
+            {
+              "value": ",,,",
+              "count": 7
+            },
+            {
+              "value": "No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,,",
+              "count": 3
+            },
+            {
+              "value": "18, 7th Cross, Vinayaka Nagar, Adugodi Post, Bangalore-30,Bangalore-30,,",
+              "count": 2
+            }
+          ]
+        },
+        "batch_name": {
+          "unique_count": 10,
+          "total_entries": 35,
+          "description": "**batch_name**: 10 unique value(s) across 35 entries",
+          "top_values": [
+            {
+              "value": "Batch-20251222113410416",
+              "count": 17
+            },
+            {
+              "value": "Batch-20260108073325656",
+              "count": 4
+            },
+            {
+              "value": "Batch-20260112121450658",
+              "count": 3
+            },
+            {
+              "value": "Batch-20260112121433086",
+              "count": 3
+            },
+            {
+              "value": "Batch-20251222113410085",
+              "count": 3
+            }
+          ]
+        },
+        "days_overdue": {
+          "unique_count": 5,
+          "total_entries": 35,
+          "description": "**days_overdue**: 5 unique value(s)",
+          "top_values": [
+            {
+              "value": "317",
+              "count": 19
+            },
+            {
+              "value": "300",
+              "count": 9
+            },
+            {
+              "value": "739995",
+              "count": 4
+            },
+            {
+              "value": "318",
+              "count": 2
+            },
+            {
+              "value": "308",
+              "count": 1
+            }
+          ]
+        },
+        "age_bucket": {
+          "unique_count": 1,
+          "total_entries": 35,
+          "description": "**age_bucket**: 1 unique value(s)",
+          "top_values": [
+            {
+              "value": "90+ days",
+              "count": 35
+            }
+          ]
+        }
+      },
+      "categorical_summary_text": "**invoice_number**: 6 unique value(s) across 35 entries\n**other_charges**: 1 unique value(s)\n**credit_and_returns**: 3 unique value(s)\n**freight_charges**: 2 unique value(s)\n**vendor_name**: 5 unique value(s) across 35 entries\n**vendor_company**: 5 unique value(s)\n**vendor_address**: 4 unique value(s)\n**batch_name**: 10 unique value(s) across 35 entries\n**days_overdue**: 5 unique value(s)\n**age_bucket**: 1 unique value(s)",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Invoice Payment Compliance Audit\n\n### Key Findings\n- **Total Records Analyzed**: **35 invoices**\n- **Major Vendor Concentration**:\n  - **Sun Shine Agencies**: **17 invoices** (Largest volume)\n  - **Fab Dairy & Trading (I) Pvt. Ltd.**: **9 invoices**\n  - **Logo L Name**: **4 invoices**\n- **Invoice Amounts**:\n  - Range of **total amounts**: **$1.00** to **$21,324.00**\n  - Notable concentration around **$1,985.00** for multiple invoices from **Fab Dairy & Trading (I) Pvt. Ltd.**\n\n### Payment Status Overview\n- **Payment Status**: All invoices show **0** (unpaid) as the unique value for payment status.\n- **Outstanding Balances**: Consistently equal to the total amounts, indicating no payments have been made against any invoices.\n  \n### Aging Analysis\n- **Days Overdue**:\n  - The majority of invoices (19 instances) are overdue by **317 days**.\n  - All invoices fall into the **90+ days** age bucket, signaling significant overdue payments.\n\n### Business Impact\n> ⚠️ The current status indicates severe delays in payment compliance, particularly with **Sun Shine Agencies** and **Fab Dairy & Trading (I) Pvt. Ltd.**, with no payments recorded against outstanding balances.\n\n### Notable Trends\n1. **High Volume from a Single Vendor**: \n   - **Sun Shine Agencies** represents over **48%** of the total invoices, highlighting a possible dependency risk.\n2. **Consistent Invoice Values**:\n   - Multiple invoices for **$1,985.00** from **Fab Dairy & Trading (I)** suggest potential systematic issues in processing or payment.\n3. **Aging Invoices**:\n   - A complete lack of payment activity across all invoices for over **90 days** could affect vendor relationships and procurement strategies.\n\n### Actionable Insights\n1. **Prioritize Communication**:\n   - Initiate discussions with **Sun Shine Agencies** and **Fab Dairy & Trading (I)** to address the overdue payments and establish a resolution plan.\n2. **Investigate Payment Processes**:\n   - Conduct a thorough review of the accounts payable processes to identify bottlenecks causing delays in payment.\n3. **Establish Payment Schedule**:\n   - Consider implementing a structured payment schedule to manage outstanding balances effectively and improve vendor relationships.\n\n---\n\n# 📊 Query Results Summary\n\n**35** records found with **18** columns\n\n## 📎 Invoices\n\n**1111** - Logo\nL\nName (12/02/2025)\n  └ 4 items, 0 units\n\n**10409/2022-23** - Fab Dairy & Trading (I) Pvt. Ltd. (02/20/2025)\n  └ 9 items, 0 units\n\n**1234567** - meat Hub (02/11/2025)\n  └ 1 items, 0 units\n\n**328** - meat Hub (02/03/2025)\n  └ 2 items, 0 units\n\n**5666** - S.P. SOAP OIL (02/02/2025)\n  └ 2 items, 0 units\n\n**SSA/5514/22-23** - Sun Shine Agencies (02/02/2025)\n  └ 17 items, 0 units\n\n## 💰 Numbers\n\n**payment_status:** 1 unique values ($0.00)\n**total_amount:** 5 unique values ($21,324.00, $10,821.63, $1,985.00)\n**outstanding_balance:** 5 unique values ($21,324.00, $10,821.63, $1,985.00)\n\n## 📅 Dates\n\n**invoice_date:** 5 unique dates from 02/02/2025 to 12/02/2025\n**due_date:** 4 unique dates from 03/02/2025 to 03/20/2025\n\n## 🏷️ Categories\n\n**invoice_number:** SSA/5514/22-23 (17), 10409/2022-23 (9), 1111 (4)\n**other_charges:** 100 (7)\n**credit_and_returns:** 1000 (6), 1000.00 (4), 5000 (1)\n**freight_charges:** 100 (6), 1000 (1)\n**vendor_name:** Sun Shine Agencies (17), Fab Dairy & Trading (I) Pvt. Ltd. (9), Logo\nL\nName (4)\n**vendor_company:** Sun Shine Agencies (17), Fab Dairy & Trading (I) Pvt. Ltd. (9), Logo\nL\nName (4)\n**vendor_address:** Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042 (17), ,,, (7), No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,, (3)\n**batch_name:** Batch-20251222113410416 (17), Batch-20260108073325656 (4), Batch-20260112121450658 (3)\n**days_overdue:** 317 (19), 300 (9), 739995 (4)\n**age_bucket:** 90+ days (35)\n",
+      "ai_summary": "## Invoice Payment Compliance Audit\n\n### Key Findings\n- **Total Records Analyzed**: **35 invoices**\n- **Major Vendor Concentration**:\n  - **Sun Shine Agencies**: **17 invoices** (Largest volume)\n  - **Fab Dairy & Trading (I) Pvt. Ltd.**: **9 invoices**\n  - **Logo L Name**: **4 invoices**\n- **Invoice Amounts**:\n  - Range of **total amounts**: **$1.00** to **$21,324.00**\n  - Notable concentration around **$1,985.00** for multiple invoices from **Fab Dairy & Trading (I) Pvt. Ltd.**\n\n### Payment Status Overview\n- **Payment Status**: All invoices show **0** (unpaid) as the unique value for payment status.\n- **Outstanding Balances**: Consistently equal to the total amounts, indicating no payments have been made against any invoices.\n  \n### Aging Analysis\n- **Days Overdue**:\n  - The majority of invoices (19 instances) are overdue by **317 days**.\n  - All invoices fall into the **90+ days** age bucket, signaling significant overdue payments.\n\n### Business Impact\n> ⚠️ The current status indicates severe delays in payment compliance, particularly with **Sun Shine Agencies** and **Fab Dairy & Trading (I) Pvt. Ltd.**, with no payments recorded against outstanding balances.\n\n### Notable Trends\n1. **High Volume from a Single Vendor**: \n   - **Sun Shine Agencies** represents over **48%** of the total invoices, highlighting a possible dependency risk.\n2. **Consistent Invoice Values**:\n   - Multiple invoices for **$1,985.00** from **Fab Dairy & Trading (I)** suggest potential systematic issues in processing or payment.\n3. **Aging Invoices**:\n   - A complete lack of payment activity across all invoices for over **90 days** could affect vendor relationships and procurement strategies.\n\n### Actionable Insights\n1. **Prioritize Communication**:\n   - Initiate discussions with **Sun Shine Agencies** and **Fab Dairy & Trading (I)** to address the overdue payments and establish a resolution plan.\n2. **Investigate Payment Processes**:\n   - Conduct a thorough review of the accounts payable processes to identify bottlenecks causing delays in payment.\n3. **Establish Payment Schedule**:\n   - Consider implementing a structured payment schedule to manage outstanding balances effectively and improve vendor relationships."
+    },
+    "table_data": {
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "other_charges",
+        "credit_and_returns",
+        "tax",
+        "freight_charges",
+        "vendor_name",
+        "vendor_company",
+        "vendor_address",
+        "batch_name",
+        "payment_status",
+        "payment_date",
+        "total_amount",
+        "paid_amount",
+        "outstanding_balance",
+        "days_overdue",
+        "age_bucket"
+      ],
+      "rows": [
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "other_charges": "100",
+          "credit_and_returns": "1000",
+          "tax": "",
+          "freight_charges": "100",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "",
+          "batch_name": "Batch-20260112121450658",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1985,
+          "paid_amount": 0,
+          "outstanding_balance": 1985,
+          "days_overdue": 300,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "other_charges": "100",
+          "credit_and_returns": "1000",
+          "tax": "",
+          "freight_charges": "100",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "",
+          "batch_name": "Batch-20260112121450658",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1985,
+          "paid_amount": 0,
+          "outstanding_balance": 1985,
+          "days_overdue": 300,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "other_charges": "100",
+          "credit_and_returns": "1000",
+          "tax": "",
+          "freight_charges": "100",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "",
+          "batch_name": "Batch-20260112121433086",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1985,
+          "paid_amount": 0,
+          "outstanding_balance": 1985,
+          "days_overdue": 300,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "other_charges": "100",
+          "credit_and_returns": "1000",
+          "tax": "",
+          "freight_charges": "100",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "",
+          "batch_name": "Batch-20260112121433086",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1985,
+          "paid_amount": 0,
+          "outstanding_balance": 1985,
+          "days_overdue": 300,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "other_charges": "100",
+          "credit_and_returns": "1000",
+          "tax": "",
+          "freight_charges": "100",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "",
+          "batch_name": "Batch-20260112121433086",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1985,
+          "paid_amount": 0,
+          "outstanding_balance": 1985,
+          "days_overdue": 300,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,,",
+          "batch_name": "Batch-20251222113410085",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1985,
+          "paid_amount": 0,
+          "outstanding_balance": 1985,
+          "days_overdue": 300,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,,",
+          "batch_name": "Batch-20251222113410085",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1985,
+          "paid_amount": 0,
+          "outstanding_balance": 1985,
+          "days_overdue": 300,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "No.155/1, Muthukatti Road, Kasaba Hobli,\nAnekal, BANGALORE 562 106.\n-,BANGALORE,,",
+          "batch_name": "Batch-20251222113410085",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1985,
+          "paid_amount": 0,
+          "outstanding_balance": 1985,
+          "days_overdue": 300,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "10409/2022-23",
+          "invoice_date": "02/20/2025",
+          "due_date": "03/20/2025",
+          "other_charges": "100",
+          "credit_and_returns": "1000",
+          "tax": "",
+          "freight_charges": "100",
+          "vendor_name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_company": "Fab Dairy & Trading (I) Pvt. Ltd.",
+          "vendor_address": "",
+          "batch_name": "Batch-20260112121450658",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1985,
+          "paid_amount": 0,
+          "outstanding_balance": 1985,
+          "days_overdue": 300,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "1111",
+          "invoice_date": "12/02/2025",
+          "due_date": "",
+          "other_charges": "",
+          "credit_and_returns": "1000.00",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Logo\nL\nName",
+          "vendor_company": "Logo\nL\nName",
+          "vendor_address": ",,,",
+          "batch_name": "Batch-20260108073325656",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 10821.63,
+          "paid_amount": 0,
+          "outstanding_balance": 10821.63,
+          "days_overdue": 739995,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "1111",
+          "invoice_date": "12/02/2025",
+          "due_date": "",
+          "other_charges": "",
+          "credit_and_returns": "1000.00",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Logo\nL\nName",
+          "vendor_company": "Logo\nL\nName",
+          "vendor_address": ",,,",
+          "batch_name": "Batch-20260108073325656",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 10821.63,
+          "paid_amount": 0,
+          "outstanding_balance": 10821.63,
+          "days_overdue": 739995,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "1111",
+          "invoice_date": "12/02/2025",
+          "due_date": "",
+          "other_charges": "",
+          "credit_and_returns": "1000.00",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Logo\nL\nName",
+          "vendor_company": "Logo\nL\nName",
+          "vendor_address": ",,,",
+          "batch_name": "Batch-20260108073325656",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 10821.63,
+          "paid_amount": 0,
+          "outstanding_balance": 10821.63,
+          "days_overdue": 739995,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "1111",
+          "invoice_date": "12/02/2025",
+          "due_date": "",
+          "other_charges": "",
+          "credit_and_returns": "1000.00",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Logo\nL\nName",
+          "vendor_company": "Logo\nL\nName",
+          "vendor_address": ",,,",
+          "batch_name": "Batch-20260108073325656",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 10821.63,
+          "paid_amount": 0,
+          "outstanding_balance": 10821.63,
+          "days_overdue": 739995,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "1234567",
+          "invoice_date": "02/11/2025",
+          "due_date": "03/12/2025",
+          "other_charges": "100",
+          "credit_and_returns": "5000",
+          "tax": "",
+          "freight_charges": "1000",
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "vendor_address": ",,,",
+          "batch_name": "Batch-20251224080152316",
+          "payment_status": "0",
+          "payment_date": "",
+          "total_amount": 0,
+          "paid_amount": 0,
+          "outstanding_balance": 0,
+          "days_overdue": 308,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "328",
+          "invoice_date": "02/03/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "vendor_address": ",,,",
+          "batch_name": "Batch-20251224072419069",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1,
+          "paid_amount": 0,
+          "outstanding_balance": 1,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "328",
+          "invoice_date": "02/03/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "meat Hub",
+          "vendor_company": "meat Hub",
+          "vendor_address": ",,,",
+          "batch_name": "Batch-20251224071950021",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 1,
+          "paid_amount": 0,
+          "outstanding_balance": 1,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "5666",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/02/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "vendor_address": "18, 7th Cross, Vinayaka Nagar, Adugodi Post, Bangalore-30,Bangalore-30,,",
+          "batch_name": "Batch-20251222113430256",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 150,
+          "paid_amount": 0,
+          "outstanding_balance": 150,
+          "days_overdue": 318,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "5666",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/02/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "S.P. SOAP OIL",
+          "vendor_company": "S.P. SOAP OIL",
+          "vendor_address": "18, 7th Cross, Vinayaka Nagar, Adugodi Post, Bangalore-30,Bangalore-30,,",
+          "batch_name": "Batch-20251224065936393",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 150,
+          "paid_amount": 0,
+          "outstanding_balance": 150,
+          "days_overdue": 318,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        },
+        {
+          "invoice_number": "SSA/5514/22-23",
+          "invoice_date": "02/02/2025",
+          "due_date": "03/03/2025",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "Sun Shine Agencies",
+          "vendor_company": "Sun Shine Agencies",
+          "vendor_address": "Ground Floor, 5.Kadandarama Layout,\nOsborne Road Cross Bangalore-560042(W.F.E.2019)\nFSSAI 11221333001434\nGSTIN/UIN: 29AEMPL4258H1Z2\nState Name Karnataka, Code : 29,,Karnataka,560042",
+          "batch_name": "Batch-20251222113410416",
+          "payment_status": "0",
+          "payment_date": null,
+          "total_amount": 21324,
+          "paid_amount": 0,
+          "outstanding_balance": 21324,
+          "days_overdue": 317,
+          "age_bucket": "90+ days"
+        }
+      ],
+      "row_count": 35
+    },
+    "visualization_config": {
+      "charts": [
+        {
+          "id": "chart_1",
+          "type": "pie",
+          "title": "Outstanding Balances by Vendor",
+          "description": "This pie chart shows the distribution of outstanding balances across different vendors, highlighting which vendors have the highest unpaid invoices.",
+          "data": [
+            {
+              "name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "value": 1985
+            },
+            {
+              "name": "Logo\nL\nName",
+              "value": 10821.63
+            },
+            {
+              "name": "meat Hub",
+              "value": 1
+            },
+            {
+              "name": "S.P. SOAP OIL",
+              "value": 150
+            },
+            {
+              "name": "Sun Shine Agencies",
+              "value": 21324
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "outstanding_balance",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#4CAF50",
+              "#2196F3"
+            ]
+          }
+        },
+        {
+          "id": "chart_2",
+          "type": "bar",
+          "title": "Total Invoices by Vendor",
+          "description": "This bar chart illustrates the total number of invoices issued by each vendor, providing insight into vendor engagement.",
+          "data": [
+            {
+              "name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "total": 4
+            },
+            {
+              "name": "Logo\nL\nName",
+              "total": 4
+            },
+            {
+              "name": "meat Hub",
+              "total": 2
+            },
+            {
+              "name": "S.P. SOAP OIL",
+              "total": 2
+            },
+            {
+              "name": "Sun Shine Agencies",
+              "total": 4
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "invoice_number",
+              "function": "count"
+            }
+          },
+          "config": {
+            "colors": [
+              "#FF9800",
+              "#F44336"
+            ]
+          }
+        },
+        {
+          "id": "chart_3",
+          "type": "line",
+          "title": "Outstanding Balances Over Time",
+          "description": "This line chart tracks the outstanding balances of invoices over time, showcasing trends in unpaid amounts.",
+          "data": [
+            {
+              "name": "02/20/2025",
+              "outstanding_balance": 1985
+            },
+            {
+              "name": "12/02/2025",
+              "outstanding_balance": 10821.63
+            },
+            {
+              "name": "02/11/2025",
+              "outstanding_balance": 0
+            },
+            {
+              "name": "02/03/2025",
+              "outstanding_balance": 1
+            },
+            {
+              "name": "02/02/2025",
+              "outstanding_balance": 21324
+            }
+          ],
+          "data_source": {
+            "x_axis": "invoice_date",
+            "y_axis": "outstanding_balance"
+          },
+          "config": {
+            "colors": [
+              "#2196F3"
+            ],
+            "smooth": true
+          }
+        },
+        {
+          "id": "chart_4",
+          "type": "area",
+          "title": "Cumulative Outstanding Balances by Vendor",
+          "description": "This area chart shows the cumulative outstanding balances by each vendor, indicating which vendors contribute most to the total outstanding debt.",
+          "data": [
+            {
+              "name": "Fab Dairy & Trading (I) Pvt. Ltd.",
+              "outstanding_balance": 1985
+            },
+            {
+              "name": "Logo\nL\nName",
+              "outstanding_balance": 10821.63
+            },
+            {
+              "name": "meat Hub",
+              "outstanding_balance": 1
+            },
+            {
+              "name": "S.P. SOAP OIL",
+              "outstanding_balance": 150
+            },
+            {
+              "name": "Sun Shine Agencies",
+              "outstanding_balance": 21324
+            }
+          ],
+          "data_source": {
+            "x_axis": "vendor_name",
+            "y_axis": "outstanding_balance"
+          },
+          "config": {
+            "colors": [
+              "#FF5722"
+            ],
+            "smooth": true
+          }
+        }
+      ],
+      "insights": "The analysis reveals that Fab Dairy & Trading (I) Pvt. Ltd. and Sun Shine Agencies have the highest outstanding balances, indicating potential payment delays. The bar chart shows a consistent engagement level in invoice issuance among various vendors. The cumulative outstanding balances area chart emphasizes the vendors contributing most to total debt, which could inform future payment strategies.",
+      "recommended_view": "dashboard"
+    },
+    "used_guidance": true,
+    "execution_time": "Fast (pre-built template, attempt 1)",
+    "query_attempts": 1
+  }
+}

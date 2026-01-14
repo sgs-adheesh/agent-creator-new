@@ -14,6 +14,7 @@ export interface Agent {
   name: string;
   prompt: string;
   created_at: string;
+  icon?: string;
   workflow_config?: WorkflowConfig;
   selected_tools?: string[];
   tool_configs?: Record<string, Record<string, string>>;
@@ -161,10 +162,10 @@ export const agentApi = {
   },
 
   executeAgent: async (id: string, query: string, toolConfigs?: Record<string, Record<string, string>>, inputData?: Record<string, string | number | boolean>): Promise<ExecuteAgentResponse> => {
-    const response = await api.post<ExecuteAgentResponse>(`/api/agents/${id}/execute`, { 
+    const response = await api.post<ExecuteAgentResponse>(`/api/agents/${id}/execute`, {
       query,
       input_data: inputData,
-      tool_configs: toolConfigs 
+      tool_configs: toolConfigs
     });
     return response.data;
   },
@@ -203,7 +204,7 @@ export const toolApi = {
     const response = await api.get<{ success: boolean; tools: string[] }>('/api/tools/list');
     return response.data.tools;
   },
-  
+
   getToolSchema: async (toolName: string): Promise<ToolSchema> => {
     const response = await api.get<ToolSchema>(`/api/tools/${toolName}/schema`);
     return response.data;

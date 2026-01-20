@@ -1061,10 +1061,10 @@ USER VISUALIZATION PREFERENCES:
 EXPLICITLY REQUESTED CHART TYPES: {requested_types_str}
 
 QUERY RESULT DATA (use this to build actual chart data):
-{json.dumps(data_summary.get('all_data', [])[:50], indent=2)}  // First 50 rows for processing
+{json.dumps(data_summary.get('all_data', [])[:50], indent=2, default=str)}  // First 50 rows for processing
 
 SAMPLE DATA (first row for reference):
-{json.dumps(data_summary.get('sample_row', {}), indent=2)}
+{json.dumps(data_summary.get('sample_row', {}), indent=2, default=str)}
 
 YOUR TASK:
 Generate a comprehensive JSON visualization configuration that:
@@ -1415,7 +1415,15 @@ Visualization Configuration JSON:"""
                     # Try to parse result as dict
                     if isinstance(result, str):
                         try:
-                            result_dict = eval(result)  # or json.loads if result is JSON
+                            # Safe eval with Decimal and datetime available
+                            import datetime as dt
+                            from decimal import Decimal
+                            context = {
+                                "Decimal": Decimal,
+                                "datetime": dt,
+                                "date": dt.date
+                            }
+                            result_dict = eval(result, {"__builtins__": {}}, context)
                             logger.debug(f"Parsed result as dict")
                         except Exception as e:
                             logger.debug(f"Failed to parse result: {e}")

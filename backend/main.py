@@ -320,14 +320,14 @@ async def create_agent_stream(request: CreateAgentRequest):
                 use_cases=request.use_cases
             ):
                 # Send progress update as SSE
-                yield f"data: {json.dumps(progress_event)}\n\n"
+                yield f"data: {json.dumps(progress_event, default=str)}\n\n"
             
         except Exception as e:
             error_event = {
                 "type": "error",
                 "message": str(e)
             }
-            yield f"data: {json.dumps(error_event)}\n\n"
+            yield f"data: {json.dumps(error_event, default=str)}\n\n"
     
     return StreamingResponse(
         event_generator(),
@@ -509,14 +509,14 @@ async def execute_agent_stream(agent_id: str, request: ExecuteAgentRequest):
                 agent_id, query, request.tool_configs, request.input_data, request.visualization_preferences
             ):
                 # Send progress update as SSE
-                yield f"data: {json.dumps(progress_event)}\n\n"
+                yield f"data: {json.dumps(progress_event, default=str)}\n\n"
             
         except Exception as e:
             error_event = {
                 "type": "error",
                 "message": str(e)
             }
-            yield f"data: {json.dumps(error_event)}\n\n"
+            yield f"data: {json.dumps(error_event, default=str)}\n\n"
     
     return StreamingResponse(
         event_generator(),
@@ -689,14 +689,14 @@ async def update_agent_stream(agent_id: str, request: UpdateAgentRequest):
                 tool_configs=request.tool_configs
             ):
                 # Send progress update as SSE
-                yield f"data: {json.dumps(progress_event)}\n\n"
+                yield f"data: {json.dumps(progress_event, default=str)}\n\n"
             
         except Exception as e:
             error_event = {
                 "type": "error",
                 "message": str(e)
             }
-            yield f"data: {json.dumps(error_event)}\n\n"
+            yield f"data: {json.dumps(error_event, default=str)}\n\n"
     
     return StreamingResponse(
         event_generator(),

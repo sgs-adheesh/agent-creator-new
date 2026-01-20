@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-14T18:51:02.832615",
+  "timestamp": "2026-01-20T10:46:00.793048",
   "schema": {
     "admin_event_entity": [
       {
@@ -1921,6 +1921,11 @@
       {
         "name": "locked_at",
         "type": "timestamp",
+        "nullable": true
+      },
+      {
+        "name": "retry_bill_count",
+        "type": "int4",
         "nullable": true
       }
     ],

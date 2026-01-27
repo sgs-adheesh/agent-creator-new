@@ -10,3 +10,51 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Override React Flow defaults to remove black ring */
+.react-flow__node:focus {
+  outline: none !important;
+}
+
+/* Target specific node types and generic selection */
+.react-flow__node-input.selected,
+.react-flow__node-output.selected,
+.react-flow__node-default.selected,
+.react-flow__node-group.selected,
+.react-flow__node.selected,
+.react-flow__node:focus,
+.react-flow__node:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Specific ID overrides to guarantee removal of black ring/border */
+.react-flow__node[data-id="output"],
+.react-flow__node[data-id="input"],
+.react-flow__node[data-id="agent"],
+.react-flow__node[data-id="decision"],
+.react-flow__node[data-id^="tool-"] {
+  outline: none !important;
+}
+
+.react-flow__node[data-id="output"].selected,
+.react-flow__node[data-id="input"].selected,
+.react-flow__node[data-id="agent"].selected,
+.react-flow__node[data-id="decision"].selected,
+.react-flow__node[data-id^="tool-"].selected,
+.react-flow__node[data-id="output"]:focus,
+.react-flow__node[data-id="input"]:focus,
+.react-flow__node[data-id="agent"]:focus,
+.react-flow__node[data-id="decision"]:focus,
+.react-flow__node[data-id^="tool-"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Remove default handle outlines */
+.react-flow__handle {
+  outline: none !important;
+  border: none !important;
+}

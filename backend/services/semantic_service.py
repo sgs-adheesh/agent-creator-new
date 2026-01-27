@@ -230,3 +230,51 @@ class SemanticService:
                 print(f"🎯 Semantic match: {tool_name} (score: {score:.2f})")
         
         return list(matched_tools)
+
+    def find_similar_templates(
+        self, 
+        prompt: str, 
+        templates: List[Dict[str, Any]],
+        threshold: float = 0.6,
+        top_k: int = 3
+    ) -> List[Tuple[Dict[str, Any], float]]:
+        """
+        Find agent templates semantically similar to the prompt
+        
+        Args:
+            prompt: User's input text
+            templates: List of template dictionaries
+            threshold: Minimum similarity score (0-1)
+            top_k: Maximum number of templates to return
+            
+        Returns:
+            List of (template, similarity_score) tuples, sorted by score
+        """
+        if not templates:
+            return []
+            
+        # Get prompt embedding
+        prompt_embedding = np.array(self.embeddings.embed_query(prompt))
+        
+        results = []
+        for template in templates:
+            # Create a rich text representation of the template for embedding
+            # Combine name, description, and prompt for best matching
+            template_text = f"{template.get('name', '')} {template.get('description', '')} {template.get('template', {}).get('prompt', '')}"
+            
+            # Compute embedding for this template
+            # Note: For production, these should be cached, but for <20 templates calculating on fly is acceptable
+            template_embedding = np.array(self.embeddings.embed_query(template_text))
+            
+            # Cosine similarity
+            similarity = np.dot(prompt_embedding, template_embedding) / (
+                np.linalg.norm(prompt_embedding) * np.linalg.norm(template_embedding)
+            )
+            
+            if similarity >= threshold:
+                results.append((template, float(similarity)))
+        
+        # Sort by similarity (highest first)
+        results.sort(key=lambda x: x[1], reverse=True)
+        
+        return results[:top_k]

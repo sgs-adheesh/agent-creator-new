@@ -1144,6 +1144,21 @@ See backend/docs/DEFENSIVE_SQL_RULES.md for complete documentation."""
                     if cols:
                         schema_lines.append(f"  JSONB columns in {table_name}: {', '.join(cols)}")
             
+            # Add specific business logic rules requested by user
+            schema_lines.append("")
+            schema_lines.append("📌 BUSINESS LOGIC RULES:")
+            schema_lines.append("  1. icap_document Status Mapping:")
+            schema_lines.append("     - 'status' and 'sub_status' in icap_document are INTEGER ENUMS (IDs).")
+            schema_lines.append("     - NEVER display the raw numbers in the UI.")
+            schema_lines.append("     - READ QUERY: ALWAYS JOIN 'icap_workflow_status' to get the descriptive name.")
+            schema_lines.append("       ✅ JOIN icap_workflow_status ws ON d.status = ws.id")
+            schema_lines.append("       ✅ SELECT ws.step_name as status_name")
+            schema_lines.append("  2. WRITE Operations (UPDATE/INSERT):")
+            schema_lines.append("     - NEVER hardcode status IDs (e.g. 10). IDs may change.")
+            schema_lines.append("     - ALWAYS use a subquery to look up the ID from 'icap_workflow_status' using the 'status_code' column.")
+            schema_lines.append("     - ✅ CORRECT: SET status = (SELECT id FROM icap_workflow_status WHERE status_code = 'Bill_Export_In_Progress')")
+            schema_lines.append("     - ❌ WRONG: SET status = 'Bill_Export_In_Progress'")
+            
             return "\n".join(schema_lines)
             
         except Exception as e:

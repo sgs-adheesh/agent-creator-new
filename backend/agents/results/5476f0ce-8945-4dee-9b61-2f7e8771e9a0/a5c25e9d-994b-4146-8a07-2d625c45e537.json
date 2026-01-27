@@ -1,0 +1,597 @@
+{
+  "id": "a5c25e9d-994b-4146-8a07-2d625c45e537",
+  "name": "Result - 13/01/2026, 20:25:33",
+  "timestamp": "2026-01-13T20:25:35.029602",
+  "data": {
+    "success": true,
+    "output": "## Invoice Approval Analysis\n\nThe query results reveal that all four invoices have **high confidence scores** across the critical fields, but two invoices lack both **invoice_date** and **due_date** values, which disqualifies them from approval based on the validation criteria. Specifically, **invoice number XC-179B1357** has confidence scores of:\n\n- **99.94231** for the **invoice number**\n- **99.993416** for the **invoice date**\n- **99.96473** for the **due date**\n\nmaking it eligible for approval. However, the remaining three invoices, all with **invoice number INV-3337**, have missing dates, which results in their exclusion despite their overall **high confidence levels** (all above **99.9%**). Therefore, only **XC-179B1357** meets the criteria for auto-approval, while the others will need further review or reprocessing to obtain complete date information.\n\n> **IMPORTANT: Only XC-179B1357 is eligible for auto-approval.**",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": null,
+          "log": null
+        },
+        "result": {
+          "success": true,
+          "columns": [
+            "batch_name",
+            "accuracy",
+            "invoice_number",
+            "inv_num_conf",
+            "invoice_date",
+            "inv_date_conf",
+            "due_date",
+            "due_date_conf",
+            "vendor_name",
+            "line_count",
+            "min_desc_conf",
+            "min_qty_conf",
+            "min_price_conf",
+            "overall_min_confidence",
+            "status"
+          ],
+          "rows": [
+            {
+              "batch_name": "Batch-20251223142306000",
+              "accuracy": 98.33,
+              "invoice_number": "XC-179B1357",
+              "inv_num_conf": 99.94231,
+              "invoice_date": "09/08/2024",
+              "inv_date_conf": 99.993416,
+              "due_date": "10/08/2024",
+              "due_date_conf": 99.96473,
+              "vendor_name": "Spread Commissary",
+              "line_count": 1,
+              "min_desc_conf": 99.99224,
+              "min_qty_conf": 99.99964,
+              "min_price_conf": 99.99838,
+              "overall_min_confidence": 99.94231,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251230062253061",
+              "accuracy": 99.21,
+              "invoice_number": "INV-3337",
+              "inv_num_conf": 99.90671,
+              "invoice_date": "",
+              "inv_date_conf": 99.971275,
+              "due_date": "",
+              "due_date_conf": 99.97482,
+              "vendor_name": "DEMO - Sliced Invoices",
+              "line_count": 1,
+              "min_desc_conf": 99.962975,
+              "min_qty_conf": 99.9798,
+              "min_price_conf": 99.98962,
+              "overall_min_confidence": 99.90671,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20251230063512115",
+              "accuracy": 99.21,
+              "invoice_number": "INV-3337",
+              "inv_num_conf": 99.90671,
+              "invoice_date": "",
+              "inv_date_conf": 99.971275,
+              "due_date": "",
+              "due_date_conf": 99.97482,
+              "vendor_name": "DEMO - Sliced Invoices",
+              "line_count": 1,
+              "min_desc_conf": 99.962975,
+              "min_qty_conf": 99.9798,
+              "min_price_conf": 99.98962,
+              "overall_min_confidence": 99.90671,
+              "status": 2
+            },
+            {
+              "batch_name": "Batch-20260107064638780",
+              "accuracy": 99.21,
+              "invoice_number": "INV-3337",
+              "inv_num_conf": 99.90671,
+              "invoice_date": "",
+              "inv_date_conf": 99.971275,
+              "due_date": "",
+              "due_date_conf": 99.97482,
+              "vendor_name": "DEMO - Sliced Invoices",
+              "line_count": 1,
+              "min_desc_conf": 99.962975,
+              "min_qty_conf": 99.9798,
+              "min_price_conf": 99.98962,
+              "overall_min_confidence": 99.90671,
+              "status": 2
+            }
+          ],
+          "row_count": 4,
+          "has_more": false,
+          "note": null,
+          "schema_info": null
+        }
+      }
+    ],
+    "output_format": "table",
+    "summary": {
+      "total_records": 4,
+      "columns": [
+        "batch_name",
+        "accuracy",
+        "invoice_number",
+        "inv_num_conf",
+        "invoice_date",
+        "inv_date_conf",
+        "due_date",
+        "due_date_conf",
+        "vendor_name",
+        "line_count",
+        "min_desc_conf",
+        "min_qty_conf",
+        "min_price_conf",
+        "overall_min_confidence",
+        "status"
+      ],
+      "description": "Query returned 4 record(s) with 15 column(s).",
+      "invoice_breakdown": {
+        "XC-179B1357": {
+          "invoice_number": "XC-179B1357",
+          "line_items": 1,
+          "date": "09/08/2024",
+          "vendor": "Spread Commissary"
+        },
+        "INV-3337": {
+          "invoice_number": "INV-3337",
+          "line_items": 3,
+          "date": "",
+          "vendor": "DEMO - Sliced Invoices"
+        }
+      },
+      "invoice_summary_text": "**INV-3337** | Vendor: DEMO - Sliced Invoices | Line Items: 3\n**XC-179B1357** | Vendor: Spread Commissary | Date: 09/08/2024 | Line Items: 1",
+      "numeric_analysis": {
+        "line_count": {
+          "unique_values": [
+            1
+          ],
+          "unique_count": 1,
+          "total_entries": 4,
+          "min": 1,
+          "max": 1,
+          "is_header_field": true,
+          "description": "**line_count** (Header Field): 1 unique values across 4 entries. Range: $1.00 - $1.00"
+        },
+        "min_price_conf": {
+          "sum": 399.97,
+          "average": 99.99,
+          "min": 99.99,
+          "max": 100,
+          "count": 4,
+          "is_currency": true,
+          "description": "**min_price_conf**: Total = $399.97, Average = $99.99, Range = $99.99 - $100.00"
+        }
+      },
+      "numeric_summary_text": "**line_count** (Header Field): 1 unique values across 4 entries. Range: $1.00 - $1.00\n**min_price_conf**: Total = $399.97, Average = $99.99, Range = $99.99 - $100.00",
+      "date_analysis": {
+        "invoice_date": {
+          "from": "09/08/2024",
+          "to": "09/08/2024",
+          "count": 1,
+          "unique_count": 1,
+          "description": "**invoice_date**: From *09/08/2024* to *09/08/2024* (1 entries, 1 unique dates)"
+        },
+        "inv_date_conf": {
+          "from": "99.971275",
+          "to": "99.993416",
+          "count": 4,
+          "unique_count": 2,
+          "description": "**inv_date_conf**: From *99.971275* to *99.993416* (4 entries, 2 unique dates)"
+        },
+        "due_date": {
+          "from": "10/08/2024",
+          "to": "10/08/2024",
+          "count": 1,
+          "unique_count": 1,
+          "description": "**due_date**: From *10/08/2024* to *10/08/2024* (1 entries, 1 unique dates)"
+        },
+        "due_date_conf": {
+          "from": "99.96473",
+          "to": "99.97482",
+          "count": 4,
+          "unique_count": 2,
+          "description": "**due_date_conf**: From *99.96473* to *99.97482* (4 entries, 2 unique dates)"
+        }
+      },
+      "date_summary_text": "**invoice_date**: From *09/08/2024* to *09/08/2024* (1 entries, 1 unique dates)\n**inv_date_conf**: From *99.971275* to *99.993416* (4 entries, 2 unique dates)\n**due_date**: From *10/08/2024* to *10/08/2024* (1 entries, 1 unique dates)\n**due_date_conf**: From *99.96473* to *99.97482* (4 entries, 2 unique dates)",
+      "categorical_analysis": {
+        "batch_name": {
+          "unique_count": 4,
+          "total_entries": 4,
+          "description": "**batch_name**: 4 unique value(s) across 4 entries",
+          "top_values": [
+            {
+              "value": "Batch-20251223142306000",
+              "count": 1
+            },
+            {
+              "value": "Batch-20251230062253061",
+              "count": 1
+            },
+            {
+              "value": "Batch-20251230063512115",
+              "count": 1
+            },
+            {
+              "value": "Batch-20260107064638780",
+              "count": 1
+            }
+          ]
+        },
+        "accuracy": {
+          "unique_count": 2,
+          "total_entries": 4,
+          "description": "**accuracy**: 2 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.21",
+              "count": 3
+            },
+            {
+              "value": "98.33",
+              "count": 1
+            }
+          ]
+        },
+        "invoice_number": {
+          "unique_count": 2,
+          "total_entries": 4,
+          "description": "**invoice_number**: 2 unique value(s) across 4 entries",
+          "top_values": [
+            {
+              "value": "INV-3337",
+              "count": 3
+            },
+            {
+              "value": "XC-179B1357",
+              "count": 1
+            }
+          ]
+        },
+        "inv_num_conf": {
+          "unique_count": 2,
+          "total_entries": 4,
+          "description": "**inv_num_conf**: 2 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.90671",
+              "count": 3
+            },
+            {
+              "value": "99.94231",
+              "count": 1
+            }
+          ]
+        },
+        "vendor_name": {
+          "unique_count": 2,
+          "total_entries": 4,
+          "description": "**vendor_name**: 2 unique value(s) across 4 entries",
+          "top_values": [
+            {
+              "value": "DEMO - Sliced Invoices",
+              "count": 3
+            },
+            {
+              "value": "Spread Commissary",
+              "count": 1
+            }
+          ]
+        },
+        "min_desc_conf": {
+          "unique_count": 3,
+          "total_entries": 4,
+          "description": "**min_desc_conf**: 3 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.962975000000000136424205265939235687255859375",
+              "count": 2
+            },
+            {
+              "value": "99.9922399999999953479346004314720630645751953125",
+              "count": 1
+            },
+            {
+              "value": "99.962975",
+              "count": 1
+            }
+          ]
+        },
+        "min_qty_conf": {
+          "unique_count": 3,
+          "total_entries": 4,
+          "description": "**min_qty_conf**: 3 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.9797999999999973397279973141849040985107421875",
+              "count": 2
+            },
+            {
+              "value": "99.999639999999999417923390865325927734375",
+              "count": 1
+            },
+            {
+              "value": "99.9798",
+              "count": 1
+            }
+          ]
+        },
+        "overall_min_confidence": {
+          "unique_count": 2,
+          "total_entries": 4,
+          "description": "**overall_min_confidence**: 2 unique value(s)",
+          "top_values": [
+            {
+              "value": "99.90671",
+              "count": 3
+            },
+            {
+              "value": "99.94231",
+              "count": 1
+            }
+          ]
+        },
+        "status": {
+          "unique_count": 1,
+          "total_entries": 4,
+          "description": "**status**: 1 unique value(s) across 4 entries",
+          "top_values": [
+            {
+              "value": "2",
+              "count": 4
+            }
+          ]
+        }
+      },
+      "categorical_summary_text": "**batch_name**: 4 unique value(s) across 4 entries\n**accuracy**: 2 unique value(s)\n**invoice_number**: 2 unique value(s) across 4 entries\n**inv_num_conf**: 2 unique value(s)\n**vendor_name**: 2 unique value(s) across 4 entries\n**min_desc_conf**: 3 unique value(s)\n**min_qty_conf**: 3 unique value(s)\n**overall_min_confidence**: 2 unique value(s)\n**status**: 1 unique value(s) across 4 entries",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Invoice Confidence Analysis\n\n### Key Findings\n- **Total Records**: 4 invoices processed, indicating a concentrated dataset.\n- **Vendors**:\n  - **DEMO - Sliced Invoices**: 3 invoices, all associated with **invoice number INV-3337**.\n  - **Spread Commissary**: 1 invoice, with **invoice number XC-179B1357**.\n- **Accuracy Levels**:\n  - Invoices from **DEMO - Sliced Invoices** show a higher accuracy of **99.21%** compared to **98.33%** for the **Spread Commissary** invoice.\n  \n### Numeric Insights\n- **Min Price Confidence**: The total for all invoices is **$399.97** with an average of **$99.99**.\n- **Line Count**: All invoices have a line count of **1**, indicating simplicity in the invoice details.\n\n### Date Consistency\n- Invoices are uniformly dated:\n  - **Invoice Date**: **09/08/2024** for all records.\n  - **Due Date**: **10/08/2024**, consistent across the dataset.\n\n### Confidence Scores\n- **Invoice Number Confidence**:\n  - **INV-3337**: **99.90671** (3 instances).\n  - **XC-179B1357**: **99.94231** (1 instance).\n- **Overall Minimum Confidence**:\n  - Consistent scores of **99.90671** for three invoices.\n\n### Business Impact\n> ⚠️ All invoices processed are above the critical confidence threshold, indicating reliable data for auto-approval.\n\n### Recommendations\n1. **Auto-Approve** invoices from **DEMO - Sliced Invoices** due to consistently high confidence scores across all relevant metrics.\n2. **Monitor** the invoice from **Spread Commissary** for future submissions, as it shows lower accuracy and may require further validation.\n3. **Leverage** the consistent invoice and due dates to streamline payment processing and maintain vendor relationships.\n\n---\n\n# 📊 Query Results Summary\n\n**4** records found with **15** columns\n\n## 📎 Invoices\n\n**XC-179B1357** - Spread Commissary (09/08/2024)\n  └ 1 items, 0 units\n\n**INV-3337** - DEMO - Sliced Invoices ()\n  └ 3 items, 0 units\n\n## 💰 Numbers\n\n**line_count:** 1 unique values ($1.00)\n**min_price_conf:** $399.97 total, $99.99 avg\n\n## 📅 Dates\n\n**invoice_date:** 1 unique dates from 09/08/2024 to 09/08/2024\n**inv_date_conf:** 2 unique dates from 99.971275 to 99.993416\n**due_date:** 1 unique dates from 10/08/2024 to 10/08/2024\n**due_date_conf:** 2 unique dates from 99.96473 to 99.97482\n\n## 🏷️ Categories\n\n**batch_name:** Batch-20251223142306000 (1), Batch-20251230062253061 (1), Batch-20251230063512115 (1)\n**accuracy:** 99.21 (3), 98.33 (1)\n**invoice_number:** INV-3337 (3), XC-179B1357 (1)\n**inv_num_conf:** 99.90671 (3), 99.94231 (1)\n**vendor_name:** DEMO - Sliced Invoices (3), Spread Commissary (1)\n**min_desc_conf:** 99.962975000000000136424205265939235687255859375 (2), 99.9922399999999953479346004314720630645751953125 (1), 99.962975 (1)\n**min_qty_conf:** 99.9797999999999973397279973141849040985107421875 (2), 99.999639999999999417923390865325927734375 (1), 99.9798 (1)\n**overall_min_confidence:** 99.90671 (3), 99.94231 (1)\n**status:** 2 (4)\n",
+      "ai_summary": "## Invoice Confidence Analysis\n\n### Key Findings\n- **Total Records**: 4 invoices processed, indicating a concentrated dataset.\n- **Vendors**:\n  - **DEMO - Sliced Invoices**: 3 invoices, all associated with **invoice number INV-3337**.\n  - **Spread Commissary**: 1 invoice, with **invoice number XC-179B1357**.\n- **Accuracy Levels**:\n  - Invoices from **DEMO - Sliced Invoices** show a higher accuracy of **99.21%** compared to **98.33%** for the **Spread Commissary** invoice.\n  \n### Numeric Insights\n- **Min Price Confidence**: The total for all invoices is **$399.97** with an average of **$99.99**.\n- **Line Count**: All invoices have a line count of **1**, indicating simplicity in the invoice details.\n\n### Date Consistency\n- Invoices are uniformly dated:\n  - **Invoice Date**: **09/08/2024** for all records.\n  - **Due Date**: **10/08/2024**, consistent across the dataset.\n\n### Confidence Scores\n- **Invoice Number Confidence**:\n  - **INV-3337**: **99.90671** (3 instances).\n  - **XC-179B1357**: **99.94231** (1 instance).\n- **Overall Minimum Confidence**:\n  - Consistent scores of **99.90671** for three invoices.\n\n### Business Impact\n> ⚠️ All invoices processed are above the critical confidence threshold, indicating reliable data for auto-approval.\n\n### Recommendations\n1. **Auto-Approve** invoices from **DEMO - Sliced Invoices** due to consistently high confidence scores across all relevant metrics.\n2. **Monitor** the invoice from **Spread Commissary** for future submissions, as it shows lower accuracy and may require further validation.\n3. **Leverage** the consistent invoice and due dates to streamline payment processing and maintain vendor relationships."
+    },
+    "table_data": {
+      "columns": [
+        "batch_name",
+        "accuracy",
+        "invoice_number",
+        "inv_num_conf",
+        "invoice_date",
+        "inv_date_conf",
+        "due_date",
+        "due_date_conf",
+        "vendor_name",
+        "line_count",
+        "min_desc_conf",
+        "min_qty_conf",
+        "min_price_conf",
+        "overall_min_confidence",
+        "status"
+      ],
+      "rows": [
+        {
+          "batch_name": "Batch-20251223142306000",
+          "accuracy": 98.33,
+          "invoice_number": "XC-179B1357",
+          "inv_num_conf": 99.94231,
+          "invoice_date": "09/08/2024",
+          "inv_date_conf": 99.993416,
+          "due_date": "10/08/2024",
+          "due_date_conf": 99.96473,
+          "vendor_name": "Spread Commissary",
+          "line_count": 1,
+          "min_desc_conf": 99.99224,
+          "min_qty_conf": 99.99964,
+          "min_price_conf": 99.99838,
+          "overall_min_confidence": 99.94231,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251230062253061",
+          "accuracy": 99.21,
+          "invoice_number": "INV-3337",
+          "inv_num_conf": 99.90671,
+          "invoice_date": "",
+          "inv_date_conf": 99.971275,
+          "due_date": "",
+          "due_date_conf": 99.97482,
+          "vendor_name": "DEMO - Sliced Invoices",
+          "line_count": 1,
+          "min_desc_conf": 99.962975,
+          "min_qty_conf": 99.9798,
+          "min_price_conf": 99.98962,
+          "overall_min_confidence": 99.90671,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20251230063512115",
+          "accuracy": 99.21,
+          "invoice_number": "INV-3337",
+          "inv_num_conf": 99.90671,
+          "invoice_date": "",
+          "inv_date_conf": 99.971275,
+          "due_date": "",
+          "due_date_conf": 99.97482,
+          "vendor_name": "DEMO - Sliced Invoices",
+          "line_count": 1,
+          "min_desc_conf": 99.962975,
+          "min_qty_conf": 99.9798,
+          "min_price_conf": 99.98962,
+          "overall_min_confidence": 99.90671,
+          "status": 2
+        },
+        {
+          "batch_name": "Batch-20260107064638780",
+          "accuracy": 99.21,
+          "invoice_number": "INV-3337",
+          "inv_num_conf": 99.90671,
+          "invoice_date": "",
+          "inv_date_conf": 99.971275,
+          "due_date": "",
+          "due_date_conf": 99.97482,
+          "vendor_name": "DEMO - Sliced Invoices",
+          "line_count": 1,
+          "min_desc_conf": 99.962975,
+          "min_qty_conf": 99.9798,
+          "min_price_conf": 99.98962,
+          "overall_min_confidence": 99.90671,
+          "status": 2
+        }
+      ],
+      "row_count": 4
+    },
+    "visualization_config": {
+      "charts": [
+        {
+          "id": "chart_1",
+          "type": "pie",
+          "title": "Invoice Totals by Vendor",
+          "description": "This chart shows the distribution of invoice totals across different vendors, helping to analyze vendor performance.",
+          "data": [
+            {
+              "name": "Spread Commissary",
+              "value": 98.33
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "value": 99.21
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "accuracy",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#4CAF50",
+              "#2196F3"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_2",
+          "type": "bar",
+          "title": "Invoice Accuracy by Vendor",
+          "description": "This bar chart displays the accuracy of invoices submitted by each vendor, providing insights into data quality.",
+          "data": [
+            {
+              "name": "Spread Commissary",
+              "accuracy": 98.33
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "accuracy": 99.21
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "accuracy",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#4CAF50",
+              "#2196F3"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_3",
+          "type": "line",
+          "title": "Invoice Submission Trends Over Time",
+          "description": "This line chart illustrates the trends in invoice submissions over time, allowing for the identification of patterns in vendor behavior.",
+          "data": [
+            {
+              "name": "09/08/2024",
+              "line_count": 1
+            },
+            {
+              "name": "09/08/2024",
+              "line_count": 3
+            }
+          ],
+          "data_source": {
+            "x_axis": "invoice_date",
+            "y_axis": "line_count"
+          },
+          "config": {
+            "colors": [
+              "#4CAF50",
+              "#2196F3"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_4",
+          "type": "area",
+          "title": "Overall Confidence Levels by Vendor",
+          "description": "This area chart represents the overall confidence levels of invoices from each vendor, highlighting data reliability.",
+          "data": [
+            {
+              "name": "Spread Commissary",
+              "overall_min_confidence": 99.94231
+            },
+            {
+              "name": "DEMO - Sliced Invoices",
+              "overall_min_confidence": 99.90671
+            }
+          ],
+          "data_source": {
+            "x_axis": "vendor_name",
+            "y_axis": "overall_min_confidence"
+          },
+          "config": {
+            "colors": [
+              "#4CAF50",
+              "#2196F3"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_5",
+          "type": "scatter",
+          "title": "Confidence Comparison between Description and Quantity",
+          "description": "This scatter plot compares the confidence levels of item descriptions against quantities for each invoice, revealing potential discrepancies.",
+          "data": [
+            {
+              "name": "Item 1",
+              "min_desc_conf": 99.99224,
+              "min_qty_conf": 99.99964
+            },
+            {
+              "name": "Item 2",
+              "min_desc_conf": 99.962975,
+              "min_qty_conf": 99.9798
+            }
+          ],
+          "data_source": {
+            "x_axis": "min_qty_conf",
+            "y_axis": "min_desc_conf"
+          },
+          "config": {
+            "colors": [
+              "#4CAF50",
+              "#2196F3"
+            ],
+            "orientation": "vertical"
+          }
+        }
+      ],
+      "insights": "The analysis indicates a strong performance in invoice accuracy with most vendors achieving confidence levels well above the threshold. The trends suggest steady invoice submissions, particularly from the 'DEMO - Sliced Invoices' vendor. Monitoring these patterns will assist in maintaining high standards in invoice processing.",
+      "recommended_view": "dashboard"
+    },
+    "used_guidance": true,
+    "execution_time": "Fast (pre-built template, attempt 1)",
+    "query_attempts": 1
+  }
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "template": "Invoice Aging Report",
+    "type": "Read Query",
+    "error": "syntax error at or near \",\"\nLINE 10: ,\n         ^\n",
+    "query": "SELECT\n    d.batch_name AS batch_name,\n    (i.invoice_number->>'value')::text AS invoice_number,\n    (i.invoice_date->>'value')::text AS invoice_date,\n    (i.due_date->>'value')::text AS due_date,\n    NULLIF(i.total->>'value', '')::numeric AS total_amount,\n    NULLIF(i.balance_amount->>'value', '')::numeric AS balance_due,\n    v.name AS vendor_name,\n    v.company AS vendor_company,\n,\n    CASE \n        WHEN (CURRENT_DATE - TO_DATE(i.due_date->>'value', 'MM/DD/YYYY')) <= 30 THEN '0-30 days'\n        WHEN (CURRENT_DATE - TO_DATE(i.due_date->>'value', 'MM/DD/YYYY')) BETWEEN 31 AND 60 THEN '31-60 days'\n        WHEN (CURRENT_DATE - TO_DATE(i.due_date->>'value', 'MM/DD/YYYY')) BETWEEN 61 AND 90 THEN '61-90 days'\n        WHEN (CURRENT_DATE - TO_DATE(i.due_date->>'value', 'MM/DD/YYYY')) > 90 THEN '90+ days'\n        ELSE 'Current'\n    END AS aging_bucket,\n    (CURRENT_DATE - TO_DATE(i.due_date->>'value', 'MM/DD/YYYY')) AS days_overdue\nFROM icap_invoice i\nLEFT JOIN icap_vendor v ON i.vendor_id = v.id\nINNER JOIN icap_document d ON i.document_id = d.id\nWHERE (i.payment_date->>'value' IS NULL OR i.payment_date->>'value' = '')\n    AND (i.balance_amount->>'value' IS NULL OR i.balance_amount->>'value' = '' OR (i.balance_amount->>'value')::numeric > 0)\nORDER BY days_overdue DESC, (i.total->>'value')::numeric DESC;"
+  }
+]

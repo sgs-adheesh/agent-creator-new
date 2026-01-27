@@ -28,6 +28,13 @@ except ImportError:
     ToolAnalyzer = None
     TOOL_ANALYZER_AVAILABLE = False
 
+try:
+    from services.semantic_service import SemanticService
+    SEMANTIC_SERVICE_AVAILABLE = True
+except ImportError:
+    SemanticService = None
+    SEMANTIC_SERVICE_AVAILABLE = False
+
 
 class AgentService:
     """Service for creating and executing agents"""
@@ -55,6 +62,16 @@ class AgentService:
         
         # Load all available tools dynamically
         self.tools = self._load_all_tools()
+        
+        # Initialize semantic service
+        if SEMANTIC_SERVICE_AVAILABLE:
+            try:
+                self.semantic_service = SemanticService()
+            except Exception as e:
+                logger.warning(f"Failed to initialize SemanticService: {e}")
+                self.semantic_service = None
+        else:
+            self.semantic_service = None
     
     def _load_all_tools(self) -> List:
         """
@@ -113,6 +130,52 @@ class AgentService:
         
         print(f"\nTotal tools loaded: {len(tools)}\n")
         return tools
+
+    def _get_agent_templates_summary(self) -> str:
+        """
+        Load and summarize existing agent templates to use as reference for the LLM
+        """
+        try:
+            # Path relative to backend/services/agent_service.py -> backend/templates/agent_templates.json
+            templates_file = Path(__file__).parent.parent / "templates" / "agent_templates.json"
+            
+            if not templates_file.exists():
+                logger.warning(f"Templates file not found at {templates_file}")
+                return ""
+            
+            with open(templates_file, 'r', encoding='utf-8') as f:
+                templates = json.load(f)
+            
+            summary_parts = []
+            for t in templates:
+                template_data = t.get("template", {})
+                summary = (
+                    f"Template Name: {t.get('name')}\n"
+                    f"Description: {t.get('description')}\n"
+                    f"Prompt: {template_data.get('prompt')}\n"
+                    f"Tools: {', '.join(template_data.get('tools', []))}\n"
+                )
+                summary_parts.append(summary)
+            
+            return "\n---\n".join(summary_parts)
+        except Exception as e:
+            logger.error(f"Error loading agent templates summary: {e}")
+            return ""
+
+    def _get_agent_templates(self) -> List[Dict[str, Any]]:
+        """
+        Load raw agent templates list
+        """
+        try:
+            templates_file = Path(__file__).parent.parent / "templates" / "agent_templates.json"
+            if not templates_file.exists():
+                return []
+            
+            with open(templates_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading agent templates: {e}")
+            return []
     
     def reload_tools(self):
         """Reload all tools from directory (useful after generating new tools)"""
@@ -232,6 +295,8 @@ class AgentService:
                     )
                     
                     if visualization_config:
+                        # 🐍 Python data formation step to ensure robustness
+                        visualization_config = self._form_visualization_data(table_data, visualization_config)
                         base_response["visualization_config"] = visualization_config
                         print(f"  ✅ Visualization config generated and added to response")
                     else:
@@ -490,6 +555,226 @@ class AgentService:
         else:
             return base_response
     
+    def _form_visualization_data(self, table_data: Dict[str, Any], visualization_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Form structured data for visualization charts using Python aggregation
+        
+        Args:
+            table_data: Raw query result data with rows and columns
+            visualization_config: The visualization configuration from LLM
+            
+        Returns:
+            Updated visualization configuration with populated data
+        """
+        if not table_data or not table_data.get('rows') or not visualization_config or not visualization_config.get('charts'):
+            return visualization_config
+            
+        rows = table_data.get('rows', [])
+        print(f"  📊 Python Data Formation: Processing {len(rows)} rows for {len(visualization_config.get('charts', []))} charts")
+        
+        for chart in visualization_config.get('charts', []):
+            try:
+                data_source = chart.get('data_source', {})
+                chart_type = chart.get('type')
+                
+                # Settle on a label for the chart
+                # Grouping Logic (for Pie, Bar, Treemap, etc.)
+                if 'group_by' in data_source and 'aggregate' in data_source:
+                    group_field = data_source['group_by']
+                    agg_config = data_source['aggregate'] # {field, function}
+                    
+                    if isinstance(agg_config, dict):
+                        agg_field = agg_config.get('field')
+                        agg_func = agg_config.get('function', 'sum').lower()
+                    else:
+                        # Handle case where aggregate might be just a string
+                        agg_field = str(agg_config)
+                        agg_func = 'sum'
+                    
+                    if not group_field or not agg_field:
+                        continue
+                        
+                    # Perform aggregation
+                    groups = {}
+                    for row in rows:
+                        # Get group key
+                        key = row.get(group_field, 'Unknown')
+                        if key is None: key = 'Unknown'
+                        if isinstance(key, dict): key = str(key)
+                        
+                        # Get value
+                        val = row.get(agg_field, 0)
+                        try:
+                            val = float(val) if val is not None else 0
+                        except (ValueError, TypeError):
+                            val = 0
+                            
+                        if key not in groups:
+                            groups[key] = []
+                        groups[key].append(val)
+                    
+                    # Compute final values
+                    chart_data = []
+                    for key, values in groups.items():
+                        if agg_func == 'sum':
+                            result_val = sum(values)
+                        elif agg_func in ['avg', 'mean', 'average']:
+                            result_val = sum(values) / len(values) if values else 0
+                        elif agg_func == 'count':
+                            result_val = len(values)
+                        elif agg_func == 'min':
+                            result_val = min(values) if values else 0
+                        elif agg_func == 'max':
+                            result_val = max(values) if values else 0
+                        else:
+                            result_val = sum(values) 
+                            
+                        chart_data.append({
+                            "name": str(key),
+                            "value": result_val,
+                            agg_field: result_val # Include original field name too
+                        })
+                    
+                    # Sort by value desc for better viz
+                    chart_data.sort(key=lambda x: x['value'], reverse=True)
+                    
+                    # Limit to top 20 for readability
+                    if len(chart_data) > 20:
+                        chart_data = chart_data[:20]
+                        
+                    chart['data'] = chart_data
+                    print(f"    ✓ Formed data for chart {chart.get('id')} ({chart_type}): {len(chart_data)} points")
+
+                # XY Logic (for Scatter, Line over time)
+                elif 'x_axis' in data_source and 'y_axis' in data_source:
+                    x_field = data_source['x_axis']
+                    y_field = data_source['y_axis']
+                    
+                    chart_data = []
+                    for row in rows:
+                        # Only include rows that have the fields
+                        if x_field in row or y_field in row:
+                            x_val = row.get(x_field, '')
+                            y_val = row.get(y_field, 0)
+                            
+                            # Clean Y value
+                            try:
+                                y_val = float(y_val) if y_val is not None else 0
+                            except:
+                                y_val = 0
+                            
+                            # 🏷️ Smart Naming Logic: prioritize Batch Name > Invoice Number > Vendor Name
+                            display_name = str(x_val) # Default to X value
+                            
+                            # Check for specific identifier fields
+                            if row.get('batch_name'):
+                                display_name = str(row['batch_name'])
+                            elif row.get('invoice_number'):
+                                display_name = str(row['invoice_number'])
+                            elif row.get('inv_num'):
+                                display_name = str(row['inv_num'])
+                            elif row.get('vendor_name') and chart_type == 'scatter':
+                                # For scatter plots, vendor name is often a good label if no invoice/batch info
+                                display_name = str(row['vendor_name'])
+                                
+                            item = {
+                                "name": display_name,
+                                x_field: x_val,
+                                y_field: y_val,
+                                "value": y_val # Fallback
+                            }
+                            # Copy other fields for tooltip context (careful not to copy huge objects)
+                            for k, v in row.items():
+                                if k not in item and isinstance(v, (str, int, float, bool, type(None))):
+                                    item[k] = v
+                                    
+                            chart_data.append(item)
+                            
+                    # Sort line/area charts by X axis if possible (dates)
+                    if chart_type in ['line', 'area', 'candlestick']:
+                        try:
+                            # Try to sort, assuming comparable types
+                            chart_data.sort(key=lambda x: x.get(x_field) or '')
+                        except:
+                            pass
+                            
+                    chart['data'] = chart_data
+                    print(f"    ✓ Formed data for chart {chart.get('id')} ({chart_type}): {len(chart_data)} points")
+                    
+                 # Radar/Radial Logic (Group by + Metrics)
+                elif 'group_by' in data_source and 'metrics' in data_source:
+                    group_field = data_source['group_by']
+                    metrics = data_source['metrics']
+                    
+                    if not isinstance(metrics, list):
+                        metrics = [metrics]
+                    
+                    chart_data = []
+                    # For Radar, take top 12 items
+                    for row in rows[:12]: 
+                        # Use group field, but can fallback to friendly names if group field is just an ID?
+                        # For now, stick to group_field as that's what the chart expects for axes
+                        item = {"name": str(row.get(group_field, 'Unknown'))}
+                        
+                        for m in metrics:
+                            val = row.get(m, 0)
+                            try: val = float(val) 
+                            except: val = 0
+                            item[m] = val
+                            
+                        # Pass through other numeric fields for flexibility
+                        for k, v in row.items():
+                            if k not in item and isinstance(v, (int, float)):
+                                item[k] = v
+                                
+                        chart_data.append(item)
+                        
+                    chart['data'] = chart_data
+                    print(f"    ✓ Formed data for chart {chart.get('id')} ({chart_type}) with metrics: {len(chart_data)} points")
+                
+                # Fallback: if data is missing, just populate strictly from rows (dumb copy)
+                elif 'data' not in chart or not chart['data']:
+                    print(f"    ℹ️ No specific data_source for chart {chart.get('id')}, copying raw rows")
+                    # Smart copy: limit rows and simplify
+                    simple_rows = []
+                    for r in rows[:50]:
+                        new_r = {}
+                        for k, v in r.items():
+                            if isinstance(v, (str, int, float, bool, type(None))): 
+                                new_r[k] = v
+                                # heuristic for 'value' if not present
+                                if isinstance(v, (int, float)) and 'value' not in new_r:
+                                     new_r['value'] = v
+                        
+                        # 🏷️ Smart Naming Logic for Fallback
+                        if 'name' not in new_r:
+                            if new_r.get('batch_name'):
+                                new_r['name'] = str(new_r['batch_name'])
+                            elif new_r.get('invoice_number'):
+                                new_r['name'] = str(new_r['invoice_number'])
+                            elif new_r.get('inv_num'):
+                                new_r['name'] = str(new_r['inv_num'])
+                            elif new_r.get('vendor_name'):
+                                new_r['name'] = str(new_r['vendor_name'])
+                            else:
+                                # Pick first string field
+                                for k, v in new_r.items():
+                                    if isinstance(v, str):
+                                        new_r['name'] = v
+                                        break
+                                if 'name' not in new_r:
+                                    new_r['name'] = f"Item {len(simple_rows)+1}"
+                        
+                        simple_rows.append(new_r)
+                    chart['data'] = simple_rows
+
+            except Exception as e:
+                print(f"    ⚠️ Error forming data for chart {chart.get('id')}: {e}")
+                import traceback
+                traceback.print_exc()
+                
+        return visualization_config
+
     def _generate_visualization_config(self, query_result: Dict[str, Any], agent_purpose: str, user_preferences: str = None, streaming_callback = None) -> Dict[str, Any]:
         """
         Generate visualization configuration using LLM based on agent purpose and data structure
@@ -1130,7 +1415,15 @@ Visualization Configuration JSON:"""
                     # Try to parse result as dict
                     if isinstance(result, str):
                         try:
-                            result_dict = eval(result)  # or json.loads if result is JSON
+                            # Safe eval with Decimal and datetime available
+                            import datetime as dt
+                            from decimal import Decimal
+                            context = {
+                                "Decimal": Decimal,
+                                "datetime": dt,
+                                "date": dt.date
+                            }
+                            result_dict = eval(result, {"__builtins__": {}}, context)
                             logger.debug(f"Parsed result as dict")
                         except Exception as e:
                             logger.debug(f"Failed to parse result: {e}")
@@ -2139,6 +2432,7 @@ Return ONLY the markdown-formatted version:"""
             
             query_template = execution_guidance.get('query_template', {})
             execution_plan = execution_guidance.get('execution_plan', {})
+            write_query_template = execution_guidance.get('write_query_template', '')
             workflow_config = agent_data.get('workflow_config', {})
             
             # Step 1: Extract parameters from input_data or user_query
@@ -2199,6 +2493,134 @@ Return ONLY the markdown-formatted version:"""
                 print("  ✅ Query was proactively fixed before execution")
                 current_query = validated_query
                 query_was_corrected = True  # Mark that we made changes
+            
+            # 🔒 CONFIRMATION CHECK & WRITE DELEGATION
+            import re
+            # Check for common write keywords at the start of the query
+            # Check for common write keywords at the start of the query
+            write_pattern = re.compile(r'^\s*(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|REPLACE|MERGE)', re.IGNORECASE)
+            
+            # Remove comments to avoid false positives (simple check)
+            clean_query = re.sub(r'--.*', '', current_query)
+            clean_query = re.sub(r'/\*.*?\*/', '', clean_query, flags=re.DOTALL)
+            clean_query = clean_query.strip()
+            
+            match = write_pattern.match(clean_query)
+            is_write_op = bool(match)
+            
+            print(f"  🔍 Query Operation Check:")
+            if write_query_template:
+                 print(f"  📝 Write Query Template Available: {write_query_template[:50]}...")
+            print(f"  - Clean start: '{clean_query[:50]}...'")
+            print(f"  - Detected Operation: {'WRITE (' + match.group(1).upper() + ')' if match else 'READ/OTHER'}")
+            print(f"  - Is Write Op: {is_write_op}")
+
+            
+            if is_write_op:
+                print("  🔒 Write operation detected - Delegating to PostgresWriter")
+                try:
+                    from tools.postgres_writer import PostgresWriter
+                    writer = PostgresWriter()
+                    
+                    # Check for confirmation
+                    is_confirmed = False
+                    if input_data and isinstance(input_data, dict):
+                         val = input_data.get('confirmation_approved')
+                         if val is True or str(val).lower() == 'true':
+                             is_confirmed = True
+                    
+                    if not is_confirmed:
+                        # Run DRY RUN to check safety and preview
+                        print("  🔒 executing dry run for safety...")
+                        dry_run_result = writer.execute(query=current_query, dry_run=True)
+                        
+                        if not dry_run_result.get('success'):
+                             # Safety check failed or error
+                             print(f"  ❌ Dry run failed: {dry_run_result.get('error')}")
+                             return dry_run_result # Return error directly
+                        
+                        # Return confirmation request with preview details
+                        affected = dry_run_result.get('affected_rows', 0)
+                        msg = f"This action involves a write operation that will affect approximately {affected} row(s)."
+                        if dry_run_result.get('preview_data'):
+                            msg += f"\nPreview: {str(dry_run_result['preview_data'])}"
+                            
+                        return {
+                             "success": True, 
+                             "requires_confirmation": True,
+                             "confirmation_message": msg,
+                             "pending_action": current_query,
+                             "preview_data": dry_run_result.get('preview_data', [])
+                         }
+                    
+                    else:
+                        # Execute REAL WRITE
+                        print("  🚀 executing confirmed write operation...")
+                        result = writer.execute(query=current_query, dry_run=False)
+                        
+                        if result.get('success'):
+                             # Standardize result format for the next steps
+                             # Writer returns {success, affected_rows, message, ...}
+                             # We need to reshape it to look like a query result (rows/columns)
+                             # Writes usually don't return rows unless RETURNING is used
+                             result['row_count'] = result.get('affected_rows', 0)
+                             result['rows'] = [] 
+                             result['columns'] = []
+                             
+                             print(f"  ✅ Write executed successfully: {result.get('message')}")
+                             if progress_callback:
+                                progress_callback(2, 'completed', 'Running tools', result.get('message'))
+                             
+                             # We skip the standard read loop by breaking or wrapping? 
+                             # The code below triggers output formatting. Let's return the result now 
+                             # formatted as if it came from the connector, so downstream logic works?
+                             # Downstream expects 'result' to be defined in the loop. 
+                             # Since we are outside the loop, we must adapt.
+                             
+                             # Actually, we should just continue to output formatting using this result.
+                             # But the loop below handles READs. We need to prevent the read loop from running.
+                             # Create intermediate steps in DICTIONARY format
+                             intermediate_steps = [{
+                                 "action": {
+                                     "tool": "postgres_writer",
+                                     "tool_input": {"query": current_query, "dry_run": False},
+                                     "log": result.get('message')
+                                 },
+                                 "result": str(result)
+                             }]
+                             
+                             output_format = workflow_config.get('output_format', 'text')
+                             
+                             # Generate simple output message
+                             output_msg = result.get('message')
+                             
+                             # Use _format_output to handle standardization
+                             formatted_result = self._format_output(output_msg, output_format, intermediate_steps, agent_data=agent_data, visualization_preferences=visualization_preferences)
+                             formatted_result['success'] = True
+                             
+                             return formatted_result
+ 
+                        else:
+                             return result # Return failure
+
+                except ImportError:
+                    print("  ⚠️ PostgresWriter tool not found - failing safely")
+                    return {"success": False, "error": "PostgresWriter tool required for write operations is missing"}
+            
+            # Executing Loop (Read or Fallback)
+            if not is_write_op or (is_write_op and not result.get('success')): # Only if not already successful
+                # If we just executed a write successfully, we should NOT enter this loop unless we need to?
+                # Actually, the logic below is structured as:
+                # for attempt... result = ...
+                # We need to restructure slightly to handle the "already executed" case.
+                pass 
+                
+            # RESTRUCTURED FLOW:
+            # If write and confirmed -> result is already set.
+            # If read -> result needs to be fetched in loop.
+            
+            # If we successfully executed a write, we will return from inside the write block.
+            # Otherwise, we proceed to this generic retry loop.
             
             for attempt in range(1, max_retries + 1):
                 print(f"\n  🔄 Attempt {attempt}/{max_retries}: Executing query...")
@@ -4685,7 +5107,7 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
             "name": agent_name,
             "description": description or prompt[:100],  # Default to first 100 chars of prompt
             "category": category or "General",
-            "icon": icon or "🤖",
+            "icon": icon or "Bot",
             "prompt": prompt,
             "system_prompt": system_prompt,
             "selected_tools": selected_tools or [t.name for t in self.tools],
@@ -4729,6 +5151,62 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
                     "input_fields": [],
                     "output_format": "text"
                 }
+
+            # 🧠 SMART TEMPLATE MATCHING
+            # Check if this request matches an existing template
+            found_exact_match = False
+            matched_template = None
+            
+            if self.semantic_service:
+                try:
+                    templates = self._get_agent_templates()
+                    matches = self.semantic_service.find_similar_templates(prompt, templates, threshold=0.75, top_k=1)
+                    
+                    if matches:
+                        matched_template, score = matches[0]
+                        
+                        # Case 1: High Similarity (>0.9) - Adopt Template
+                        if score >= 0.9:
+                            yield {
+                                "type": "progress",
+                                "step": 1,
+                                "status": "in_progress",
+                                "message": f"Found matching template: {matched_template.get('name')}",
+                                "detail": "Adopting template configuration..."
+                            }
+                            
+                            found_exact_match = True
+                            t_data = matched_template.get("template", {})
+                            
+                            # Adopt prompt if not too specific? No, user prompt is user prompt.
+                            # Adopt tools if not specified
+                            if selected_tools is None:
+                                selected_tools = t_data.get("tools", [])
+                            
+                            # Adopt workflow config if not specified (or default)
+                            if workflow_config.get("trigger_type") == "text_query" and not workflow_config.get("input_fields"):
+                                workflow_config["trigger_type"] = t_data.get("trigger_type", "text_query")
+                                workflow_config["input_fields"] = t_data.get("input_fields", [])
+                                workflow_config["output_format"] = t_data.get("output_format", "text")
+                            
+                            # Adopt metadata if missing
+                            if not description: description = matched_template.get("description")
+                            if not category: category = matched_template.get("category")
+                            if not icon: icon = matched_template.get("icon")
+                            if not use_cases: use_cases = matched_template.get("use_cases")
+                            if not name: name = f"Copy of {matched_template.get('name')}" 
+                            
+                        # Case 2: Moderate Similarity (>0.75) - Use as Reference
+                        else:
+                            yield {
+                                "type": "progress",
+                                "step": 1,
+                                "status": "in_progress",
+                                "message": "Found similar reference template",
+                                "detail": f"Using '{matched_template.get('name')}' as a guide"
+                            }
+                except Exception as e:
+                    logger.warning(f"Template matching failed: {e}")
             
             # Auto-add postgres_inspect_schema
             if selected_tools is not None and 'postgres_query' in selected_tools:
@@ -4769,7 +5247,39 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
             # Build AI reasoning prompt
             tool_descriptions = "\n".join([f"- {tool.name}: {tool.description}" for tool in agent_tools])
             
+            # Get templates summary
+            templates_summary = self._get_agent_templates_summary()
+            
+            # 🧠 Template Context Injection
+            template_instruction = ""
+            if matched_template:
+                t_name = matched_template.get('name')
+                t_desc = matched_template.get('description')
+                t_prompt = matched_template.get('template', {}).get('prompt')
+                
+                if found_exact_match:
+                    template_instruction = f"""
+✅ **EXACT TEMPLATE MATCH FOUND: "{t_name}"**
+The user's request is nearly identical to this template. 
+**CRITICAL INSTRUCTION:** You MUST create an agent that mimics this template exactly.
+- Use the same tools.
+- Use the same logic.
+- Adapt the system prompt: "{t_prompt}"
+- Only change details if the user explicitly asked for something different (e.g., different trigger).
+"""
+                else:
+                    template_instruction = f"""
+💡 **SIMILAR TEMPLATE FOUND: "{t_name}"**
+The user's request is similar to this template: "{t_desc}".
+Use this template as your PRIMARY FOUNDATION. Adapt its prompt ("{t_prompt}") to fit the user's specific request.
+"""
+
             reasoning_prompt = f"""You are an AI assistant helping to create an intelligent agent.
+
+**Reference Agent Templates (Good Examples):**
+Here are some examples of high-quality agents. Use these as a reference.
+{templates_summary}
+{template_instruction}
 
 **Agent Purpose:**
 {prompt}
@@ -4786,7 +5296,9 @@ Think step-by-step and explain your reasoning as you design this agent.
 4. Outline the main instructions the agent needs
 5.While making database queries if confition is there for agent, ensure adding where clause to avoid full table scans.
 
-Start by explaining your understanding and reasoning:"""
+Start by explaining your understanding and reasoning.
+Ensure you end your response with:
+FINAL PROMPT: [The detailed, refined prompt text here]"""
             
             messages = [
                 {"role": "user", "content": reasoning_prompt}
@@ -4797,9 +5309,21 @@ Start by explaining your understanding and reasoning:"""
             for token in self._stream_ai_response(messages):
                 ai_reasoning.append(token)
             
+            # Parse refined prompt from AI output
+            full_reasoning = "".join(ai_reasoning)
+            refined_prompt = prompt # Default to original
+            if "FINAL PROMPT:" in full_reasoning:
+                try:
+                    parts = full_reasoning.split("FINAL PROMPT:")
+                    if len(parts) > 1:
+                        refined_prompt = parts[1].strip()
+                        print(f"✨ AI Refined Prompt: {refined_prompt[:100]}...")
+                except Exception as e:
+                    print(f"⚠️ Failed to parse refined prompt: {e}")
+            
             # Now generate actual system prompt (non-streaming for simplicity)
             selected_tool_names = selected_tools if selected_tools is not None else [t.name for t in self.tools]
-            system_prompt = self._generate_system_prompt(prompt, agent_tools, selected_tool_names)
+            system_prompt = self._generate_system_prompt(refined_prompt, agent_tools, selected_tool_names)
             
             # Mark AI substep complete
             yield {
@@ -5811,6 +6335,40 @@ Start by explaining your understanding and reasoning:"""
                 "output_format": "text"
             })
         
+        # 🚀 OPTIMIZATION: Check if this is a metadata-only update (name change only)
+        original_prompt = existing_agent.get("prompt", "")
+        # Note: existing_agent might not have workflow_config set if old data
+        original_config = existing_agent.get("workflow_config", {})
+        original_tools = existing_agent.get("selected_tools", [])
+        
+        prompt_has_changed = prompt != original_prompt
+        # Note: workflow_config is defaulted above, so we compare that
+        # We need to handle case where original_config defaults might differ from standard defaults if data is old,
+        # but here we rely on value equality.
+        config_has_changed = workflow_config != existing_agent.get("workflow_config")
+        
+        tools_have_changed = False
+        if selected_tools is not None:
+             tools_have_changed = set(selected_tools) != set(original_tools)
+             
+        is_metadata_update_only = (not prompt_has_changed) and (not config_has_changed) and (not tools_have_changed)
+        
+        if is_metadata_update_only:
+             print("ℹ️ Metadata-only update detected. Skipping AI regeneration.")
+             updated_data = {
+                 "name": agent_name,
+                 "prompt": original_prompt,
+                 "system_prompt": existing_agent.get("system_prompt"),
+                 "selected_tools": original_tools,
+                 "workflow_config": workflow_config, # Use the one we resolved (defaults included)
+                 "execution_guidance": existing_agent.get("execution_guidance"),
+                 "cached_query": existing_agent.get("cached_query"), # Preserve cache!
+                 "tool_configs": tool_configs if tool_configs is not None else existing_agent.get("tool_configs", {})
+             }
+             
+             self.storage.update_agent(agent_id, updated_data)
+             return self.storage.get_agent(agent_id)
+
         # Determine which tools to use
         if selected_tools is not None:
             # Use explicitly provided tools (from UI)
@@ -5985,6 +6543,52 @@ Start by explaining your understanding and reasoning:"""
                 "detail": f"Editing agent: {agent_name}"
             }
             
+            # 🚀 OPTIMIZATION: Check for metadata-only updates
+            original_prompt = existing_agent.get("prompt", "")
+            original_config = existing_agent.get("workflow_config", {})
+            original_tools = existing_agent.get("selected_tools", [])
+            
+            prompt_changed = prompt != original_prompt
+            config_changed = workflow_config != existing_agent.get("workflow_config")
+            
+            tools_changed = False
+            if selected_tools is not None:
+                tools_changed = set(selected_tools) != set(original_tools)
+                
+            is_metadata_only = not (prompt_changed or config_changed or tools_changed)
+            
+            if is_metadata_only:
+                print("ℹ️ Metadata-only update detected. Skipping AI regeneration.")
+                
+                # Skip Steps 2, 3, 4
+                yield {"type": "progress", "step": 2, "status": "completed", "message": "Tool analysis skipped (no changes)"}
+                yield {"type": "progress", "step": 3, "status": "completed", "message": "Agent update skipped (no changes)"}
+                yield {"type": "progress", "step": 4, "status": "completed", "message": "Optimization skipped (no changes)"}
+                
+                # Step 5: Save
+                yield {"type": "progress", "step": 5, "status": "in_progress", "message": "Saving changes..."}
+                
+                updated_data = {
+                    "name": agent_name,
+                    "prompt": original_prompt,
+                    "system_prompt": existing_agent.get("system_prompt"),
+                    "selected_tools": original_tools,
+                    "workflow_config": workflow_config,
+                    "execution_guidance": existing_agent.get("execution_guidance"),
+                    "cached_query": existing_agent.get("cached_query"), # Preserve cache
+                    "tool_configs": tool_configs if tool_configs else existing_agent.get("tool_configs", {})
+                }
+                
+                self.storage.update_agent(agent_id, updated_data)
+                
+                yield {"type": "progress", "step": 5, "status": "completed", "message": "Changes saved"}
+                
+                yield {
+                    "type": "result",
+                    "data": self.storage.get_agent(agent_id)
+                }
+                return
+            
             # Step 2: Tool analysis
             yield {
                 "type": "progress",
@@ -6053,7 +6657,14 @@ Start by explaining your understanding and reasoning:"""
             
             changes_text = ", ".join(changes) if changes else "configuration"
             
+            # Get templates summary
+            templates_summary = self._get_agent_templates_summary()
+            
             reasoning_prompt = f"""You are updating an existing agent. Here's what changed:
+
+**Reference Agent Templates (Good Examples):**
+Here are some examples of high-quality agents. Use these as a reference to maintain quality during the update.
+{templates_summary}
 
 **Original Agent:**
 - Name: {existing_agent.get('name')}
@@ -6073,8 +6684,12 @@ Explain what changed and how you're adapting the agent's instructions.
 2. Explain if any new tools are needed or if existing ones should be removed
 3. Describe key adjustments to the agent's behavior
 4. Note any special considerations for the updated mission
+5. Ensure the updated agent meets the quality standards of the reference templates
+6. Finally, write a REFINED PROMPT that will be used as the agent's instructions.
 
-Start by explaining your analysis:"""
+Start by explaining your analysis.
+Ensure you end your response with:
+FINAL PROMPT: [The detailed, refined prompt text here]"""
             
             messages = [
                 {"role": "user", "content": reasoning_prompt}
@@ -6085,8 +6700,20 @@ Start by explaining your analysis:"""
             for token in self._stream_ai_response(messages):
                 ai_reasoning.append(token)
             
+            # Parse refined prompt from AI output
+            full_reasoning = "".join(ai_reasoning)
+            refined_prompt = prompt # Default to original
+            if "FINAL PROMPT:" in full_reasoning:
+                try:
+                    parts = full_reasoning.split("FINAL PROMPT:")
+                    if len(parts) > 1:
+                        refined_prompt = parts[1].strip()
+                        print(f"✨ AI Refined Prompt: {refined_prompt[:100]}...")
+                except Exception as e:
+                    print(f"⚠️ Failed to parse refined prompt: {e}")
+            
             # Generate actual system prompt (non-streaming)
-            system_prompt = self._generate_system_prompt(prompt, agent_tools, selected_tool_names)
+            system_prompt = self._generate_system_prompt(refined_prompt, agent_tools, selected_tool_names)
             
             # Mark AI substep complete
             yield {

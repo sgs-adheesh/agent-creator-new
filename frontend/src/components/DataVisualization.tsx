@@ -920,6 +920,11 @@ export function DataVisualization({ data, title, visualization_config }: DataVis
       ...(configChartData.areaData || []),
       ...(configChartData.scatterData || []),
       ...(configChartData.stackedData || []),
+      ...(configChartData.radarData || []),
+      ...(configChartData.treemapData || []),
+      ...(configChartData.funnelData || []),
+      ...(configChartData.radialData || []),
+      ...(configChartData.composedData || []),
       ...(configChartData.waterfallData || []),
       ...(configChartData.candleData || [])
     ];

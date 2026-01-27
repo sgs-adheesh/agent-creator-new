@@ -17,16 +17,16 @@ export default function CreateAgent() {
   const [generatingTools, setGeneratingTools] = useState(false);
   const [dependencyWarnings, setDependencyWarnings] = useState<string[]>([]);
   const [matchedTools, setMatchedTools] = useState<string[]>([]);  // Store matched tools from analysis
-  
+
   // Workflow configuration state
   const [triggerType, setTriggerType] = useState<string>('text_query');
   const [outputFormat] = useState<string>('text');  // Standardized to 'text' for markdown output
   const [inputFields, setInputFields] = useState<WorkflowConfig['input_fields']>([]);
-  
+
   // NEW: Progress tracking for agent creation
   const [creationProgress, setCreationProgress] = useState<ProgressStep[]>([]);
   const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
-  
+
   const navigate = useNavigate();
 
   // Navigate to workflow viewer when agent is created
@@ -81,14 +81,14 @@ export default function CreateAgent() {
     try {
       const toolsToUse = selectedTools || matchedTools;
       console.log('🚀 Creating agent with tools:', toolsToUse);
-      
+
       // Build workflow configuration
       const workflowConfig: WorkflowConfig = {
         trigger_type: triggerType,
         input_fields: inputFields,
         output_format: outputFormat,
       };
-      
+
       // Initialize progress steps
       const steps: ProgressStep[] = [
         { id: '1', label: 'Analyzing requirements...', status: 'pending' },
@@ -98,7 +98,7 @@ export default function CreateAgent() {
         { id: '5', label: 'Saving agent...', status: 'pending' },
       ];
       setCreationProgress(steps);
-      
+
       // Use streaming API
       const response = await fetch('http://localhost:8000/api/agents/create/stream', {
         method: 'POST',
@@ -110,21 +110,21 @@ export default function CreateAgent() {
           workflow_config: workflowConfig,
         })
       });
-      
+
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      
+
       const readStream = () => {
         reader!.read().then(({ done, value }) => {
           if (done) return;
-          
+
           const text = decoder.decode(value);
           const lines = text.split('\n');
-          
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = JSON.parse(line.substring(6));
-              
+
               if (data.type === 'progress') {
                 // Update progress step
                 const stepIndex = data.step - 1;
@@ -151,14 +151,14 @@ export default function CreateAgent() {
               }
             }
           }
-          
+
           readStream();
         }).catch(err => {
           setError(err.message);
           setLoading(false);
         });
       };
-      
+
       readStream();
     } catch (err) {
       const error = err as { response?: { data?: { detail?: string } }; message?: string };
@@ -177,36 +177,36 @@ export default function CreateAgent() {
     try {
       const allWarnings: string[] = [];
       let totalInstalled = 0;
-      
+
       // Generate each approved tool sequentially
       for (const tool of approvedTools) {
         const result = await toolApi.generateTool(tool);
         if (!result.success) {
           throw new Error(`Failed to generate tool ${tool.display_name}: ${result.error}`);
         }
-        
+
         // Count installed dependencies
         if (result.dependencies_installed) {
           totalInstalled += result.installation_log?.length || 0;
         }
-        
+
         // Collect dependency warnings (only for failed installations)
         if (result.warnings && result.warnings.length > 0) {
           // Filter out warnings for successfully installed packages
           const failedWarnings = result.warnings.filter((warning: string) => {
-            return !result.installation_log?.some((log) => 
+            return !result.installation_log?.some((log) =>
               log.success && warning.includes(log.package)
             );
           });
           allWarnings.push(...failedWarnings);
         }
       }
-      
+
       // Show success message if dependencies were installed
       if (totalInstalled > 0) {
         console.log(`✅ Successfully installed ${totalInstalled} dependencies`);
       }
-      
+
       // Show dependency warnings only if there are unresolved issues
       if (allWarnings.length > 0) {
         setDependencyWarnings(allWarnings);
@@ -232,7 +232,7 @@ export default function CreateAgent() {
     setProposedTools([]);
     setToolReasoning('');
   };
-  
+
   const handleDismissWarnings = async () => {
     setDependencyWarnings([]);
     // Proceed to create agent anyway
@@ -258,7 +258,7 @@ export default function CreateAgent() {
       <div className="max-w-3xl mx-auto">
         <div className="bg-white shadow rounded-lg p-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Agent</h1>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -295,7 +295,7 @@ export default function CreateAgent() {
             {/* Workflow Configuration Section */}
             <div className="border-t pt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">Workflow Configuration</h3>
-              
+
               {/* Trigger Type Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -380,7 +380,7 @@ export default function CreateAgent() {
                       + Add Field
                     </button>
                   </div>
-                  
+
                   {inputFields.map((field, index) => (
                     <div key={index} className="bg-white p-3 rounded border border-gray-200 mb-2">
                       <div className="grid grid-cols-2 gap-3 mb-2">
@@ -403,7 +403,7 @@ export default function CreateAgent() {
                         <select
                           value={field.type}
                           onChange={(e) => updateInputField(index, 'type', e.target.value)}
-                          className="px-3 py-1 text-sm border border-gray-300 rounded"
+                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 shadow-sm"
                         >
                           <option value="text">Text</option>
                           <option value="number">Number</option>
@@ -430,7 +430,7 @@ export default function CreateAgent() {
                       </div>
                     </div>
                   ))}
-                  
+
                   {inputFields.length === 0 && (
                     <p className="text-sm text-gray-500 text-center py-2">
                       No input fields defined yet. Click "Add Field" to create custom input fields.
@@ -494,14 +494,14 @@ export default function CreateAgent() {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/', { state: { activeTab: 'my-agents' } })}
                 className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 Cancel
               </button>
             </div>
           </form>
-          
+
           {/* Progress Panel - Show during agent creation */}
           {loading && creationProgress.length > 0 && (
             <div className="mt-6 space-y-4">
@@ -526,4 +526,3 @@ export default function CreateAgent() {
     </div>
   );
 }
-

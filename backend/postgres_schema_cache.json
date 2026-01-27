@@ -1,6 +1,48 @@
 {
-  "timestamp": "2026-01-12T16:27:37.872464",
+  "timestamp": "2026-01-27T15:01:43.166108",
   "schema": {
+    "_prisma_migrations": [
+      {
+        "name": "id",
+        "type": "varchar",
+        "nullable": false
+      },
+      {
+        "name": "checksum",
+        "type": "varchar",
+        "nullable": false
+      },
+      {
+        "name": "finished_at",
+        "type": "timestamptz",
+        "nullable": true
+      },
+      {
+        "name": "migration_name",
+        "type": "varchar",
+        "nullable": false
+      },
+      {
+        "name": "logs",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "rolled_back_at",
+        "type": "timestamptz",
+        "nullable": true
+      },
+      {
+        "name": "started_at",
+        "type": "timestamptz",
+        "nullable": false
+      },
+      {
+        "name": "applied_steps_count",
+        "type": "int4",
+        "nullable": false
+      }
+    ],
     "admin_event_entity": [
       {
         "name": "id",
@@ -1922,6 +1964,11 @@
         "name": "locked_at",
         "type": "timestamp",
         "nullable": true
+      },
+      {
+        "name": "retry_bill_count",
+        "type": "int4",
+        "nullable": true
       }
     ],
     "icap_document_audit": [
@@ -2888,6 +2935,28 @@
         "name": "is_component",
         "type": "bool",
         "nullable": false
+      }
+    ],
+    "icap_monitored_services": [
+      {
+        "name": "service_name",
+        "type": "varchar",
+        "nullable": false
+      },
+      {
+        "name": "service_url",
+        "type": "text",
+        "nullable": false
+      },
+      {
+        "name": "is_active",
+        "type": "bool",
+        "nullable": true
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp",
+        "nullable": true
       }
     ],
     "icap_n8n_workflow_config": [
@@ -5946,6 +6015,15 @@
       "icap_coa_export_staging_detail",
       "icap_invoice_detail"
     ],
+    "migrations": [
+      "_prisma_migrations"
+    ],
+    "prisma_migrations": [
+      "_prisma_migrations"
+    ],
+    "prisma": [
+      "_prisma_migrations"
+    ],
     "entity": [
       "admin_event_entity",
       "event_entity",
@@ -6542,6 +6620,15 @@
     ],
     "menus": [
       "icap_menus"
+    ],
+    "services": [
+      "icap_monitored_services"
+    ],
+    "monitored_services": [
+      "icap_monitored_services"
+    ],
+    "monitored": [
+      "icap_monitored_services"
     ],
     "workflow_config": [
       "icap_n8n_workflow_config"
@@ -9752,6 +9839,10 @@
       ],
       "incoming": []
     },
+    "_prisma_migrations": {
+      "outgoing": [],
+      "incoming": []
+    },
     "admin_event_entity": {
       "outgoing": [
         {
@@ -10879,6 +10970,10 @@
       "incoming": []
     },
     "icap_menus": {
+      "outgoing": [],
+      "incoming": []
+    },
+    "icap_monitored_services": {
       "outgoing": [],
       "incoming": []
     },

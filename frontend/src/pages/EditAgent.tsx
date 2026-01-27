@@ -16,11 +16,11 @@ export default function EditAgent() {
   // Form Data
   const [prompt, setPrompt] = useState('');
   const [name, setName] = useState('');
-  
+
   // Tool Analysis State
   const [error, setError] = useState<string | null>(null);
   const [matchedTools, setMatchedTools] = useState<string[]>([]);
-  
+
   // Tool Management State
   const [availableTools, setAvailableTools] = useState<string[]>([]);
   const [showToolSelector, setShowToolSelector] = useState(false);
@@ -32,7 +32,7 @@ export default function EditAgent() {
   const [triggerType, setTriggerType] = useState<string>('text_query');
   const [outputFormat] = useState<string>('text');  // Standardized to 'text' for markdown output
   const [inputFields, setInputFields] = useState<WorkflowConfig['input_fields']>([]);
-  
+
   // NEW: Progress tracking for agent editing
   const [editProgress, setEditProgress] = useState<ProgressStep[]>([]);
   const [updatedAgentId, setUpdatedAgentId] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export default function EditAgent() {
       loadAvailableTools();
     }
   }, [id]);
-  
+
   const loadAvailableTools = async () => {
     try {
       const tools = await toolApi.listTools();
@@ -66,14 +66,14 @@ export default function EditAgent() {
     try {
       setInitialLoading(true);
       const agent: Agent = await agentApi.getAgent(id!);
-      
+
       console.log('📦 Loaded agent:', agent);
       console.log('🔧 Agent tools:', agent.selected_tools);
       console.log('🛠️ Agent tool configs:', agent.tool_configs);
-      
+
       setName(agent.name);
       setPrompt(agent.prompt);
-      
+
       // Load existing tools
       if (agent.selected_tools && agent.selected_tools.length > 0) {
         setMatchedTools(agent.selected_tools);
@@ -81,7 +81,7 @@ export default function EditAgent() {
       } else {
         console.log('⚠️ No tools found for this agent');
       }
-      
+
       // Load existing tool configs
       if (agent.tool_configs) {
         setToolConfigs(agent.tool_configs);
@@ -112,7 +112,7 @@ export default function EditAgent() {
       console.log('💾 Saving agent updates...');
       console.log('📋 Current tools:', matchedTools);
       console.log('🔧 Tool configs:', toolConfigs);
-      
+
       await updateAgentDirectly(matchedTools);
     } catch (err) {
       const error = err as { response?: { data?: { detail?: string } }; message?: string };
@@ -125,13 +125,13 @@ export default function EditAgent() {
   const updateAgentDirectly = async (selectedTools?: string[]) => {
     try {
       const toolsToUse = selectedTools || matchedTools;
-      
+
       const workflowConfig: WorkflowConfig = {
         trigger_type: triggerType,
         input_fields: inputFields,
         output_format: outputFormat,
       };
-      
+
       // Initialize progress steps
       const steps: ProgressStep[] = [
         { id: '1', label: 'Loading agent configuration...', status: 'pending' },
@@ -141,7 +141,7 @@ export default function EditAgent() {
         { id: '5', label: 'Saving changes...', status: 'pending' },
       ];
       setEditProgress(steps);
-      
+
       // Use streaming API
       const response = await fetch(`http://localhost:8000/api/agents/${id}/stream`, {
         method: 'PUT',
@@ -154,21 +154,21 @@ export default function EditAgent() {
           tool_configs: toolConfigs,
         })
       });
-      
+
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      
+
       const readStream = () => {
         reader!.read().then(({ done, value }) => {
           if (done) return;
-          
+
           const text = decoder.decode(value);
           const lines = text.split('\n');
-          
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = JSON.parse(line.substring(6));
-              
+
               if (data.type === 'progress') {
                 // Update progress step
                 const stepIndex = data.step - 1;
@@ -195,14 +195,14 @@ export default function EditAgent() {
               }
             }
           }
-          
+
           readStream();
         }).catch(err => {
           setError(err.message);
           setLoading(false);
         });
       };
-      
+
       readStream();
     } catch (err) {
       const error = err as { response?: { data?: { detail?: string } }; message?: string };
@@ -225,7 +225,7 @@ export default function EditAgent() {
   const removeInputField = (index: number) => {
     setInputFields(inputFields.filter((_, i) => i !== index));
   };
-  
+
   // 6. Tool Management Functions
   const addTool = (toolName: string) => {
     if (!matchedTools.includes(toolName)) {
@@ -233,7 +233,7 @@ export default function EditAgent() {
     }
     setShowToolSelector(false);
   };
-  
+
   const removeTool = (toolName: string) => {
     setMatchedTools(matchedTools.filter(t => t !== toolName));
     // Also remove config if exists
@@ -241,18 +241,18 @@ export default function EditAgent() {
     delete newConfigs[toolName];
     setToolConfigs(newConfigs);
   };
-  
+
   const handleConfigureTool = (toolName: string) => {
     // Exclude postgres and qdrant
     const excludedTools = ['postgres_query', 'postgres_inspect_schema', 'qdrant_connector', 'qdrant_search', 'QdrantConnector', 'PostgresConnector'];
     if (excludedTools.some(excluded => toolName.toLowerCase().includes(excluded.toLowerCase()))) {
       return; // Don't show config modal
     }
-    
+
     setConfiguringTool(toolName);
     setShowToolConfigModal(true);
   };
-  
+
   const saveToolConfig = (config: Record<string, string>) => {
     setToolConfigs({
       ...toolConfigs,
@@ -261,7 +261,7 @@ export default function EditAgent() {
     setShowToolConfigModal(false);
     setConfiguringTool('');
   };
-  
+
   const getToolDisplayName = (toolName: string): string => {
     // Map specific tool names to user-friendly names
     const toolNameMap: Record<string, string> = {
@@ -271,12 +271,12 @@ export default function EditAgent() {
       'PostgresConnector': 'DB Reader',
       'PostgresWriter': 'DB Writer',
     };
-    
+
     // Return mapped name if exists, otherwise format normally
     if (toolNameMap[toolName]) {
       return toolNameMap[toolName];
     }
-    
+
     // Convert tool names to readable format
     return toolName
       .replace(/_/g, ' ')
@@ -286,7 +286,7 @@ export default function EditAgent() {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   };
-  
+
   const isToolConfigured = (toolName: string): boolean => {
     const excludedTools = ['postgres_query', 'postgres_inspect_schema', 'qdrant_connector', 'qdrant_search', 'QdrantConnector', 'PostgresConnector'];
     if (excludedTools.some(excluded => toolName.toLowerCase().includes(excluded.toLowerCase()))) {
@@ -316,10 +316,10 @@ export default function EditAgent() {
           <div className="mb-6 flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">Edit Agent</h1>
             <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
-               ID: {id?.slice(0, 8)}...
+              ID: {id?.slice(0, 8)}...
             </span>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -352,7 +352,7 @@ export default function EditAgent() {
                 Describe what you want this agent to accomplish.
               </p>
             </div>
-            
+
             {/* Tool Management Section */}
             <div className="border-t pt-6 space-y-4">
               <div className="flex items-center justify-between">
@@ -371,7 +371,7 @@ export default function EditAgent() {
                   Add Tool
                 </button>
               </div>
-              
+
               {matchedTools.length === 0 ? (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
                   <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -415,23 +415,23 @@ export default function EditAgent() {
                           </svg>
                         </button>
                       </div>
-                      
+
                       {/* Configure button for third-party tools only */}
-                      {!['postgres_query', 'postgres_inspect_schema', 'qdrant_connector', 'qdrant_search', 'QdrantConnector', 'PostgresConnector'].some(excluded => 
+                      {!['postgres_query', 'postgres_inspect_schema', 'qdrant_connector', 'qdrant_search', 'QdrantConnector', 'PostgresConnector'].some(excluded =>
                         tool.toLowerCase().includes(excluded.toLowerCase())
                       ) && (
-                        <button
-                          type="button"
-                          onClick={() => handleConfigureTool(tool)}
-                          className="mt-3 w-full inline-flex items-center justify-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          {isToolConfigured(tool) ? 'Edit Configuration' : 'Configure'}
-                        </button>
-                      )}
+                          <button
+                            type="button"
+                            onClick={() => handleConfigureTool(tool)}
+                            className="mt-3 w-full inline-flex items-center justify-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            {isToolConfigured(tool) ? 'Edit Configuration' : 'Configure'}
+                          </button>
+                        )}
                     </div>
                   ))}
                 </div>
@@ -441,7 +441,7 @@ export default function EditAgent() {
             {/* Workflow Configuration Section */}
             <div className="border-t pt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">Workflow Configuration</h3>
-              
+
               {/* Trigger Type Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -485,7 +485,7 @@ export default function EditAgent() {
                       + Add Field
                     </button>
                   </div>
-                  
+
                   {inputFields.map((field, index) => (
                     <div key={index} className="bg-white p-3 rounded border border-gray-200 mb-2">
                       <div className="grid grid-cols-2 gap-3 mb-2">
@@ -508,7 +508,7 @@ export default function EditAgent() {
                         <select
                           value={field.type}
                           onChange={(e) => updateInputField(index, 'type', e.target.value)}
-                          className="px-3 py-1 text-sm border border-gray-300 rounded"
+                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 shadow-sm"
                         >
                           <option value="text">Text</option>
                           <option value="number">Number</option>
@@ -535,7 +535,7 @@ export default function EditAgent() {
                       </div>
                     </div>
                   ))}
-                  
+
                   {inputFields.length === 0 && (
                     <p className="text-sm text-gray-500 text-center py-2">
                       No input fields defined yet.
@@ -568,7 +568,7 @@ export default function EditAgent() {
               </button>
             </div>
           </form>
-          
+
           {/* Progress Panel - Show during agent editing */}
           {loading && editProgress.length > 0 && (
             <div className="mt-6 space-y-4">
@@ -580,7 +580,7 @@ export default function EditAgent() {
           )}
         </div>
       </div>
-      
+
       {/* Tool Selector Modal */}
       {showToolSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowToolSelector(false)}>
@@ -617,7 +617,7 @@ export default function EditAgent() {
           </div>
         </div>
       )}
-      
+
       {/* Tool Configuration Modal */}
       {showToolConfigModal && (
         <ToolConfigurationModal
@@ -656,7 +656,7 @@ function ToolConfigurationModal({ toolName, initialConfig, onSave, onCancel }: T
         const toolSchema = await toolApi.getToolSchema(toolName);
         setSchema(toolSchema);
         console.log(`📋 Schema for ${toolName}:`, toolSchema);
-        
+
         // Initialize showPassword state for all password fields
         const passwordFields: Record<string, boolean> = {};
         toolSchema.config_fields.forEach(field => {
@@ -672,7 +672,7 @@ function ToolConfigurationModal({ toolName, initialConfig, onSave, onCancel }: T
         setLoading(false);
       }
     };
-    
+
     fetchSchema();
   }, [toolName]);
 
@@ -687,7 +687,7 @@ function ToolConfigurationModal({ toolName, initialConfig, onSave, onCancel }: T
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Configure {toolName.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
         </h3>
-        
+
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -745,7 +745,7 @@ function ToolConfigurationModal({ toolName, initialConfig, onSave, onCancel }: T
                 No configuration fields required for this tool.
               </div>
             )}
-            
+
             <div className="flex gap-2 pt-2">
               <button
                 type="submit"

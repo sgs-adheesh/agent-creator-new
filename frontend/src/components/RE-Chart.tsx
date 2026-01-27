@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {
@@ -1004,20 +1005,27 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
                     />
                     <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '12px', fontWeight: '500' }} formatter={(value) => formatFieldName(value)} />
 
-                    {numericFields.slice(0, 5).map((field, idx) => (
-                      <Radar
-                        key={field}
-                        name={formatFieldName(field)}
-                        dataKey={field}
-                        stroke={MODERN_COLORS[idx % MODERN_COLORS.length]}
-                        fill={MODERN_COLORS[idx % MODERN_COLORS.length]}
-                        fillOpacity={0.3}
-                        onClick={(data) => {
-                          const chartData = data as unknown as ChartData;
-                          handleChartClick(chartData);
-                        }}
-                      />
-                    ))}
+                    {numericFields
+                      .filter(field => {
+                        // Only include fields that actually exist in the data being rendered
+                        const dataSample = (radarData?.length ?? 0) > 0 ? radarData![0] : (barData?.[0]);
+                        return dataSample && typeof dataSample[field as keyof ChartData] === 'number';
+                      })
+                      .slice(0, 5)
+                      .map((field, idx) => (
+                        <Radar
+                          key={field}
+                          name={formatFieldName(field)}
+                          dataKey={field}
+                          stroke={MODERN_COLORS[idx % MODERN_COLORS.length]}
+                          fill={MODERN_COLORS[idx % MODERN_COLORS.length]}
+                          fillOpacity={0.3}
+                          onClick={(data) => {
+                            const chartData = data as unknown as ChartData;
+                            handleChartClick(chartData);
+                          }}
+                        />
+                      ))}
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
@@ -1059,7 +1067,11 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
                   >
                     <RadialBar
                       label={{ position: 'insideStart', fill: '#fff', fontSize: 11 }}
-                      dataKey={numericFields[0]}
+                      dataKey={(() => {
+                        // Find the first numeric field that actually exists in this data
+                        const dataSample = dataToRender![0];
+                        return numericFields.find(f => dataSample && typeof dataSample[f as keyof ChartData] === 'number') || numericFields[0];
+                      })()}
                       onClick={(data) => {
                         const chartData = data as unknown as ChartData;
                         handleChartClick(chartData);
@@ -1085,96 +1097,98 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
         })()}
 
         {/* Composed Chart (mixed types) */}
-        {((composedData?.length ?? 0) > 0 || (barData?.length ?? 0) > 0) && wantsComposed && numericFields.length >= 2 && (
-          (() => {
-            const dataToRender = (composedData?.length ?? 0) > 0 ? composedData : barData;
-            return (
-              <div className="bg-gradient-to-br from-white via-cyan-50 to-blue-50 p-8 rounded-2xl border-2 border-cyan-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="mb-6">
-                  <h4 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-blue-600 to-cyan-500">Combined Analysis (Mixed Chart)</h4>
-                  <p className="text-sm text-gray-700 mt-2 font-medium">Multiple visualization types in one view</p>
-                  <p className="text-xs text-cyan-600 mt-3 flex items-center gap-2 bg-cyan-50 px-3 py-1.5 rounded-full w-fit">
-                    <span className="text-base">👆</span> Hover to preview | Click to view full details
-                  </p>
-                </div>
+        {((composedData?.length ?? 0) > 0 || (barData?.length ?? 0) > 0) && wantsComposed && (() => {
+          const dataToRender = (composedData?.length ?? 0) > 0 ? composedData : barData;
+          const validFields = numericFields.filter(f => dataToRender![0] && typeof dataToRender![0][f as keyof ChartData] === 'number');
+          if (validFields.length < 1) return null;
 
-                <div style={{ width: '100%', height: 500 }} onClick={(e) => e.currentTarget.style.outline = 'none'}>
-                  <ResponsiveContainer>
-                    <ComposedChart data={dataToRender} margin={{ top: 10, right: 10, bottom: 100, left: 10 }} style={{ outline: 'none' }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                      <XAxis
-                        dataKey="name"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#9ca3af', fontSize: 10 }}
-                        height={70}
-                        angle={-35}
-                        textAnchor="end"
-                        interval={0}
-                      />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#9ca3af', fontSize: 11 }}
-                      />
-                      <Tooltip
-                        content={<HoverTooltip />}
-                        cursor={{ fill: 'rgba(6, 182, 212, 0.1)' }}
-                        wrapperStyle={{ pointerEvents: 'none' }}
-                      />
-                      <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '12px', fontWeight: '500' }} formatter={(value) => formatFieldName(value)} />
+          return (
+            <div className="bg-gradient-to-br from-white via-cyan-50 to-blue-50 p-8 rounded-2xl border-2 border-cyan-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <div className="mb-6">
+                <h4 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-blue-600 to-cyan-500">Combined Analysis (Mixed Chart)</h4>
+                <p className="text-sm text-gray-700 mt-2 font-medium">Multiple visualization types in one view</p>
+                <p className="text-xs text-cyan-600 mt-3 flex items-center gap-2 bg-cyan-50 px-3 py-1.5 rounded-full w-fit">
+                  <span className="text-base">👆</span> Hover to preview | Click to view full details
+                </p>
+              </div>
 
-                      {/* First metric as bars */}
-                      <Bar
-                        dataKey={numericFields[0]}
-                        name={formatFieldName(numericFields[0])}
-                        fill={MODERN_COLORS[0]}
-                        radius={[8, 8, 0, 0]}
-                        barSize={36}
+              <div style={{ width: '100%', height: 500 }} onClick={(e) => e.currentTarget.style.outline = 'none'}>
+                <ResponsiveContainer>
+                  <ComposedChart data={dataToRender} margin={{ top: 10, right: 10, bottom: 100, left: 10 }} style={{ outline: 'none' }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#9ca3af', fontSize: 10 }}
+                      height={70}
+                      angle={-35}
+                      textAnchor="end"
+                      interval={0}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#9ca3af', fontSize: 11 }}
+                    />
+                    <Tooltip
+                      content={<HoverTooltip />}
+                      cursor={{ fill: 'rgba(6, 182, 212, 0.1)' }}
+                      wrapperStyle={{ pointerEvents: 'none' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '12px', fontWeight: '500' }} formatter={(value) => formatFieldName(value)} />
+
+                    {/* First metric as bars */}
+                    <Bar
+                      dataKey={validFields[0]}
+                      name={formatFieldName(validFields[0])}
+                      fill={MODERN_COLORS[0]}
+                      radius={[8, 8, 0, 0]}
+                      barSize={36}
+                      onClick={(data) => {
+                        const chartData = data as unknown as ChartData;
+                        handleChartClick(chartData);
+                      }}
+                    />
+
+                    {/* Second metric as line */}
+                    {validFields[1] && (
+                      <Line
+                        type="monotone"
+                        dataKey={validFields[1]}
+                        name={formatFieldName(validFields[1])}
+                        stroke={MODERN_COLORS[1]}
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
                         onClick={(data) => {
                           const chartData = data as unknown as ChartData;
                           handleChartClick(chartData);
                         }}
                       />
+                    )}
 
-                      {/* Second metric as line */}
-                      {numericFields[1] && (
-                        <Line
-                          type="monotone"
-                          dataKey={numericFields[1]}
-                          name={formatFieldName(numericFields[1])}
-                          stroke={MODERN_COLORS[1]}
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                          onClick={(data) => {
-                            const chartData = data as unknown as ChartData;
-                            handleChartClick(chartData);
-                          }}
-                        />
-                      )}
-
-                      {/* Third metric as area (if exists) */}
-                      {numericFields[2] && (
-                        <Area
-                          type="monotone"
-                          dataKey={numericFields[2]}
-                          name={formatFieldName(numericFields[2])}
-                          fill={MODERN_COLORS[2]}
-                          stroke={MODERN_COLORS[2]}
-                          fillOpacity={0.3}
-                          onClick={(data) => {
-                            const chartData = data as unknown as ChartData;
-                            handleChartClick(chartData);
-                          }}
-                        />
-                      )}
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
+                    {/* Third metric as area (if exists) */}
+                    {validFields[2] && (
+                      <Area
+                        type="monotone"
+                        dataKey={validFields[2]}
+                        name={formatFieldName(validFields[2])}
+                        fill={MODERN_COLORS[2]}
+                        stroke={MODERN_COLORS[2]}
+                        fillOpacity={0.3}
+                        onClick={(data) => {
+                          const chartData = data as unknown as ChartData;
+                          handleChartClick(chartData);
+                        }}
+                      />
+                    )}
+                  </ComposedChart>
+                </ResponsiveContainer>
               </div>
-            );
-          })()
-        )}
+            </div>
+          );
+        })()
+        }
 
         {/* Funnel Chart (conversion analysis) */}
         {((funnelData?.length ?? 0) > 0 || (barData?.length ?? 0) > 0) && wantsFunnel && (() => {

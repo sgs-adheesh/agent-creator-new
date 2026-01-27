@@ -23,7 +23,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           type="date"
           value={startDate}
           onChange={(e) => onStartDateChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 shadow-sm"
         />
       </div>
       <div>
@@ -34,7 +34,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           type="date"
           value={endDate}
           onChange={(e) => onEndDateChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 shadow-sm"
         />
       </div>
     </>
@@ -70,7 +70,7 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({
         <select
           value={month}
           onChange={(e) => onMonthChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 shadow-sm"
         >
           <option value="">Select Month</option>
           {months.map((m, idx) => (
@@ -87,7 +87,7 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({
         <select
           value={year}
           onChange={(e) => onYearChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 shadow-sm"
         >
           <option value="">Select Year</option>
           {years.map((y) => (

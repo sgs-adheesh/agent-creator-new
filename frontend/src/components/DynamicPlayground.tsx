@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DateRangePicker, MonthYearPicker, YearPicker } from './DatePickers';
-import {DynamicForm} from './DynamicForm';
+import { DynamicForm } from './DynamicForm';
 
 interface DynamicPlaygroundProps {
   triggerType: string;
@@ -42,25 +42,25 @@ export const DynamicPlayground: React.FC<DynamicPlaygroundProps> = ({
           const [year, month, day] = dateStr.split('-');
           return `${month}/${day}/${year}`;
         };
-        inputData = { 
-          start_date: formatDate(startDate), 
-          end_date: formatDate(endDate) 
+        inputData = {
+          start_date: formatDate(startDate),
+          end_date: formatDate(endDate)
         };
         break;
       }
-        case 'month_year':
+      case 'month_year':
         inputData = { month, year };
-          break;
-        case 'year':
+        break;
+      case 'year':
         inputData = { year };
-          break;
+        break;
       case 'scheduled':
         // No input needed for scheduled agents
         inputData = {};
-          break;
+        break;
       default:
         inputData = {};
-      }
+    }
 
     onExecute(inputData);
   };
@@ -72,18 +72,18 @@ export const DynamicPlayground: React.FC<DynamicPlaygroundProps> = ({
   const renderInputUI = () => {
     switch (triggerType) {
       case 'text_query':
-  return (
-    <div className="space-y-4">
-          <div>
+        return (
+          <div className="space-y-4">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Ask a Question
-            </label>
-            <textarea
+              </label>
+              <textarea
                 value={textQuery}
                 onChange={(e) => setTextQuery(e.target.value)}
-              rows={4}
+                rows={4}
                 placeholder="Enter your query or question..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 shadow-sm"
               />
             </div>
             <button
@@ -188,14 +188,14 @@ export const DynamicPlayground: React.FC<DynamicPlaygroundProps> = ({
             >
               {loading ? 'Running...' : 'Run Now (Manual Trigger)'}
             </button>
-              </div>
+          </div>
         );
 
       default:
         return (
           <div className="text-center py-8 text-gray-500">
             <p>Unknown trigger type: {triggerType}</p>
-            </div>
+          </div>
         );
     }
   };

@@ -1,7 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { agentApi, type Agent } from '../services/api';
-import { IconRenderer } from '../components/IconRenderer';
+import { IconRender } from '../components/IconRendor';
 import { Tooltip } from '../components/Tooltip';
 
 interface AgentTemplate {
@@ -141,7 +143,7 @@ export default function AgentList() {
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <div className="flex items-center gap-2">
-                <IconRenderer iconName="LayoutTemplate" size={16} />
+                <IconRender iconName="LayoutTemplate" size={16} />
                 Agent Templates
               </div>
             </button>
@@ -153,7 +155,7 @@ export default function AgentList() {
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <div className="flex items-center gap-2">
-                <IconRenderer iconName="workflow" size={16} />
+                <IconRender iconName="workflow" size={16} />
                 My Agents ({agents.length})
               </div>
             </button>
@@ -194,7 +196,7 @@ export default function AgentList() {
                 >
                   <div className="flex items-start mb-4">
                     <div className="text-blue-600 mr-3">
-                      <IconRenderer iconName={template.icon} size={32} />
+                      <IconRender iconName={template.icon} size={32} />
                     </div>
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -260,7 +262,7 @@ export default function AgentList() {
                 onClick={() => navigate('/agents/create')}
                 className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                <IconRenderer iconName="brain" size={18} /> Create Custom Agent
+                <IconRender iconName="brain" size={18} /> Create Custom Agent
               </button>
             </div>
 
@@ -269,7 +271,7 @@ export default function AgentList() {
               {/* Search */}
               <div className="relative flex-1 w-full">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                  <IconRenderer iconName="Search" size={18} />
+                  <IconRender iconName="Search" size={18} />
                 </div>
                 <input
                   type="text"
@@ -285,7 +287,7 @@ export default function AgentList() {
                 {/* Filter Trigger */}
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <IconRenderer iconName="Filter" size={16} />
+                    <IconRender iconName="Filter" size={16} />
                   </div>
                   <select
                     value={filterTrigger}
@@ -304,7 +306,7 @@ export default function AgentList() {
                 {/* Sort */}
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <IconRenderer iconName="ArrowUpDown" size={16} />
+                    <IconRender iconName="ArrowUpDown" size={16} />
                   </div>
                   <select
                     value={sortBy}
@@ -323,7 +325,7 @@ export default function AgentList() {
             {filteredAgents.length === 0 ? (
               <div className="bg-white shadow rounded-lg p-12 text-center border border-gray-200">
                 <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
-                  <IconRenderer iconName="Search" size={48} />
+                  <IconRender iconName="Search" size={48} />
                 </div>
                 <p className="text-gray-500 mb-4">
                   {searchTerm || filterTrigger !== 'all' ? 'No agents match your search.' : 'No custom agents created yet.'}
@@ -358,7 +360,7 @@ export default function AgentList() {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className="text-blue-600 bg-blue-50 p-2 rounded-lg flex-shrink-0">
-                            <IconRenderer iconName={agent.icon || 'workflow'} size={24} />
+                            <IconRender iconName={'workflow'} size={24} />
                           </div>
                           <h2 className="text-xl font-semibold text-gray-900 truncate pr-2" title={agent.name}>{agent.name}</h2>
                         </div>
@@ -386,4 +388,3 @@ export default function AgentList() {
     </div >
   );
 }
-

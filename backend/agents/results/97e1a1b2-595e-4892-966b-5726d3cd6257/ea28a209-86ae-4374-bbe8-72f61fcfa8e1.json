@@ -1,0 +1,530 @@
+{
+  "id": "ea28a209-86ae-4374-bbe8-72f61fcfa8e1",
+  "name": "Result - 27/01/2026, 15:15:47",
+  "timestamp": "2026-01-27T15:15:48.461063",
+  "data": {
+    "success": true,
+    "output": "## Invoice Records from Vendor \"Meat Hub\"\n\nThe records retrieved for invoices from the vendor **\"Meat Hub\"** reveal a variety of line items associated with two distinct invoice numbers, **1234567** and **328**. \n\n### Invoice Details\n\n1. **Invoice 1234567**\n   - **Date:** **February 11, 2025**\n   - **Line Items:**\n     - Quantity: **100**\n     - Unit Price: **100**\n     - Category: **Alcohol Licenses**\n   - **Total Amount:** **10,000** (excluding other charges, credit returns, and freight charges)\n\n2. **Invoice 328**\n   - **Dates:** **December 12, 2025** and **February 3, 2025**\n   - **Line Items:**\n     - Item 1:\n       - Quantity: **10**\n       - Unit Price: **10**\n       - Category: **Alcohol Licenses**\n     - Item 2:\n       - Quantity: **10**\n       - Unit Price: **10**\n       - Category: **Alarm Systems**\n   - > Notably, this invoice lacks additional charges or credits, indicating straightforward transactions.\n\nThe data points highlight the vendor's offerings and the relevant **GL category mappings**, essential for accurate financial reporting and analysis.",
+    "intermediate_steps": [
+      {
+        "action": {
+          "tool": "postgres_query",
+          "tool_input": null,
+          "log": null
+        },
+        "result": {
+          "success": true,
+          "columns": [
+            "invoice_number",
+            "invoice_date",
+            "due_date",
+            "other_charges",
+            "credit_and_returns",
+            "tax",
+            "freight_charges",
+            "vendor_name",
+            "line_item_description",
+            "quantity",
+            "unit_price",
+            "uom",
+            "pack",
+            "size_numeric",
+            "size_unit",
+            "category_name",
+            "product_name"
+          ],
+          "rows": [
+            {
+              "invoice_number": "1234567",
+              "invoice_date": "2025-02-11",
+              "due_date": "2025-03-12",
+              "other_charges": "100",
+              "credit_and_returns": "5000",
+              "tax": "",
+              "freight_charges": "1000",
+              "vendor_name": "meat Hub",
+              "line_item_description": "one",
+              "quantity": "100",
+              "unit_price": "100",
+              "uom": "",
+              "pack": "",
+              "size_numeric": null,
+              "size_unit": null,
+              "category_name": "Alcohol Licenses",
+              "product_name": "one"
+            },
+            {
+              "invoice_number": "328",
+              "invoice_date": "2025-02-03",
+              "due_date": "2025-03-03",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "meat Hub",
+              "line_item_description": "one",
+              "quantity": "10",
+              "unit_price": "10",
+              "uom": "",
+              "pack": "",
+              "size_numeric": null,
+              "size_unit": null,
+              "category_name": "Alcohol Licenses",
+              "product_name": "one"
+            },
+            {
+              "invoice_number": "328",
+              "invoice_date": "2025-12-12",
+              "due_date": "2026-12-01",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "meat Hub",
+              "line_item_description": "two",
+              "quantity": "10",
+              "unit_price": "10",
+              "uom": "",
+              "pack": "",
+              "size_numeric": null,
+              "size_unit": null,
+              "category_name": "Alarm Systems",
+              "product_name": "two"
+            },
+            {
+              "invoice_number": "328",
+              "invoice_date": "2025-12-12",
+              "due_date": "2026-01-12",
+              "other_charges": "",
+              "credit_and_returns": "",
+              "tax": "",
+              "freight_charges": "",
+              "vendor_name": "meat Hub",
+              "line_item_description": "two",
+              "quantity": "10",
+              "unit_price": "10",
+              "uom": "",
+              "pack": "",
+              "size_numeric": null,
+              "size_unit": null,
+              "category_name": "Alarm Systems",
+              "product_name": "two"
+            }
+          ],
+          "row_count": 4,
+          "has_more": false,
+          "note": null,
+          "schema_info": null
+        }
+      }
+    ],
+    "output_format": "text",
+    "summary": {
+      "total_records": 4,
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "other_charges",
+        "credit_and_returns",
+        "tax",
+        "freight_charges",
+        "vendor_name",
+        "line_item_description",
+        "quantity",
+        "unit_price",
+        "uom",
+        "pack",
+        "size_numeric",
+        "size_unit",
+        "category_name",
+        "product_name"
+      ],
+      "description": "Query returned 4 record(s) with 17 column(s).",
+      "invoice_breakdown": {
+        "328": {
+          "invoice_number": "328",
+          "line_items": 3,
+          "date": "2025-02-03",
+          "vendor": "meat Hub",
+          "total_quantity": 30
+        },
+        "1234567": {
+          "invoice_number": "1234567",
+          "line_items": 1,
+          "date": "2025-02-11",
+          "vendor": "meat Hub",
+          "total_quantity": 100
+        }
+      },
+      "invoice_summary_text": "**1234567** | Vendor: meat Hub | Date: 2025-02-11 | Line Items: 1 | Total Quantity: 100 units\n**328** | Vendor: meat Hub | Date: 2025-02-03 | Line Items: 3 | Total Quantity: 30 units",
+      "numeric_analysis": {
+        "quantity": {
+          "sum": 130,
+          "average": 32.5,
+          "min": 10,
+          "max": 100,
+          "count": 4,
+          "is_quantity": true,
+          "description": "**quantity**: Total = 130, Average = 32.5, Range = 10 - 100"
+        },
+        "unit_price": {
+          "sum": 130,
+          "average": 32.5,
+          "min": 10,
+          "max": 100,
+          "count": 4,
+          "is_currency": true,
+          "description": "**unit_price**: Total = $130.00, Average = $32.50, Range = $10.00 - $100.00"
+        }
+      },
+      "numeric_summary_text": "**quantity**: Total = 130, Average = 32.5, Range = 10 - 100\n**unit_price**: Total = $130.00, Average = $32.50, Range = $10.00 - $100.00",
+      "date_analysis": {
+        "invoice_date": {
+          "from": "2025-02-03",
+          "to": "2025-12-12",
+          "count": 4,
+          "unique_count": 3,
+          "description": "**invoice_date**: From *2025-02-03* to *2025-12-12* (4 entries, 3 unique dates)"
+        },
+        "due_date": {
+          "from": "2025-03-03",
+          "to": "2026-12-01",
+          "count": 4,
+          "unique_count": 4,
+          "description": "**due_date**: From *2025-03-03* to *2026-12-01* (4 entries, 4 unique dates)"
+        }
+      },
+      "date_summary_text": "**invoice_date**: From *2025-02-03* to *2025-12-12* (4 entries, 3 unique dates)\n**due_date**: From *2025-03-03* to *2026-12-01* (4 entries, 4 unique dates)",
+      "categorical_analysis": {
+        "invoice_number": {
+          "unique_count": 2,
+          "total_entries": 4,
+          "description": "**invoice_number**: 2 unique value(s) across 4 entries",
+          "top_values": [
+            {
+              "value": "328",
+              "count": 3
+            },
+            {
+              "value": "1234567",
+              "count": 1
+            }
+          ]
+        },
+        "other_charges": {
+          "unique_count": 1,
+          "total_entries": 1,
+          "description": "**other_charges**: 1 unique value(s)",
+          "top_values": [
+            {
+              "value": "100",
+              "count": 1
+            }
+          ]
+        },
+        "credit_and_returns": {
+          "unique_count": 1,
+          "total_entries": 1,
+          "description": "**credit_and_returns**: 1 unique value(s)",
+          "top_values": [
+            {
+              "value": "5000",
+              "count": 1
+            }
+          ]
+        },
+        "freight_charges": {
+          "unique_count": 1,
+          "total_entries": 1,
+          "description": "**freight_charges**: 1 unique value(s)",
+          "top_values": [
+            {
+              "value": "1000",
+              "count": 1
+            }
+          ]
+        },
+        "vendor_name": {
+          "unique_count": 1,
+          "total_entries": 4,
+          "description": "**vendor_name**: 1 unique value(s) across 4 entries",
+          "top_values": [
+            {
+              "value": "meat Hub",
+              "count": 4
+            }
+          ]
+        },
+        "category_name": {
+          "unique_count": 2,
+          "total_entries": 4,
+          "description": "**category_name**: 2 unique value(s) across 4 entries",
+          "top_values": [
+            {
+              "value": "Alcohol Licenses",
+              "count": 2
+            },
+            {
+              "value": "Alarm Systems",
+              "count": 2
+            }
+          ]
+        },
+        "product_name": {
+          "unique_count": 2,
+          "total_entries": 4,
+          "description": "**product_name**: 2 unique value(s) across 4 entries",
+          "top_values": [
+            {
+              "value": "one",
+              "count": 2
+            },
+            {
+              "value": "two",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "categorical_summary_text": "**invoice_number**: 2 unique value(s) across 4 entries\n**other_charges**: 1 unique value(s)\n**credit_and_returns**: 1 unique value(s)\n**freight_charges**: 1 unique value(s)\n**vendor_name**: 1 unique value(s) across 4 entries\n**category_name**: 2 unique value(s) across 4 entries\n**product_name**: 2 unique value(s) across 4 entries",
+      "text_analysis": {
+        "line_item_description": {
+          "unique_count": 2,
+          "total_entries": 4,
+          "avg_length": 3,
+          "description": "**line_item_description**: 2 unique entries (avg length: 3 chars)",
+          "samples": [
+            "one",
+            "two"
+          ]
+        }
+      },
+      "text_summary_text": "**line_item_description**: 2 unique entries (avg length: 3 chars)",
+      "full_summary": "# 🤖 AI-Generated Insights\n\n## Invoice Analysis Summary\n\n### Key Findings\n- The dataset contains **4 unique invoices** from a single vendor, **meat Hub**, indicating a strong reliance on this supplier.\n- Total **quantity** across invoices is **130 units** with an average of **32.5 units per invoice**.\n- Total invoiced **amount** equals **$130.00** with an average **unit price** of **$32.50**.\n\n### Invoice Breakdown\n1. **Invoice Numbers**:\n   - **328** appears **3 times** with a total quantity of **30 units**.\n   - **1234567** appears **1 time** with a total quantity of **100 units**.\n\n2. **Vendor Information**:\n   - All invoices are from **meat Hub**, indicating a concentrated vendor relationship.\n\n3. **Date Ranges**:\n   - **Invoice Dates** range from **2025-02-03** to **2025-12-12** with varying due dates from **2025-03-03** to **2026-12-01**.\n\n### Notable Trends\n- The **freight charges** and **other charges** are consistently **$1000** and **$100**, respectively, suggesting a standard shipping and handling cost structure.\n- All invoices recorded **no tax**, possibly indicating a tax-exempt status or a specific categorization of goods.\n\n### Observations on Product Categories\n- Invoices are categorized under **Alcohol Licenses** and **Alarm Systems**, with the product **one** and **two** each appearing **twice**.\n- This indicates a diverse offering from the vendor, warranting further analysis on product performance.\n\n### Business Impact\n> ⚠️ The concentration of invoices from a single vendor may pose risks related to supply chain dependency.\n\n### Actionable Insights\n1. **Vendor Review**: Assess the relationship with **meat Hub** for pricing competitiveness and potential alternative suppliers.\n2. **Invoice Monitoring**: Regularly track invoices for anomalies or unexpected charges, especially with the noted fixed charges.\n3. **Product Performance Evaluation**: Analyze sales and usage data for the products categorized as **Alcohol Licenses** and **Alarm Systems** to maximize procurement efficiency.\n\n---\n\n# 📊 Query Results Summary\n\n**4** records found with **17** columns\n\n## 📎 Invoices\n\n**1234567** - meat Hub (2025-02-11)\n  └ 1 items, 100 units\n\n**328** - meat Hub (2025-02-03)\n  └ 3 items, 30 units\n\n## 💰 Numbers\n\n**quantity:** 130 total, 32.5 avg (10 - 100)\n**unit_price:** $130.00 total, $32.50 avg\n\n## 📅 Dates\n\n**invoice_date:** 3 unique dates from 2025-02-03 to 2025-12-12\n**due_date:** 4 unique dates from 2025-03-03 to 2026-12-01\n\n## 🏷️ Categories\n\n**invoice_number:** 328 (3), 1234567 (1)\n**other_charges:** 100 (1)\n**credit_and_returns:** 5000 (1)\n**freight_charges:** 1000 (1)\n**vendor_name:** meat Hub (4)\n**category_name:** Alcohol Licenses (2), Alarm Systems (2)\n**product_name:** one (2), two (2)\n\n## 📝 Text Fields\n\n**line_item_description:** 2 unique entries, avg 3.0 chars\n",
+      "ai_summary": "## Invoice Analysis Summary\n\n### Key Findings\n- The dataset contains **4 unique invoices** from a single vendor, **meat Hub**, indicating a strong reliance on this supplier.\n- Total **quantity** across invoices is **130 units** with an average of **32.5 units per invoice**.\n- Total invoiced **amount** equals **$130.00** with an average **unit price** of **$32.50**.\n\n### Invoice Breakdown\n1. **Invoice Numbers**:\n   - **328** appears **3 times** with a total quantity of **30 units**.\n   - **1234567** appears **1 time** with a total quantity of **100 units**.\n\n2. **Vendor Information**:\n   - All invoices are from **meat Hub**, indicating a concentrated vendor relationship.\n\n3. **Date Ranges**:\n   - **Invoice Dates** range from **2025-02-03** to **2025-12-12** with varying due dates from **2025-03-03** to **2026-12-01**.\n\n### Notable Trends\n- The **freight charges** and **other charges** are consistently **$1000** and **$100**, respectively, suggesting a standard shipping and handling cost structure.\n- All invoices recorded **no tax**, possibly indicating a tax-exempt status or a specific categorization of goods.\n\n### Observations on Product Categories\n- Invoices are categorized under **Alcohol Licenses** and **Alarm Systems**, with the product **one** and **two** each appearing **twice**.\n- This indicates a diverse offering from the vendor, warranting further analysis on product performance.\n\n### Business Impact\n> ⚠️ The concentration of invoices from a single vendor may pose risks related to supply chain dependency.\n\n### Actionable Insights\n1. **Vendor Review**: Assess the relationship with **meat Hub** for pricing competitiveness and potential alternative suppliers.\n2. **Invoice Monitoring**: Regularly track invoices for anomalies or unexpected charges, especially with the noted fixed charges.\n3. **Product Performance Evaluation**: Analyze sales and usage data for the products categorized as **Alcohol Licenses** and **Alarm Systems** to maximize procurement efficiency."
+    },
+    "table_data": {
+      "columns": [
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "other_charges",
+        "credit_and_returns",
+        "tax",
+        "freight_charges",
+        "vendor_name",
+        "line_item_description",
+        "quantity",
+        "unit_price",
+        "uom",
+        "pack",
+        "size_numeric",
+        "size_unit",
+        "category_name",
+        "product_name"
+      ],
+      "rows": [
+        {
+          "invoice_number": "1234567",
+          "invoice_date": "2025-02-11",
+          "due_date": "2025-03-12",
+          "other_charges": "100",
+          "credit_and_returns": "5000",
+          "tax": "",
+          "freight_charges": "1000",
+          "vendor_name": "meat Hub",
+          "line_item_description": "one",
+          "quantity": "100",
+          "unit_price": "100",
+          "uom": "",
+          "pack": "",
+          "size_numeric": null,
+          "size_unit": null,
+          "category_name": "Alcohol Licenses",
+          "product_name": "one"
+        },
+        {
+          "invoice_number": "328",
+          "invoice_date": "2025-02-03",
+          "due_date": "2025-03-03",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "meat Hub",
+          "line_item_description": "one",
+          "quantity": "10",
+          "unit_price": "10",
+          "uom": "",
+          "pack": "",
+          "size_numeric": null,
+          "size_unit": null,
+          "category_name": "Alcohol Licenses",
+          "product_name": "one"
+        },
+        {
+          "invoice_number": "328",
+          "invoice_date": "2025-12-12",
+          "due_date": "2026-12-01",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "meat Hub",
+          "line_item_description": "two",
+          "quantity": "10",
+          "unit_price": "10",
+          "uom": "",
+          "pack": "",
+          "size_numeric": null,
+          "size_unit": null,
+          "category_name": "Alarm Systems",
+          "product_name": "two"
+        },
+        {
+          "invoice_number": "328",
+          "invoice_date": "2025-12-12",
+          "due_date": "2026-01-12",
+          "other_charges": "",
+          "credit_and_returns": "",
+          "tax": "",
+          "freight_charges": "",
+          "vendor_name": "meat Hub",
+          "line_item_description": "two",
+          "quantity": "10",
+          "unit_price": "10",
+          "uom": "",
+          "pack": "",
+          "size_numeric": null,
+          "size_unit": null,
+          "category_name": "Alarm Systems",
+          "product_name": "two"
+        }
+      ],
+      "row_count": 4
+    },
+    "visualization_config": {
+      "charts": [
+        {
+          "id": "chart_1",
+          "type": "pie",
+          "title": "Total Invoice Amounts by Vendor",
+          "description": "This pie chart shows the distribution of total invoice amounts from each vendor, highlighting the contributions of each vendor to the overall invoicing.",
+          "data": [
+            {
+              "name": "meat Hub",
+              "value": 5100
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "total",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#4CAF50",
+              "#2196F3"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_2",
+          "type": "bar",
+          "title": "Invoice Quantities by Vendor",
+          "description": "This bar chart displays the total quantities of line items invoiced from each vendor, providing insights into the volume of goods received.",
+          "data": [
+            {
+              "name": "meat Hub",
+              "quantity": 120
+            }
+          ],
+          "data_source": {
+            "group_by": "vendor_name",
+            "aggregate": {
+              "field": "quantity",
+              "function": "sum"
+            }
+          },
+          "config": {
+            "colors": [
+              "#FF5722"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_3",
+          "type": "line",
+          "title": "Invoice Amounts Over Time",
+          "description": "This line chart illustrates the trend of invoice amounts from the vendor over time, showcasing payment patterns and seasonality.",
+          "data": [
+            {
+              "name": "2025-02-11",
+              "amount": 5100
+            },
+            {
+              "name": "2025-02-03",
+              "amount": 100
+            },
+            {
+              "name": "2025-12-12",
+              "amount": 200
+            },
+            {
+              "name": "2025-12-12",
+              "amount": 200
+            }
+          ],
+          "data_source": {
+            "x_axis": "invoice_date",
+            "y_axis": "total"
+          },
+          "config": {
+            "colors": [
+              "#3F51B5"
+            ],
+            "orientation": "vertical"
+          }
+        },
+        {
+          "id": "chart_4",
+          "type": "area",
+          "title": "Cumulative Invoice Amounts by Vendor",
+          "description": "This area chart shows the cumulative amounts of invoices over time from each vendor, allowing for an understanding of total expenditures over the selected period.",
+          "data": [
+            {
+              "name": "2025-02-11",
+              "amount": 5100
+            },
+            {
+              "name": "2025-12-12",
+              "amount": 2000
+            }
+          ],
+          "data_source": {
+            "x_axis": "invoice_date",
+            "y_axis": "total"
+          },
+          "config": {
+            "colors": [
+              "#FFC107"
+            ],
+            "orientation": "vertical"
+          }
+        }
+      ],
+      "insights": "The total amounts invoiced by the vendor meat Hub indicate a significant reliance on this supplier. The distribution of invoice quantities shows a consistent volume of goods received, while the trends in invoice amounts over time reflect potential seasonal spending patterns.",
+      "recommended_view": "dashboard"
+    },
+    "used_guidance": true,
+    "execution_time": "Fast (pre-built template, attempt 2)",
+    "query_attempts": 2,
+    "query_corrected": true,
+    "correction_saved": true
+  }
+}

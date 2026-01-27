@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Handle, Position } from 'reactflow';
-import { IconRenderer } from './IconRenderer';
+import { IconRender } from './IconRendor';
 
 // --- Types ---
 interface NodeData {
@@ -64,7 +64,7 @@ const BaseNode = ({
             flex items-center justify-center 
             text-lg shadow-inner
           ">
-            <IconRenderer iconName={config.icon} size={20} />
+            <IconRender iconName={config.icon} size={20} />
           </div>
 
           {/* Title & Type */}

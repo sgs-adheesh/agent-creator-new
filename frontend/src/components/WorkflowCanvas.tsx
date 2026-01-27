@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, useCallback, useRef } from 'react';
 import * as React from 'react';
 import ReactFlow, {
@@ -20,7 +21,7 @@ import remarkGfm from 'remark-gfm';
 import SavedResultsManager from './SavedResultsManager';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { IconRenderer } from './IconRenderer';
+import { IconRender } from './IconRendor';
 
 
 function MarkdownRenderer({ content }: { content: string }) {
@@ -1037,7 +1038,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                                           disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
                                         />
                                         <span className="ml-3 text-sm text-gray-700 flex items-center gap-2.5 font-medium">
-                                          <span className="text-base"><IconRenderer iconName={chart.icon} size={16} /></span>
+                                          <span className="text-base"><IconRender iconName={chart.icon} size={16} /></span>
                                           {chart.label}
                                         </span>
                                       </label>
@@ -1120,7 +1121,7 @@ export default function WorkflowCanvas({ agentId, viewMode = 'full' }: WorkflowC
                                           disabled={executing || (!selectedChartTypes.includes(chart.value) && selectedChartTypes.length >= 4)}
                                         />
                                         <span className="ml-3 text-sm text-gray-700 flex items-center gap-2.5 font-medium">
-                                          <span className="text-base"><IconRenderer iconName={chart.icon} size={16} /></span>
+                                          <span className="text-base"><IconRender iconName={chart.icon} size={16} /></span>
                                           {chart.label}
                                         </span>
                                       </label>

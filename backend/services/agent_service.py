@@ -2091,10 +2091,12 @@ Visualization Configuration JSON:"""
                 agent_desc = agent_data.get('description', '')
                 use_cases = agent_data.get('use_cases', [])
                 agent_category = agent_data.get('category', '')
+                agent_prompt = agent_data.get('prompt', '')
                 
                 agent_context = f"""\n\n🎯 AGENT CONTEXT:
 - Name: {agent_name}
 - Description: {agent_desc}
+- Purpose/Prompt: {agent_prompt}
 - Category: {agent_category}
 - Use Cases: {', '.join(use_cases)}
 
@@ -2145,7 +2147,7 @@ Provide a detailed, insightful summary using **STRICT MARKDOWN FORMATTING**:
 
 ### Key Findings
 - Found **10 duplicate groups** affecting **30 invoices**
-- Vendor **meat Hub** has invoice **#328** duplicated **4 times** (Total: **$1.00**)
+- Vendor **vendor_name** has invoice **#328** duplicated **4 times** (Total: **$1.00**)
 
 ### Business Impact
 > ⚠️ High-priority duplicates detected in vendor payments
@@ -2191,10 +2193,12 @@ Provide a comprehensive markdown-formatted analysis:"""
                 agent_desc = agent_data.get('description', '')
                 use_cases = agent_data.get('use_cases', [])
                 agent_category = agent_data.get('category', '')
+                agent_prompt = agent_data.get('prompt', '')
                 
                 agent_context = f"""\n\n🎯 AGENT CONTEXT:
 - Name: {agent_name}
 - Description: {agent_desc}
+- Purpose/Prompt: {agent_prompt}
 - Category: {agent_category}
 - Use Cases: {', '.join(use_cases)}
 
@@ -3898,44 +3902,49 @@ User Request: {prompt}
 
 Database Schema Information:
 {schema_info}
+🔴 The 5 Golden Rules of Defensive SQL:
+    📌 RULE 1: Defensive Join Pattern (UUID Fields)
+    Never cast JSONB to UUID directly in a JOIN. If the key is missing or empty, the query will crash.
 
-🔴 THE 4 GOLDEN RULES OF DEFENSIVE SQL (MUST FOLLOW EVERY TIME):
+    ❌ BAD: LEFT JOIN prod ON (detail.product_id->>'value')::uuid = prod.id
 
-📌 RULE 1: Defensive Join Pattern (for UUID fields)
-   Never cast JSONB to UUID directly in JOIN. Always verify data exists first.
-   ❌ BAD: LEFT JOIN icap_product_master prod ON (detail.product_id->>'value')::uuid = prod.id
-   ✅ GOOD: LEFT JOIN icap_product_master prod ON NULLIF(detail.product_id->>'value', '') IS NOT NULL AND (detail.product_id->>'value')::uuid = prod.id
+    ✅ GOOD: LEFT JOIN prod ON NULLIF(detail.product_id->>'value', '') IS NOT NULL AND (detail.product_id->>'value')::uuid = prod.id
 
-📌 RULE 2: Safe Numeric Pattern
-   OCR data contains empty strings ''. Casting '' to numeric causes errors.
-   ❌ BAD: (invoice.total->>'value')::numeric
-   ✅ GOOD: NULLIF(invoice.total->>'value', '')::numeric
-   Alternative: COALESCE(NULLIF(invoice.total->>'value', '')::numeric, 0)
+    📌 RULE 2: Safe Numeric Pattern
+    OCR data often contains empty strings (''). Casting an empty string to numeric causes a direct failure.
 
-📌 RULE 3: Date Handling Pattern (CRITICAL!)
-   Dates are stored as MM/DD/YYYY strings. Use TO_DATE for all date operations.
-   ❌ BAD: (invoice.due_date->>'value')::date
-   ❌ BAD: invoice.due_date::date
-   ❌ BAD: CURRENT_DATE - invoice.due_date
-   ✅ GOOD: TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY')
-   
-   Date aging calculation:
-   ✅ CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') AS days_overdue
-   
-   Date filtering:
-   ✅ WHERE TO_DATE(invoice.invoice_date->>'value', 'MM/DD/YYYY') BETWEEN TO_DATE('01/01/2024', 'MM/DD/YYYY') AND TO_DATE('12/31/2024', 'MM/DD/YYYY')
-   
-   Age buckets:
-   ✅ CASE 
-        WHEN CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') <= 30 THEN '0-30 days'
-        WHEN CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') <= 60 THEN '31-60 days'
-        ELSE '90+ days'
-      END AS age_bucket
+    ❌ BAD: (invoice.total->>'value')::numeric
 
-📌 RULE 4: Always Include Document Join
-   batch_name lives in icap_document, not icap_invoice. Always join it.
-   ✅ INNER JOIN icap_document d ON invoice.document_id = d.id
-   This provides: batch_name, status, sub_status, accuracy
+    ✅ GOOD: NULLIF(invoice.total->>'value', '')::numeric
+
+    Pro Tip: Use COALESCE(..., 0) if you need a fallback value for calculations.
+
+    📌 RULE 3: Date Handling Pattern (Critical!)
+    Dates are stored as MM/DD/YYYY strings. Standard casting (::date) will fail or interpret data incorrectly.
+
+    ❌ BAD: invoice.due_date::date
+
+    ✅ GOOD: TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY')
+
+    Calculation: CURRENT_DATE - TO_DATE(invoice.due_date->>'value', 'MM/DD/YYYY') AS days_overdue
+
+    📌 RULE 4: Always Include Document Join
+    The batch_name and high-level metadata live in icap_document, not the specific invoice table.
+
+    ✅ ACTION: Always INNER JOIN icap_document d ON invoice.document_id = d.id to access batch_name, status, and accuracy.
+
+    📌 RULE 5: Case-Insensitive Text Comparison
+    Data entry and OCR are messy. Using = or LIKE requires an exact case match (e.g., "Apple" != "apple"), which leads to missed records.
+
+    ❌ BAD: WHERE vendor_name = 'Cisco'
+
+    ❌ BAD: WHERE vendor_name LIKE 'Cisco%'
+
+    ✅ GOOD: WHERE vendor_name ILIKE 'Cisco'
+
+    ✅ GOOD: WHERE vendor_name ILIKE '%cisco%'
+
+    Why: ILIKE is the PostgreSQL-specific operator for case-insensitive matching. It ensures "CISCO", "cisco", and "Cisco" are all captured.
 
 🔴 CRITICAL COLUMN TYPE VALIDATION (CHECK BEFORE USING ANY COLUMN):
 
@@ -4037,9 +4046,31 @@ SQL QUERY:"""
                 conditions = []
                 for field in workflow_config['input_fields']:
                     field_name = field['name']
+                    field_type = (field.get('type') or '').lower()
                     parameters.append(field_name)
-                    # Simple equality condition for now - can be enhanced
-                    conditions.append(f"{field_name} = '{{{field_name}}}")
+
+                    field_name_l = field_name.lower()
+
+                    text_types = {'text', 'string', 'varchar'}
+                    numeric_types = {'number', 'numeric', 'int', 'integer', 'float', 'decimal'}
+                    date_types = {'date', 'datetime'}
+
+                    textish_tokens = {'name', 'vendor', 'customer', 'supplier', 'product', 'description', 'desc', 'title', 'email', 'company'}
+                    numericish_tokens = {'amount', 'total', 'qty', 'quantity', 'price', 'rate', 'number', 'num', 'count'}
+                    dateish_tokens = {'date', 'month', 'year', 'day'}
+
+                    is_textish = field_type in text_types or any(tok in field_name_l for tok in textish_tokens)
+                    is_numericish = field_type in numeric_types or any(tok in field_name_l for tok in numericish_tokens)
+                    is_dateish = field_type in date_types or any(tok in field_name_l for tok in dateish_tokens)
+
+                    if is_numericish:
+                        conditions.append(f"{field_name} = {{{field_name}}}")
+                    elif is_dateish:
+                        conditions.append(f"{field_name} = '{{{field_name}}}'")
+                    elif is_textish:
+                        conditions.append(f"{field_name} ILIKE '%{{{field_name}}}%'")
+                    else:
+                        conditions.append(f"{field_name} = '{{{field_name}}}'")
                 where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
                 param_instructions = f"Extract these fields from input_data: {', '.join(parameters)}"
                 
@@ -4826,8 +4857,9 @@ Your final response MUST be in **STRICT MARKDOWN FORMAT**:
 - Check `foreign_keys` in schema to find correct JOIN columns
 - For JSONB dates, use `TO_DATE(column->>'value', 'MM/DD/YYYY')` for proper filtering
 - **For text/name matching, ALWAYS use case-insensitive comparisons:**
-  - Use `ILIKE` instead of `LIKE` for pattern matching (e.g., `WHERE v.name ILIKE '%meat hub%'`)
-  - Or use `LOWER()` function (e.g., `WHERE LOWER(v.name) = LOWER('Meat Hub')`)
+  - Use `ILIKE` instead of `LIKE` or `=` for pattern matching (e.g., `WHERE v.name ILIKE '%vendor_name%'`)
+  - Don't use `=` for exact matches on text fields strictly
+  - Or use `LOWER()` function (e.g., `WHERE LOWER(v.name) = LOWER('vendor_name')`)
   - Never use `=` or `LIKE` for vendor names, product names, or any user-provided text
   - Database text fields may have inconsistent capitalization
 
@@ -4905,7 +4937,7 @@ Your final response MUST be in **STRICT MARKDOWN FORMAT**:
 
 ### Key Findings
 - Found **10 duplicate groups** affecting **30 invoices**
-- Vendor **meat Hub** has invoice **#328** duplicated **4 times**
+- Vendor **vendor_name** has invoice **#328** duplicated **4 times**
 
 ### Business Impact
 > ⚠️ High-priority duplicates detected
@@ -4947,7 +4979,7 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
 
 ### Overview
 - Total duplicates: **10 groups**
-- Vendor **meat Hub** has invoice **#328** appearing **4 times**
+- Vendor **vendor_name** has invoice **#328** appearing **4 times**
 
 ### Critical Issues  
 > ⚠️ Requires immediate attention
@@ -4958,7 +4990,7 @@ Your FINAL response to the user MUST use **STRICT MARKDOWN FORMAT**:
 ```
 
 ❌ WRONG (plain text):
-"Found 10 duplicate groups in the data. The first group is invoice 328 from meat Hub..."
+"Found 10 duplicate groups in the data. The first group is invoice 328 from vendor_name..."
 
 🔴 YOU MUST FORMAT YOUR RESPONSE IN MARKDOWN - NO EXCEPTIONS! 🔴
 """
@@ -5262,8 +5294,7 @@ Think step-by-step and explain your reasoning as you design this agent.
 2. Identify which tools are required and why
 3. Describe the key challenges this agent will face
 4. Outline the main instructions the agent needs
-5. Compare with the reference templates to ensure high quality
-6. Finally, write a REFINED PROMPT that will be used as the agent's instructions.
+5.While making database queries if confition is there for agent, ensure adding where clause to avoid full table scans.
 
 Start by explaining your understanding and reasoning.
 Ensure you end your response with:
@@ -5893,19 +5924,30 @@ FINAL PROMPT: [The detailed, refined prompt text here]"""
             # Convert Decimal objects to float for JSON serialization
             import json
             from decimal import Decimal
-            
-            def convert_decimals(obj):
-                """Recursively convert Decimal objects to float"""
+            from datetime import date, datetime
+
+            def convert_serializable(obj):
+                """Recursively convert Decimal and Date objects for JSON serialization"""
+                # Handle Decimals
                 if isinstance(obj, Decimal):
                     return float(obj)
+                
+                # Handle Dates and Datetimes
+                # We convert to string format 'YYYY-MM-DD' to keep it clean
+                elif isinstance(obj, (date, datetime)):
+                    return obj.isoformat()
+                
+                # Standard recursive boilerplate for dicts and lists
                 elif isinstance(obj, dict):
-                    return {k: convert_decimals(v) for k, v in obj.items()}
+                    return {k: convert_serializable(v) for k, v in obj.items()}
                 elif isinstance(obj, list):
-                    return [convert_decimals(item) for item in obj]
+                    return [convert_serializable(item) for item in obj]
+                
                 return obj
-            
-            serializable_result = convert_decimals(result)
-            
+
+            # Usage
+            serializable_result = convert_serializable(result)
+
             yield {
                 "type": "result",
                 "data": serializable_result
@@ -6705,9 +6747,16 @@ FINAL PROMPT: [The detailed, refined prompt text here]"""
             
             has_postgres = selected_tool_names and any(tool in selected_tool_names for tool in ['postgres_query', 'postgres_inspect_schema'])
             trigger_type = workflow_config.get('trigger_type', 'text_query')
-            should_regenerate_guidance = has_postgres
             
-            if (prompt_changed or trigger_changed or format_changed) and should_regenerate_guidance:
+            # Align with create_agent logic: Only generate guidance for structured inputs
+            # text_query is too variable for static caching
+            should_regenerate_guidance = has_postgres and trigger_type in ['date_range', 'month_year', 'year']
+            
+            # Flag to track if we need to explicitly clear old guidance (because it's stale)
+            # If config changed, we assume we must either replace it or clear it
+            should_clear_guidance = (prompt_changed or trigger_changed or format_changed)
+            
+            if should_clear_guidance and should_regenerate_guidance:
                 yield {
                     "type": "progress",
                     "step": 4,
@@ -6732,11 +6781,12 @@ FINAL PROMPT: [The detailed, refined prompt text here]"""
                     )
                     
                     if execution_guidance and not execution_guidance.get('error'):
+                        should_clear_guidance = False  # We have a replacement, so don't just clear it
                         yield {
                             "type": "progress",
                             "step": 4,
-                            "status": "in_progress",
-                            "message": "Optimizing execution",
+                            "status": "completed",
+                            "message": "Execution optimized",
                             "substeps": [
                                 {
                                     "id": "ai-regenerate-template",
@@ -6746,15 +6796,9 @@ FINAL PROMPT: [The detailed, refined prompt text here]"""
                                 }
                             ]
                         }
-                        
-                        yield {
-                            "type": "progress",
-                            "step": 4,
-                            "status": "completed",
-                            "message": "Execution optimized"
-                        }
                     else:
                         execution_guidance = None
+                        should_clear_guidance = True  # Explicitly clear stale guidance
                         yield {
                             "type": "progress",
                             "step": 4,
@@ -6778,6 +6822,7 @@ FINAL PROMPT: [The detailed, refined prompt text here]"""
                         }
                 except Exception:
                     execution_guidance = None
+                    should_clear_guidance = True  # Explicitly clear stale guidance
                     yield {
                         "type": "progress",
                         "step": 4,
@@ -6797,6 +6842,17 @@ FINAL PROMPT: [The detailed, refined prompt text here]"""
                         "status": "completed",
                         "message": "Using standard execution"
                     }
+            elif should_clear_guidance:
+                # Config changed but we don't need to regenerate (e.g. switched to text_query)
+                # We MUST clear the old guidance
+                execution_guidance = None
+                yield {
+                    "type": "progress",
+                    "step": 4,
+                    "status": "completed",
+                    "message": "Clearing optimization logic",
+                    "detail": "New configuration uses standard execution"
+                }
             else:
                 yield {
                     "type": "progress",
@@ -6825,6 +6881,9 @@ FINAL PROMPT: [The detailed, refined prompt text here]"""
             
             if execution_guidance:
                 updated_data['execution_guidance'] = execution_guidance
+            elif should_clear_guidance:
+                # 🗑️ Explicitly remove execution_guidance if it's stale or unwanted
+                updated_data['execution_guidance'] = None
             
             # Clear cached query
             updated_data["cached_query"] = None
@@ -7081,6 +7140,7 @@ FINAL PROMPT: [The detailed, refined prompt text here]"""
             agent_context = f"""\n\n🎯 AGENT CONTEXT:
 - Name: {agent_name}
 - Description: {agent_desc}
+- Purpose/Prompt: {agent_prompt}
 - Category: {agent_category}
 - Use Cases: {', '.join(use_cases)}
 

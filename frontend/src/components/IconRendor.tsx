@@ -1,4 +1,4 @@
-import React from 'react';
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import * as Icons from 'lucide-react';
 
 interface IconRendererProps {

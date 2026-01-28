@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { agentApi, type Agent } from '../services/api';
 import { IconRender } from '../components/IconRendor';
 import { Tooltip } from '../components/Tooltip';
@@ -15,9 +15,12 @@ interface AgentTemplate {
   use_cases: string[];
 }
 
-export default function AgentList() {
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'templates' | 'my-agents'>((location.state as any)?.activeTab || 'templates');
+interface AgentListProps {
+  activeTab: string;
+  setActiveTab: React.Dispatch<React.SetStateAction<'templates' | 'my-agents'>>;
+}
+
+export default function AgentList({ activeTab, setActiveTab }: AgentListProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [templates, setTemplates] = useState<AgentTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +38,7 @@ export default function AgentList() {
 
   useEffect(() => {
     loadData();
+    navigate(activeTab==='templates'?'/templates':'/my-agents');
   }, [activeTab]);
 
   const loadData = async () => {
@@ -115,6 +119,12 @@ export default function AgentList() {
       return 0;
     });
 
+  const handleNavTab = (tab: 'templates' | 'my-agents') => {
+    setActiveTab(tab);
+    if(tab==='templates') navigate('/templates')
+    else navigate('/my-agents');
+  }
+ 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -136,7 +146,7 @@ export default function AgentList() {
         <div className="border-b border-gray-200 mb-8">
           <nav className="-mb-px flex space-x-8">
             <button
-              onClick={() => setActiveTab('templates')}
+              onClick={()=>handleNavTab('templates')}
               className={`${activeTab === 'templates'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -148,7 +158,7 @@ export default function AgentList() {
               </div>
             </button>
             <button
-              onClick={() => setActiveTab('my-agents')}
+              onClick={()=>handleNavTab('my-agents')}
               className={`${activeTab === 'my-agents'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -156,7 +166,7 @@ export default function AgentList() {
             >
               <div className="flex items-center gap-2">
                 <IconRender iconName="workflow" size={16} />
-                My Agents ({agents.length})
+                My Agents
               </div>
             </button>
           </nav>
